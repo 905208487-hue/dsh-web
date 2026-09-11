@@ -41,6 +41,8 @@ export interface FakeHost {
   persistedIds: string[]
   /** Sessions whose `inspect` should fail (unreadable preview). */
   brokenIds: string[]
+  /** When true, every feed read rejects (a host mid-boot). */
+  feedFails: boolean
   registry: {
     state: FakeRegistryState
     workspaces: FixtureWorkspace[]
@@ -62,6 +64,8 @@ export function createFakeHost(options: {
   brokenIds?: string[]
   archivedSessionIds?: string[]
   dirs?: string[]
+  /** Make the feed read reject, standing in for a host mid-boot. */
+  feedFails?: boolean
 } = {}): FakeHost {
   const home = mkdtempSync(join(tmpdir(), 'dsh-session-archive-'))
   const sessionsRoot = join(home, 'sessions')
@@ -129,18 +133,23 @@ export function createFakeHost(options: {
     liveIds: options.liveIds ?? [],
     persistedIds,
     brokenIds,
+    feedFails: options.feedFails === true,
     registry,
     ledger: { version: 1, entries: {} },
     sources() {
       return {
         feed: {
           async list() {
+            if (host.feedFails) throw new Error('feed unavailable')
             return { items: feedItems }
           },
         },
         registry: registry as unknown as InventorySources['registry'],
         dshHome: home,
         ledger: host.ledger,
+        // Read at call time on purpose: tests mutate host.liveIds to stand in
+        // for a host restart (a fresh process holds no session yet).
+        liveIds: new Set(host.liveIds),
       }
     },
   }
@@ -192,6 +201,7 @@ export function writeProjcacheSessionFile(home: string, id: string, entry: { tit
 export function fakeContext(host: FakeHost): unknown {
   const sessionController = {
     async list() {
+      if (host.feedFails) throw new Error('feed unavailable')
       return { items: host.feedItems }
     },
     async inspect(sessionId: string) {

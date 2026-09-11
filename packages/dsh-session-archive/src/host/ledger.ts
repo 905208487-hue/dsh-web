@@ -31,6 +31,53 @@ export interface AutoStateDocument {
   nextCheckAt?: number
 }
 
+/** One deferred delete: a session the user confirmed while the host held it live. */
+export interface PendingDeleteEntry {
+  /** Epoch ms of the original delete request. */
+  requestedAt: number
+  source: 'manual' | 'auto'
+}
+
+/**
+ * Persisted deferred-delete queue. Drained at the next host start, when no
+ * browser has attached those sessions yet; an id that is still protected then
+ * stays queued for the start after that.
+ */
+export interface PendingDeleteDocument {
+  version: 1
+  entries: Record<string, PendingDeleteEntry>
+  /** Result of the most recent drain attempt, when one has run. */
+  lastSweep?: RunStats
+}
+
+export function createPendingDeleteDocument(): PendingDeleteDocument {
+  return { version: 1, entries: {} }
+}
+
+/** Tolerant deserialize: corrupt or foreign documents start fresh. */
+export function deserializePendingDeletes(raw: string): PendingDeleteDocument {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return createPendingDeleteDocument()
+  }
+  if (typeof parsed !== 'object' || parsed === null) return createPendingDeleteDocument()
+  const doc = parsed as { version?: unknown; entries?: unknown; lastSweep?: unknown }
+  if (doc.version !== 1 || typeof doc.entries !== 'object' || doc.entries === null) return createPendingDeleteDocument()
+  const entries: Record<string, PendingDeleteEntry> = {}
+  for (const [id, value] of Object.entries(doc.entries as Record<string, unknown>)) {
+    if (typeof value !== 'object' || value === null) continue
+    const entry = value as { requestedAt?: unknown; source?: unknown }
+    if (typeof entry.requestedAt !== 'number' || !Number.isFinite(entry.requestedAt)) continue
+    if (entry.source !== 'manual' && entry.source !== 'auto') continue
+    entries[id] = { requestedAt: entry.requestedAt, source: entry.source }
+  }
+  const document: PendingDeleteDocument = { version: 1, entries }
+  if (isRunStats(doc.lastSweep)) document.lastSweep = doc.lastSweep
+  return document
+}
+
 export function createLedgerDocument(): LedgerDocument {
   return { version: 1, entries: {} }
 }

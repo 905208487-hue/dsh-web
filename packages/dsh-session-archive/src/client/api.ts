@@ -8,6 +8,7 @@ import type {
   AutoPreviewView,
   BatchResponse,
   InventoryView,
+  PendingDeleteView,
   RunStats,
   SessionPreviewView,
 } from '../core/types.ts'
@@ -48,6 +49,8 @@ export interface ArchiveApi {
   archive(ids: string[], currentSessionId?: string): Promise<BatchResponse>
   unarchive(ids: string[]): Promise<BatchResponse>
   deleteSessions(ids: string[], currentSessionId: string | undefined, expectedTotal: number): Promise<BatchResponse>
+  /** Drop deferred deletes: no ids clears the whole queue. */
+  clearPending(ids?: string[]): Promise<PendingDeleteView>
   autoPreview(): Promise<AutoPreviewView>
   autoRun(kind: 'archive' | 'delete', currentSessionId?: string): Promise<RunStats>
 }
@@ -70,6 +73,7 @@ export function createArchiveApi(): ArchiveApi {
       post(ids, { ...(currentSessionId === undefined ? {} : { currentSessionId }), expectedTotal }),
       BATCH_TIMEOUT_MS,
     ),
+    clearPending: (ids) => request(`${prefix}/pending/clear`, ids === undefined ? { method: 'POST' } : post(ids, {}), DEFAULT_TIMEOUT_MS),
     autoPreview: () => request(`${prefix}/auto/preview`, undefined, DEFAULT_TIMEOUT_MS),
     autoRun: (kind, currentSessionId) => request(
       `${prefix}/auto/run`,

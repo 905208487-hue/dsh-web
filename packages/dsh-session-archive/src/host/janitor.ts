@@ -26,6 +26,7 @@ import type {
   BatchResponse,
   InventoryView,
   OpResult,
+  PendingDeleteView,
   RunStats,
   SessionPreviewView,
   WorkspaceView,
@@ -33,11 +34,14 @@ import type {
 import { buildInventory, ledgerEntryFor, readProjcacheIndex, type InventorySources, type ProjcacheFileEntry } from './inventory.ts'
 import {
   capEntries,
+  createPendingDeleteDocument,
   deserializeAutoState,
   deserializeLedger,
+  deserializePendingDeletes,
   writeJsonAtomic,
   type AutoStateDocument,
   type LedgerDocument,
+  type PendingDeleteDocument,
 } from './ledger.ts'
 import { canonicalSessionId, deleteRdbSession, isSessionRdb, rdbDbPaths, removeSessionDir } from './session-files.ts'
 import { dshHome as resolveDshHome } from '../dsh-home.ts'
@@ -77,9 +81,11 @@ export class ArchiveService {
   private readonly dshHome: string
   private readonly ledgerPath: string
   private readonly statePath: string
+  private readonly pendingPath: string
 
   private ledger: LedgerDocument = { version: 1, entries: {} }
   private autoState: AutoStateDocument = { version: 1 }
+  private pending: PendingDeleteDocument = createPendingDeleteDocument()
   private config: ResolvedAutoConfig = resolveAutoConfig(undefined)
   /** Per-session projection-cache file facts, memoized across inventory passes. */
   private readonly projcacheFiles = new Map<string, ProjcacheFileEntry | null>()
@@ -98,6 +104,7 @@ export class ArchiveService {
     this.dshHome = options.dshHome ?? resolveDshHome()
     this.ledgerPath = join(this.dshHome, 'dsh-session-archive', 'archive-ledger.json')
     this.statePath = join(this.dshHome, 'dsh-session-archive', 'state.json')
+    this.pendingPath = join(this.dshHome, 'dsh-session-archive', 'pending-deletes.json')
   }
 
   // ------------------------------------------------------------------
@@ -105,9 +112,10 @@ export class ArchiveService {
   // ------------------------------------------------------------------
 
   async start(): Promise<void> {
-    const [rawLedger, rawState] = await Promise.all([
+    const [rawLedger, rawState, rawPending] = await Promise.all([
       this.readFile(this.ledgerPath),
       this.readFile(this.statePath),
+      this.readFile(this.pendingPath),
     ])
     if (rawLedger !== undefined) {
       try {
@@ -123,7 +131,19 @@ export class ArchiveService {
         this.autoState = { version: 1 }
       }
     }
+    if (rawPending !== undefined) {
+      try {
+        this.pending = deserializePendingDeletes(rawPending)
+      } catch {
+        this.pending = createPendingDeleteDocument()
+      }
+    }
     this.loaded = true
+    // Deferred deletes run first, while the host still holds no session: this
+    // is the one moment a session that was live in the previous process is
+    // cold again and therefore deletable. The caller does not await start()
+    // (see the plugin's apply), so this does not delay host boot.
+    await this.sweepPendingDeletes()
     this.armScheduler(true)
   }
 
@@ -165,6 +185,11 @@ export class ArchiveService {
     await writeJsonAtomic(this.statePath, this.autoState).catch(() => {})
   }
 
+  private async flushPending(): Promise<void> {
+    if (!this.loaded) return
+    await writeJsonAtomic(this.pendingPath, this.pending).catch(() => {})
+  }
+
   // ------------------------------------------------------------------
   // Sources and protection
   // ------------------------------------------------------------------
@@ -178,6 +203,7 @@ export class ArchiveService {
       dshHome: this.dshHome,
       ledger: this.ledger,
       projcacheFiles: this.projcacheFiles,
+      liveIds: this.liveSessionIds(),
     }
   }
 
@@ -205,17 +231,24 @@ export class ArchiveService {
     return ids
   }
 
-  /** Protection map shared by manual delete and auto cycles. */
+  /**
+   * Protection map shared by manual delete and auto cycles. Precedence runs
+   * weakest to strongest, so the reported reason is the most specific true
+   * fact: a live member that is also running reports `running` (not
+   * `attached`), and the session being viewed reports `current`. Only
+   * `attached` alone is queueable for the next host start — the other reasons
+   * mean the session is doing work right now.
+   */
   private protectedReason(currentSessionId: string | undefined, rows?: readonly ArchiveSessionRow[]): Map<string, string> {
     const map = new Map<string, string>()
     // Live-store members are held open by the running harness process even
     // when the feed reports them idle — a distinct, honest skip reason.
     for (const id of this.liveSessionIds()) map.set(id, 'attached')
-    // Feed-reported running agents are protected even when the live store
-    // lookup fails or lags.
+    // Feed-reported running agents outrank mere attachment: the reason must
+    // name the work, and only attachment is safe to defer to a restart.
     if (rows !== undefined) {
       for (const row of rows) {
-        if (row.running && !map.has(row.id)) map.set(row.id, 'running')
+        if (row.running) map.set(row.id, 'running')
       }
     }
     // The client reports the current session in the harness's native spelling;
@@ -256,7 +289,21 @@ export class ArchiveService {
       workspaces,
       archivedSessionIds: built.archivedSessionIds,
       auto: this.autoView(),
+      pending: this.pendingView(),
     }
+  }
+
+  /** The deferred-delete queue as the browser half renders it. */
+  pendingView(): PendingDeleteView {
+    return {
+      ids: Object.keys(this.pending.entries),
+      ...(this.pending.lastSweep !== undefined ? { lastSweep: this.pending.lastSweep } : {}),
+    }
+  }
+
+  /** Read-only queue snapshot for tests and diagnostics. */
+  pendingSnapshot(): PendingDeleteDocument {
+    return this.pending
   }
 
   autoView(): AutoStateView {
@@ -266,6 +313,138 @@ export class ArchiveService {
       ...(this.autoState.nextCheckAt !== undefined ? { nextCheckAt: this.autoState.nextCheckAt } : {}),
       cycleRunning: this.cycleRunning,
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Deferred deletes
+  // ------------------------------------------------------------------
+
+  /**
+   * The ids a delete request could not touch ONLY because the running host
+   * holds them live. Computed by re-planning the same request with the
+   * `attached` marks dropped: whatever becomes deletable then was blocked by
+   * attachment alone. Every other protection (running, current, in-flight,
+   * plus structural outcomes such as `not-found`) keeps the id out of the
+   * deferred set, because those sessions are doing work now and a restart is
+   * not the user's instruction to kill them.
+   */
+  private deferrableTargets(
+    rows: readonly ArchiveSessionRow[],
+    ids: readonly string[],
+    protectedMap: ReadonlyMap<string, string>,
+    plan: { readonly targets: readonly string[] },
+  ): string[] {
+    const withoutAttached = new Map(protectedMap)
+    let dropped = 0
+    for (const [id, reason] of protectedMap) {
+      if (reason !== 'attached') continue
+      withoutAttached.delete(id)
+      dropped += 1
+    }
+    if (dropped === 0) return []
+    const already = new Set(plan.targets)
+    return planDelete(rows, ids, withoutAttached).targets.filter((id) => !already.has(id))
+  }
+
+  /** Record ids for the next host start and relabel their batch results. */
+  private async deferDeletes(
+    response: BatchResponse,
+    ids: readonly string[],
+    source: 'manual' | 'auto',
+  ): Promise<BatchResponse> {
+    if (ids.length === 0) return response
+    const now = Date.now()
+    for (const id of ids) {
+      this.pending.entries[id] ??= { requestedAt: now, source }
+    }
+    await this.flushPending()
+    const deferred = new Set(ids)
+    return {
+      ...response,
+      results: response.results.map((result): OpResult => result.status === 'skipped' && deferred.has(result.id)
+        ? { id: result.id, status: 'skipped', reason: 'queued' }
+        : result),
+    }
+  }
+
+  /**
+   * Drain the deferred-delete queue. Called at host start (before any browser
+   * can attach a session) and on later scheduler ticks for retries. An id
+   * leaves the queue once it is deleted or the feed confirms it is gone; an id
+   * that is still protected, or whose deletion failed, stays queued.
+   * @returns the run stats, or undefined when nothing was queued / the queue
+   *   is busy elsewhere.
+   */
+  async sweepPendingDeletes(): Promise<RunStats | undefined> {
+    const ids = Object.keys(this.pending.entries)
+    if (!this.loaded || ids.length === 0) return undefined
+    try {
+      return await this.withLock(async () => {
+        const built = await buildInventory(this.sources(), AbortSignal.timeout(30_000))
+        const protectedMap = this.protectedReason(undefined, built.rows)
+        const plan = planDelete(built.rows, ids, protectedMap)
+        let response: BatchResponse
+        if (plan.targets.length === 0) {
+          response = { results: [...plan.skipped], freedBytes: 0 }
+        } else {
+          for (const id of plan.targets) this.busy.add(id)
+          try {
+            response = await this.executeDelete(plan, built, 'boot')
+          } finally {
+            for (const id of plan.targets) this.busy.delete(id)
+          }
+        }
+        for (const result of response.results) {
+          if (result.status === 'ok') delete this.pending.entries[result.id]
+          // Without the authoritative feed a missing row means "this host
+          // cannot see it yet", not "it is gone": those stay queued.
+          else if (result.reason === 'not-found' && built.feedAvailable) delete this.pending.entries[result.id]
+        }
+        const stats = this.statsFrom(response.results, Date.now())
+        this.pending.lastSweep = stats
+        await this.flushPending()
+        return stats
+      })
+    } catch (error) {
+      // A held lock (a manual batch or an auto cycle) is retryable: the queue
+      // stays and the next tick tries again.
+      if (!(error instanceof BusyError)) this.logSweepFailure(error)
+      return undefined
+    }
+  }
+
+  /** Best-effort diagnostic for a sweep that threw before producing results. */
+  private logSweepFailure(error: unknown): void {
+    try {
+      const logger = (this.ctx as unknown as { logger?: { warn(message: string): void } }).logger
+      logger?.warn(`dsh-session-archive: deferred delete sweep failed: ${error instanceof Error ? error.message : String(error)}`)
+    } catch {
+      // Logging is never load-bearing.
+    }
+  }
+
+  /**
+   * Drop ids from the deferred-delete queue: an explicit user cancel, or an
+   * unarchive that says "keep this session after all".
+   */
+  async clearPending(ids?: readonly string[]): Promise<PendingDeleteView> {
+    return this.withLock(async () => {
+      if (ids === undefined || ids.length === 0) this.pending.entries = {}
+      else for (const id of ids) delete this.pending.entries[canonicalSessionId(id)]
+      await this.flushPending()
+      return this.pendingView()
+    })
+  }
+
+  private forgetQueued(ids: readonly string[]): void {
+    let changed = false
+    for (const id of ids) {
+      const canonical = canonicalSessionId(id)
+      if (this.pending.entries[canonical] === undefined) continue
+      delete this.pending.entries[canonical]
+      changed = true
+    }
+    if (changed) void this.flushPending()
   }
 
   // ------------------------------------------------------------------
@@ -354,6 +533,9 @@ export class ArchiveService {
           if (native !== undefined && native !== id) delete this.ledger.entries[native]
           results.push({ id, status: 'ok' })
         }
+        // Restoring a session states the intent to keep it, which cancels any
+        // deferred delete recorded for it.
+        this.forgetQueued(toUnarchive)
       } catch (error) {
         for (const id of toUnarchive) {
           results.push({ id, status: 'failed', reason: 'missing-seam', detail: error instanceof Error ? error.message.slice(0, 200) : String(error) })
@@ -373,9 +555,16 @@ export class ArchiveService {
    * fresh inventory with the full protection map; `expectedTotal` (the number
    * the user confirmed) must match or the whole batch aborts with a plan
    * mismatch so the UI can re-confirm.
+   *
+   * Sessions blocked by attachment alone are not refused: they enter the
+   * deferred-delete queue and the host deletes them at its next start. The
+   * running host cannot release a live session (no public seam exists), so
+   * deferring to the one moment those sessions are cold again is what turns
+   * "restart the service yourself" into "restart and it is already done".
    */
   async deleteSessions(ids: readonly string[], options: { currentSessionId?: string; expectedTotal?: number; source?: 'manual' | 'auto' } = {}): Promise<BatchResponse> {
     return this.withLock(async () => {
+      const source = options.source ?? 'manual'
       const built = await buildInventory(this.sources(), AbortSignal.timeout(30_000))
       const protectedMap = this.protectedReason(options.currentSessionId, built.rows)
       const plan = planDelete(built.rows, ids, protectedMap)
@@ -386,6 +575,7 @@ export class ArchiveService {
       if (typeof options.expectedTotal === 'number' && plan.targets.length > options.expectedTotal) {
         throw new PlanMismatchError(plan)
       }
+      const deferred = this.deferrableTargets(built.rows, ids, protectedMap, plan)
       if (!unarchiveSeamAvailable(this.ctx.workspaceRegistry)) {
         return {
           results: plan.targets.map((id) => ({ id, status: 'failed' as const, reason: 'missing-seam' as const, detail: 'workspace registry seam unavailable' })),
@@ -393,11 +583,13 @@ export class ArchiveService {
         }
       }
       for (const id of plan.targets) this.busy.add(id)
+      let response: BatchResponse
       try {
-        return await this.executeDelete(plan, built, options.source ?? 'manual')
+        response = await this.executeDelete(plan, built, source)
       } finally {
         for (const id of plan.targets) this.busy.delete(id)
       }
+      return this.deferDeletes(response, deferred, source)
     })
   }
 
@@ -411,7 +603,7 @@ export class ArchiveService {
   private async executeDelete(
     plan: ReturnType<typeof planDelete>,
     built: Awaited<ReturnType<typeof buildInventory>>,
-    source: 'manual' | 'auto',
+    source: 'manual' | 'auto' | 'boot',
   ): Promise<BatchResponse> {
     const results = new Map<string, OpResult>()
     const targets = plan.targets
@@ -576,16 +768,23 @@ export class ArchiveService {
         }
         const built = await buildInventory(this.sources(), AbortSignal.timeout(30_000))
         const protectedMap = this.protectedReason(currentSessionId, built.rows)
-        const protectedSet = new Set(protectedMap.keys())
-        const seeds = autoDeleteSeedCandidates(built.rows, { retainDays: this.config.autoDeleteDays, now: startedAt, runStartedAt: startedAt, protectedIds: protectedSet })
+        // Seeding protects work, not presence: a session that is merely held
+        // live by this process is still a policy candidate, and the plan below
+        // defers it to the next host start instead of skipping it forever.
+        const workingIds = new Set(
+          [...protectedMap].filter(([, reason]) => reason !== 'attached').map(([id]) => id),
+        )
+        const seeds = autoDeleteSeedCandidates(built.rows, { retainDays: this.config.autoDeleteDays, now: startedAt, runStartedAt: startedAt, protectedIds: workingIds })
         if (seeds.length === 0) {
           const stats: RunStats = { at: startedAt, total: 0, ok: 0, skipped: 0, failed: 0, entries: [] }
           this.autoState.lastDeleteRun = stats
           await this.flushState()
           return stats
         }
-        const plan = planDelete(built.rows, seeds.map((seed) => seed.id), protectedMap)
-        const response = await this.executeDelete(plan, built, 'auto')
+        const seedIds = seeds.map((seed) => seed.id)
+        const plan = planDelete(built.rows, seedIds, protectedMap)
+        const deferred = this.deferrableTargets(built.rows, seedIds, protectedMap, plan)
+        const response = await this.deferDeletes(await this.executeDelete(plan, built, 'auto'), deferred, 'auto')
         const stats = this.statsFrom(response.results, startedAt)
         this.autoState.lastDeleteRun = stats
         await this.flushState()
@@ -668,6 +867,9 @@ export class ArchiveService {
         }
       }
     }
+    // The deferred-delete queue retries here: a start-time sweep that lost a
+    // race to a browser, or that failed outright, gets another pass.
+    await this.sweepPendingDeletes()
     this.autoState.nextCheckAt = Date.now() + Math.max(15, this.config.checkIntervalMin) * 60_000
     await this.flushState()
     this.armScheduler(false)

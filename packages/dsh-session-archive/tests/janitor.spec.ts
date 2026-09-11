@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ArchiveService, BusyError, PlanMismatchError } from '../src/host/janitor.ts'
@@ -26,6 +26,11 @@ function writeSessionDir(host: FakeHost, id: string, size = 64): string {
 /** Seed the on-disk ledger BEFORE the service starts (it loads once). */
 async function seedLedger(host: FakeHost, entries: Record<string, { archivedAt: number; source: 'manual' | 'auto' }>): Promise<void> {
   await writeJsonAtomic(join(host.home, 'dsh-session-archive', 'archive-ledger.json'), { version: 1, entries })
+}
+
+/** Seed the deferred-delete queue BEFORE the service starts (it loads once). */
+async function seedPending(host: FakeHost, entries: Record<string, { requestedAt: number; source: 'manual' | 'auto' }>): Promise<void> {
+  await writeJsonAtomic(join(host.home, 'dsh-session-archive', 'pending-deletes.json'), { version: 1, entries })
 }
 
 async function settledService(host: FakeHost, config?: Record<string, unknown>): Promise<ArchiveService> {
@@ -138,17 +143,20 @@ describe('physical delete', () => {
     expect(response.results).toEqual([{ id: 'session-cur', status: 'skipped', reason: 'current' }])
   })
 
-  it('protects live (in-use) sessions even when the feed shows them idle', async () => {
+  it('defers live (in-use) sessions the feed shows idle instead of refusing them', async () => {
     const host = createFakeHost({
       feedItems: [{ sessionId: 'session-live', updatedAt: 10, running: false }],
       persistedIds: ['session-live'],
       liveIds: ['session-live'],
     })
-    writeSessionDir(host, 'session-live')
+    const dir = writeSessionDir(host, 'session-live')
     const service = await settledService(host)
     const response = await service.deleteSessions(['session-live'])
     expect(response.results[0]?.status).toBe('skipped')
-    expect(response.results[0]?.reason).toBe('attached')
+    expect(response.results[0]?.reason).toBe('queued')
+    // Nothing is touched now; the next host start does the work.
+    expect(existsSync(dir)).toBe(true)
+    expect(service.pendingView().ids).toEqual(['session-live'])
   })
 
   it('skips the entire family when a descendant is running (no half-deleted families)', async () => {
@@ -325,5 +333,214 @@ describe('preview', () => {
     const broken = await service.preview('session-broken')
     expect(broken.messageCount).toBe(0)
     await expect(service.preview('session-missing')).rejects.toThrow('session not found')
+  })
+})
+
+describe('deferred deletes (the restart queue)', () => {
+  it('operator queues an attached idle session instead of being refused, and nothing is deleted yet', async () => {
+    // Given an archived session the running host still holds attached
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-live', updatedAt: 10 }],
+      persistedIds: ['session-live'],
+      liveIds: ['session-live'],
+      archivedSessionIds: ['session-live'],
+    })
+    const dir = writeSessionDir(host, 'session-live')
+    const service = await settledService(host)
+
+    // When the operator deletes it
+    const response = await service.deleteSessions(['session-live'])
+
+    // Then the target reports queued while the stored data and the durable queue survive
+    expect(response.results).toEqual([{ id: 'session-live', status: 'skipped', reason: 'queued' }])
+    expect(existsSync(dir)).toBe(true)
+    expect(service.pendingView().ids).toEqual(['session-live'])
+    // The queue is durable: it survives the process that recorded it.
+    const raw = JSON.parse(readFileSync(join(host.home, 'dsh-session-archive', 'pending-deletes.json'), 'utf8'))
+    expect(Object.keys(raw.entries)).toEqual(['session-live'])
+    const entry = service.pendingSnapshot().entries['session-live']
+    expect(entry?.source).toBe('manual')
+    expect(entry?.requestedAt).toBeGreaterThan(0)
+  })
+
+  it('operator sees the queue drained at the next host start, before a browser can attach anything', async () => {
+    // Given a session queued while its first host still held it attached
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-live', updatedAt: 10 }],
+      persistedIds: ['session-live'],
+      liveIds: ['session-live'],
+      archivedSessionIds: ['session-live'],
+    })
+    const dir = writeSessionDir(host, 'session-live')
+    const first = await settledService(host)
+    await first.deleteSessions(['session-live'])
+    expect(first.pendingView().ids).toEqual(['session-live'])
+    first.stop()
+
+    // When a fresh process that holds no session starts and sweeps the queue
+    host.liveIds = []
+    const second = await settledService(host)
+
+    // Then the delete has happened, the queue is empty and the sweep counted the success
+    expect(existsSync(dir)).toBe(false)
+    expect(second.pendingView().ids).toEqual([])
+    const sweep = second.pendingView().lastSweep
+    expect(sweep?.ok).toBe(1)
+    expect(host.registry.archivedSessionIds).toEqual([])
+  })
+
+  it('operator sees ids still attached after the restart stay queued for the start after that', async () => {
+    // Given a queued session that the browser re-attaches before the start-up sweep runs
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-live', updatedAt: 10 }],
+      persistedIds: ['session-live'],
+      liveIds: [],
+      archivedSessionIds: ['session-live'],
+    })
+    const dir = writeSessionDir(host, 'session-live')
+    await seedPending(host, { 'session-live': { requestedAt: 1, source: 'manual' } })
+    // The browser won the race and attached the session before the sweep ran.
+    host.liveIds = ['session-live']
+
+    // When the host starts
+    const service = await settledService(host)
+
+    // Then the id stays queued and the sweep records the skip
+    expect(existsSync(dir)).toBe(true)
+    expect(service.pendingView().ids).toEqual(['session-live'])
+    expect(service.pendingView().lastSweep?.skipped).toBe(1)
+  })
+
+  it('operator sees ids the feed confirms gone retired from the queue', async () => {
+    // Given a queued id the feed no longer lists anywhere
+    const host = createFakeHost({ feedItems: [], persistedIds: [], liveIds: [] })
+    await seedPending(host, { 'session-gone': { requestedAt: 1, source: 'auto' } })
+
+    // When the host starts and sweeps the queue
+    const service = await settledService(host)
+
+    // Then the id left the queue instead of being retried forever
+    expect(service.pendingView().ids).toEqual([])
+    expect(service.pendingView().lastSweep?.skipped).toBe(1)
+  })
+
+  it('operator never defers a working session: running wins over attached and current is skipped', async () => {
+    // Given one running session and the session the operator is currently viewing, both attached
+    const host = createFakeHost({
+      feedItems: [
+        { sessionId: 'session-run', updatedAt: 10, running: true },
+        { sessionId: 'session-cur', updatedAt: 9 },
+      ],
+      persistedIds: ['session-run', 'session-cur'],
+      liveIds: ['session-run', 'session-cur'],
+    })
+    writeSessionDir(host, 'session-run')
+    writeSessionDir(host, 'session-cur')
+    const service = await settledService(host)
+
+    // When the operator deletes both
+    const response = await service.deleteSessions(['session-run', 'session-cur'], { currentSessionId: 'session-cur' })
+
+    // Then each reports its true blocking reason and nothing enters the restart queue
+    const byId = new Map(response.results.map((entry) => [entry.id, entry]))
+    expect(byId.get('session-run')?.reason).toBe('running')
+    expect(byId.get('session-cur')?.reason).toBe('current')
+    expect(service.pendingView().ids).toEqual([])
+  })
+
+  it('operator restoring a queued session cancels its deferred delete', async () => {
+    // Given an attached session already sitting in the restart queue
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-live', updatedAt: 10 }],
+      persistedIds: ['session-live'],
+      liveIds: ['session-live'],
+      archivedSessionIds: ['session-live'],
+    })
+    writeSessionDir(host, 'session-live')
+    const service = await settledService(host)
+    await service.deleteSessions(['session-live'])
+    expect(service.pendingView().ids).toEqual(['session-live'])
+
+    // When the operator unarchives it, which states the intent to keep it
+    await service.unarchive(['session-live'])
+
+    // Then the deferred delete is gone
+    expect(service.pendingView().ids).toEqual([])
+  })
+
+  it('operator clears the whole queue or a chosen subset on request', async () => {
+    // Given two attached sessions already queued for the next restart
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-live', updatedAt: 10 }, { sessionId: 'session-kept', updatedAt: 9 }],
+      persistedIds: ['session-live', 'session-kept'],
+      liveIds: ['session-live', 'session-kept'],
+    })
+    writeSessionDir(host, 'session-live')
+    writeSessionDir(host, 'session-kept')
+    const service = await settledService(host)
+    await service.deleteSessions(['session-live', 'session-kept'])
+    expect([...service.pendingView().ids].sort()).toEqual(['session-kept', 'session-live'])
+
+    // When the operator drops one id and then asks for the whole queue to be cleared
+    const remaining = await service.clearPending(['session-live'])
+
+    // Then only the requested ids left the queue
+    expect(remaining.ids).toEqual(['session-kept'])
+    expect((await service.clearPending()).ids).toEqual([])
+  })
+
+  it('operator sees the attached flag per row and the queue through inventory()', async () => {
+    // Given an inventory with one attached session, one cold session and an empty queue
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-live', updatedAt: 10 }, { sessionId: 'session-cold', updatedAt: 9 }],
+      persistedIds: ['session-live', 'session-cold'],
+      liveIds: ['session-live'],
+    })
+    const service = await settledService(host)
+
+    // When the archive panel reads its inventory
+    const inventory = await service.inventory()
+
+    // Then each row carries its own attachment fact alongside the queue state
+    const byId = new Map(inventory.rows.map((row) => [row.id, row]))
+    expect(byId.get('session-live')?.attached).toBe(true)
+    expect(byId.get('session-cold')?.attached).toBe(false)
+    expect(inventory.pending).toEqual({ ids: [] })
+  })
+
+  it('operator sees attachment-blocked sessions deferred by the automatic delete policy too', async () => {
+    // Given an archived session well past its retention that the host still holds attached
+    const DAY_MS = 86_400_000
+    const now = Date.now()
+    const host = createFakeHost({
+      feedItems: [{ sessionId: 'session-old', updatedAt: now - 40 * DAY_MS }],
+      persistedIds: ['session-old'],
+      liveIds: ['session-old'],
+      archivedSessionIds: ['session-old'],
+    })
+    const dir = writeSessionDir(host, 'session-old')
+    await seedLedger(host, { 'session-old': { archivedAt: now - 40 * DAY_MS, source: 'manual' } })
+    const service = await settledService(host, { autoDeleteEnabled: true, autoDeleteDays: 7 })
+
+    // When the automatic cleanup cycle runs
+    const stats = await service.runAutoCycle('delete')
+
+    // Then the candidate is deferred rather than skipped forever, and its data survives
+    expect(stats.skipped).toBe(1)
+    expect(service.pendingView().ids).toEqual(['session-old'])
+    expect(existsSync(dir)).toBe(true)
+  })
+
+  it('operator keeps a deferred id when the feed cannot answer, because absence proves nothing', async () => {
+    // Given a queued id and a feed that fails to answer this pass
+    const host = createFakeHost({ feedItems: [], persistedIds: [], liveIds: [], feedFails: true })
+    await seedPending(host, { 'session-hidden': { requestedAt: 1, source: 'manual' } })
+
+    // When the host starts and sweeps the queue
+    const service = await settledService(host)
+
+    // Then the id stays queued instead of being mistaken for deleted
+    expect(service.pendingView().ids).toEqual(['session-hidden'])
+    expect(service.pendingView().lastSweep?.skipped).toBe(1)
   })
 })

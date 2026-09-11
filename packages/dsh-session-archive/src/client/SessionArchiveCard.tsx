@@ -43,6 +43,7 @@ function statusChips(row: ArchiveSessionRow, currentId: string | undefined): { k
   else if (row.blank) chips.push({ key: 'blank', label: t('arch.status.blank'), tone: styles.chipNeutral })
   else chips.push({ key: 'active', label: t('arch.status.active'), tone: styles.chipSuccess })
   if (row.archived) chips.push({ key: 'archived', label: t('arch.status.archived'), tone: styles.chipBusiness })
+  if (row.attached && !row.running) chips.push({ key: 'attached', label: t('arch.status.attached'), tone: styles.chipWarn })
   if (row.origin === 'subagent') chips.push({ key: 'subagent', label: t('arch.status.subagent'), tone: styles.chipNeutral })
   if (currentId !== undefined && row.id === currentId) chips.push({ key: 'current', label: t('arch.current.badge'), tone: styles.chipDanger })
   return chips
@@ -76,6 +77,9 @@ export function SessionArchiveCard(props: SessionArchiveProps): ReactNode {
   const page = Math.min(ui.page, totalPages - 1)
   const shown = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
   const busy = ui.batch !== null && ui.batch.running
+  const pending = ui.inventory?.pending
+  const pendingIds = pending?.ids ?? []
+  const lastSweep = pending?.lastSweep
 
   const workspaceTitle = (id: string): string => workspaces.find((workspace) => workspace.id === id)?.title ?? id
 
@@ -260,6 +264,30 @@ export function SessionArchiveCard(props: SessionArchiveProps): ReactNode {
       </div>
 
       <AutoSettingsPanel settings={props.settings} controller={controller} auto={ui.inventory?.auto} />
+
+      {(pendingIds.length > 0 || lastSweep !== undefined) && (
+        <div className={styles.pendingBar} data-dsh-part="pending">
+          <div className={styles.pendingText}>
+            <span className={styles.pendingTitle}>{t('arch.pending.title', { n: pendingIds.length })}</span>
+            {pendingIds.length > 0 && <span className={styles.muted}>{t('arch.pending.hint')}</span>}
+            {lastSweep !== undefined && (
+              <span className={styles.muted}>
+                {t('arch.pending.sweep', { ok: lastSweep.ok, skipped: lastSweep.skipped, failed: lastSweep.failed })}
+              </span>
+            )}
+          </div>
+          {pendingIds.length > 0 && (
+            <button
+              type="button"
+              className={styles.button}
+              disabled={busy}
+              onClick={() => { void controller.clearPending() }}
+            >
+              {t('arch.pending.clear')}
+            </button>
+          )}
+        </div>
+      )}
 
       {ui.confirmDelete !== null && (        <DeleteConfirmDialog
           state={ui.confirmDelete}

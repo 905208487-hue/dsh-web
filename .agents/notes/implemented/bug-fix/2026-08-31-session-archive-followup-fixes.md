@@ -90,6 +90,10 @@ longer existed), so the summary line claimed 366 items outside the filter.
 **Consequences.** The protection semantics are unchanged — sessions held open
 by the running DSH process remain undeletable until the service restarts or
 the session is closed; what changed is that the UI now says so honestly and
+the selection counter reflects reality. The refusal itself is later superseded:
+[the delete-at-restart queue](../feature/2026-09-11-session-archive-delete-at-restart-queue.md)
+keeps this reason code and copy for the fallback case, while attachment-only
+blocks are now deferred and deleted at the next host start.
 the selection counter reflects reality. QA-verified: select 3 seeded sessions
 → batch delete → dialog `成功：3 / 跳过：0`, selection counter pruned to
 `已选 0 项`. Evidence: `/tmp/qa-evidence/25..27-*.png`.

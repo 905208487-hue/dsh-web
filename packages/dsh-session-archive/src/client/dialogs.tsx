@@ -97,6 +97,9 @@ export function DeleteConfirmDialog(props: {
         {props.state.skippedProtected > 0 && (
           <div className={styles.muted}>{t('arch.confirm.skipped', { n: props.state.skippedProtected })}</div>
         )}
+        {props.state.deferred > 0 && (
+          <div className={styles.muted}>{t('arch.confirm.deferred', { n: props.state.deferred })}</div>
+        )}
         {props.state.totalBytes > 0 && (
           <div className={styles.muted}>{t('arch.confirm.freed', { size: formatBytes(props.state.totalBytes) })}</div>
         )}
@@ -137,6 +140,7 @@ export function BatchDialog(props: {
   const failed = batch.results.filter((result) => result.status === 'failed')
   const skipped = batch.results.filter((result) => result.status === 'skipped')
   const ok = batch.results.filter((result) => result.status === 'ok')
+  const queued = batch.results.filter((result) => result.reason === 'queued')
   const reasonText = (result: (typeof batch.results)[number]): string => {
     const base = result.reason === undefined ? t('arch.reason.error') : t(`arch.reason.${result.reason}`)
     return result.detail === undefined ? base : `${base} (${result.detail})`
@@ -172,6 +176,9 @@ export function BatchDialog(props: {
                 .join(' · '),
             })}
           </div>
+        )}
+        {!batch.running && queued.length > 0 && (
+          <div className={styles.pendingNote}>{t('arch.batch.deferred', { n: queued.length })}</div>
         )}
         {!batch.running && failed.length > 0 && (
           <button type="button" className={styles.button} onClick={props.onRetryFailed}>{t('arch.batch.retryFailed')}</button>

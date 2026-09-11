@@ -14,6 +14,7 @@ export type OpStatus = 'ok' | 'skipped' | 'failed'
 export type OpReason =
   | 'running'
   | 'attached'
+  | 'queued'
   | 'current'
   | 'in-flight'
   | 'not-found'
@@ -65,6 +66,13 @@ export interface ArchiveSessionRow {
   readonly lastActivityReliable: boolean
   readonly sizeBytes?: number
   readonly running: boolean
+  /**
+   * True when the running DSH host process holds this session in its live
+   * store (`ctx.sessions`). Such a session cannot be physically deleted while
+   * that process lives: no public seam releases a live session, so the host
+   * defers the delete to its next start instead.
+   */
+  readonly attached: boolean
   readonly blank: boolean
   readonly origin?: 'subagent'
   readonly parentId?: string
@@ -89,6 +97,20 @@ export interface InventoryView {
   readonly archivedSessionIds: readonly string[]
   /** Host-side current-session id when the feed exposes one. */
   readonly auto: AutoStateView
+  /** Deletion requests waiting for the next host start. */
+  readonly pending: PendingDeleteView
+}
+
+/**
+ * The deferred-delete queue: sessions the user confirmed for physical deletion
+ * while the running host still held them live. The queue is drained by the
+ * next host start, before a browser can attach those sessions again.
+ */
+export interface PendingDeleteView {
+  /** Canonical session ids waiting for the next host start. */
+  readonly ids: readonly string[]
+  /** Result of the most recent drain attempt, when one has run. */
+  readonly lastSweep?: RunStats
 }
 
 /** Automatic policy run status persisted across restarts. */

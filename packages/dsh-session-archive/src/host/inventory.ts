@@ -49,6 +49,8 @@ export interface InventorySources {
    * not re-read unchanged files.
    */
   projcacheFiles?: Map<string, ProjcacheFileEntry | null>
+  /** Canonical ids the running host holds live (`ctx.sessions` members). */
+  liveIds?: ReadonlySet<string>
 }
 
 /** Enrichment facts from one per-session projection-cache file. */
@@ -121,11 +123,18 @@ export async function readProjcacheFile(dshHome: string, id: string, cache?: Inv
   return entry
 }
 
+/** One complete inventory pass over the feed, registry, and on-disk facts. */
 export interface BuiltInventory {
   rows: ArchiveSessionRow[]
   workspaces: WorkspaceView[]
   archivedSessionIds: string[]
   dirIndex: SessionDirIndex
+  /**
+   * Whether the authoritative session feed answered this pass. The
+   * deferred-delete sweep reads it to distinguish "the session is gone"
+   * (retire it) from "this host cannot see the feed yet" (keep it queued).
+   */
+  feedAvailable: boolean
   /**
    * Canonical row id -> the id the harness natively uses for the session.
    * Harness installs mix id spellings (feed, archive set, and store may hold
@@ -164,6 +173,7 @@ export async function buildInventory(sources: InventorySources, signal: AbortSig
   }
   const drafts = new Map<string, Draft>()
   const nativeIds: Record<string, string> = {}
+  let feedAvailable = false
   const add = (id: string): Draft => {
     let draft = drafts.get(id)
     if (draft === undefined) {
@@ -183,6 +193,9 @@ export async function buildInventory(sources: InventorySources, signal: AbortSig
   if (sources.feed !== undefined) {
     try {
       const response = await sources.feed.list({}, signal)
+      // The feed answered: a session absent from this pass is genuinely gone
+      // rather than merely unreadable in this host.
+      feedAvailable = true
       for (const item of response.items ?? []) {
         if (typeof item.sessionId !== 'string' || item.sessionId === '') continue
         // The feed mixes id spellings (bare uuids beside `session-<uuid>`);
@@ -304,6 +317,7 @@ export async function buildInventory(sources: InventorySources, signal: AbortSig
       lastActivityReliable: draft.lastActivityReliable,
       ...(sizeBytes !== undefined ? { sizeBytes } : {}),
       running: draft.running,
+      attached: sources.liveIds?.has(draft.id) === true,
       blank: draft.blank,
       ...(draft.origin !== undefined ? { origin: draft.origin } : {}),
       ...(draft.parentId !== undefined ? { parentId: draft.parentId } : {}),
@@ -313,7 +327,7 @@ export async function buildInventory(sources: InventorySources, signal: AbortSig
     })
   }
   rows.sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0) || a.id.localeCompare(b.id))
-  return { rows, workspaces, archivedSessionIds, dirIndex, nativeIds }
+  return { rows, workspaces, archivedSessionIds, dirIndex, nativeIds, feedAvailable }
 }
 
 export function emptyLedger(): LedgerDocument {

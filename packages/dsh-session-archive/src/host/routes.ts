@@ -209,6 +209,36 @@ export function makeAutoRunRoute(service: ArchiveService): WebRoute {
   }
 }
 
+/**
+ * Cancel deferred deletes. An empty body clears the whole queue; an `ids` array
+ * drops exactly those entries, so a user who changes their mind can keep a
+ * session before the next host start deletes it.
+ */
+export function makePendingClearRoute(service: ArchiveService): WebRoute {
+  return {
+    kind: 'exact',
+    path: `${ARCHIVE_API_PREFIX}/pending/clear`,
+    handler: async (req, res) => {
+      if (!fenced(req, res)) return
+      if (req.method !== 'POST') {
+        writeJson(res, 405, { ok: false, error: 'method not allowed' })
+        return
+      }
+      const body = (await readBody(req)) as Record<string, unknown>
+      const ids = idList(body.ids)
+      try {
+        writeJson(res, 200, await service.clearPending(ids.length > 0 ? ids : undefined), { 'cache-control': 'no-store' })
+      } catch (error) {
+        if (error instanceof BusyError) {
+          writeJson(res, 409, { ok: false, error: 'busy: another archive operation is running' })
+          return
+        }
+        writeJson(res, 500, { ok: false, error: errorDetail(error) })
+      }
+    },
+  }
+}
+
 export function makeArchiveRoutes(service: ArchiveService): WebRoute[] {
   return [
     makeInventoryRoute(service),
@@ -216,6 +246,7 @@ export function makeArchiveRoutes(service: ArchiveService): WebRoute[] {
     makeArchiveRoute(service),
     makeUnarchiveRoute(service),
     makeDeleteRoute(service),
+    makePendingClearRoute(service),
     makeAutoPreviewRoute(service),
     makeAutoRunRoute(service),
   ]

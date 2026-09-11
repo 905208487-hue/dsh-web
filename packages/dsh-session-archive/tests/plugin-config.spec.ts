@@ -33,6 +33,7 @@ const ROUTE_PATHS = [
   '/api/dsh-session-archive/archive',
   '/api/dsh-session-archive/unarchive',
   '/api/dsh-session-archive/delete',
+  '/api/dsh-session-archive/pending/clear',
   '/api/dsh-session-archive/auto/preview',
   '/api/dsh-session-archive/auto/run',
 ]

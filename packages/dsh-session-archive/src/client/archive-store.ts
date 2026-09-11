@@ -43,6 +43,12 @@ export interface ConfirmDeleteState {
   descendants: number
   skippedProtected: number
   totalBytes: number
+  /**
+   * Planned targets the running host holds live. They cannot be deleted now,
+   * so the host defers them to its next start; the dialog states that up front
+   * because the total the user confirms includes them.
+   */
+  deferred: number
   /** Extra confirmation checkbox required (select-all or large deletes). */
   strong: boolean
 }

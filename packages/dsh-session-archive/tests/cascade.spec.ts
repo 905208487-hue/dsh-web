@@ -8,6 +8,7 @@ function row(overrides: Partial<ArchiveSessionRow> & { id: string }): ArchiveSes
     archived: false,
     lastActivityReliable: false,
     running: false,
+    attached: false,
     blank: false,
     childIds: [],
     childCount: 0,

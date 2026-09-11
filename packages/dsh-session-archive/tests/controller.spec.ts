@@ -9,6 +9,7 @@ function row(overrides: Partial<ArchiveSessionRow> & { id: string }): ArchiveSes
     archived: false,
     lastActivityReliable: true,
     running: false,
+    attached: false,
     blank: false,
     childIds: [],
     childCount: 0,
@@ -45,13 +46,14 @@ describe('chunkDeleteTargets', () => {
   })
 })
 
-function makeInventory(rows: ArchiveSessionRow[]): InventoryView {
+function makeInventory(rows: ArchiveSessionRow[], pendingIds: string[] = []): InventoryView {
   return {
     generatedAt: 0,
     rows,
     workspaces: [],
     archivedSessionIds: [],
     auto: { cycleRunning: false },
+    pending: { ids: pendingIds },
   }
 }
 
@@ -74,6 +76,10 @@ function stubApi(overrides: Partial<ArchiveApi> = {}): { api: ArchiveApi; calls:
     },
     autoPreview: () => Promise.reject(new Error('not used')),
     autoRun: () => Promise.reject(new Error('not used')),
+    clearPending: (ids) => {
+      calls.push({ path: 'clearPending', ids: ids === undefined ? [] : [...ids] })
+      return Promise.resolve({ ids: [] })
+    },
     ...overrides,
   }
   return { api, calls }
@@ -174,5 +180,49 @@ describe('ArchiveController.runBatch', () => {
     controller.store.actions.setInventory(makeInventory(rows))
     await controller.runBatch('delete', ['session-a'])
     expect(controller.store.getSnapshot().batch?.results[0]?.status).toBe('failed')
+  })
+})
+
+describe('ArchiveController deferred deletes', () => {
+  it('operator sees host-held targets counted as deferred in the confirm dialog', async () => {
+    // Given an inventory with one process-attached session and one cold session
+    const rows = [
+      row({ id: 'session-live', attached: true }),
+      row({ id: 'session-cold' }),
+    ]
+    const { api } = stubApi()
+    const controller = new ArchiveController({ api })
+    controller.store.actions.setInventory(makeInventory(rows))
+
+    // When the operator opens the delete confirmation for both
+    await controller.confirmDelete(['session-live', 'session-cold'])
+
+    // Then both are planned and exactly the attached one is reported as deferred
+    const state = controller.store.getSnapshot().confirmDelete
+    expect(state?.total).toBe(2)
+    expect(state?.deferred).toBe(1)
+  })
+
+  it('operator sees queued results from the host and can cancel the queue', async () => {
+    // Given a host that answers the delete with a queued result for an attached session
+    const rows = [row({ id: 'session-live', attached: true })]
+    const { api, calls } = stubApi({
+      deleteSessions: (ids) => Promise.resolve({
+        results: ids.map((id) => ({ id, status: 'skipped' as const, reason: 'queued' as const })),
+        freedBytes: 0,
+      }),
+    })
+    const controller = new ArchiveController({ api })
+    controller.store.actions.setInventory(makeInventory(rows, ['session-live']))
+
+    // When the operator runs the delete batch and then clears the queue
+    await controller.runBatch('delete', ['session-live'])
+    const results = controller.store.getSnapshot().batch?.results ?? []
+    await controller.clearPending()
+
+    // Then the batch reports the queued reason and the cancel reaches the host route
+    expect(results.map((result) => result.reason)).toEqual(['queued'])
+    expect(calls.at(-1)?.path).toBe('clearPending')
+    expect(calls.at(-1)?.ids).toEqual([])
   })
 })

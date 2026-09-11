@@ -128,8 +128,29 @@ export class ArchiveController {
       descendants: plan.targets.filter((id) => !directSet.has(id)).length,
       skippedProtected: plan.skipped.length,
       totalBytes: plan.totalBytes,
+      deferred: this.deferredCount(plan.targets),
       strong,
     })
+  }
+
+  /**
+   * Planned targets the host holds live, so the confirm dialog can say that
+   * part of the batch lands at the next host start instead of now.
+   */
+  private deferredCount(targets: readonly string[]): number {
+    const rows = this.store.getSnapshot().inventory?.rows ?? []
+    const attached = new Set(rows.filter((row) => row.attached).map((row) => row.id))
+    return targets.filter((id) => attached.has(id)).length
+  }
+
+  /** Cancel deferred deletes (no ids clears the whole queue) and reload. */
+  async clearPending(ids?: readonly string[]): Promise<void> {
+    try {
+      await this.api.clearPending(ids === undefined ? undefined : [...ids])
+    } catch {
+      // A refused cancel surfaces through the reloaded queue below.
+    }
+    await this.load()
   }
 
   /** Execute one batch kind over explicit ids, updating progress per chunk. */

@@ -467,6 +467,38 @@
 }
 
 /* Auto maintenance panel */
+
+/* Deferred-delete queue strip */
+
+.pendingBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b45309) 28%, transparent);
+  border-left: 3px solid var(--dsw-alias-state-warn-primary, #b45309);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b45309) 7%, transparent);
+}
+
+.pendingText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pendingTitle {
+  font-weight: 600;
+  color: var(--dsw-alias-state-warn-primary, #b45309);
+}
+
+.pendingNote {
+  color: var(--dsw-alias-state-warn-primary, #b45309);
+  font-weight: 600;
+}
+
 /* Dialogs */
 
 .overlay {
