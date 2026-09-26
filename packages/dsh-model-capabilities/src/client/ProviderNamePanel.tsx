@@ -165,58 +165,62 @@ export function ProviderNamePanel(props: ProviderNamePanelProps) {
 
   return (
     <section className={css.namePanel} data-dsh-plugin="model-capabilities" data-dsh-part="provider-name">
-      <p className={css.nameHint}>{t('providerName.hint')}</p>
-      {phase.kind === 'loading' ? <p className={css.status} role="status">{t('providerName.loading')}</p> : null}
+      {phase.kind === 'loading' ? <span className={css.status} role="status">{t('providerName.loading')}</span> : null}
       {phase.kind === 'error'
         ? (
-            <div className={css.statusRow}>
-              <p className={css.failed} role="alert">{t('providerName.loadFailed', { error: phase.message })}</p>
-              <button type="button" className={css.ghost} data-dsh-part="reload" onClick={() => { void load(settings) }}>
+            <span className={css.statusRow}>
+              <span className={css.failed} role="alert">{t('providerName.loadFailed', { error: phase.message })}</span>
+              <button type="button" className={css.inlineBtn} data-dsh-part="reload" onClick={() => { void load(settings) }}>
                 {t('providerName.reload')}
               </button>
-            </div>
+            </span>
           )
         : null}
       {phase.kind === 'ready' && snapshot !== undefined
         ? (
             <>
-              {readOnly ? <p className={css.readOnly} role="status">{t('providerName.readOnly')}</p> : null}
               <div className={css.nameRow} data-dsh-part="name-row">
-                <code className={css.nameId}>{provider.provider}</code>
+                <span className={css.nameId}>{provider.provider}</span>
                 <input
                   className={css.nameInput}
                   type="text"
                   value={value}
                   placeholder={t('providerName.placeholder')}
                   aria-label={t('providerName.label')}
+                  title={t('providerName.hint')}
                   disabled={readOnly}
                   onChange={event => { setName(event.target.value) }}
                 />
+                {save.kind === 'saved' ? <span className={css.status} role="status">{t('providerName.saved')}</span> : null}
+                {save.kind === 'conflict' ? <span className={css.failed} role="alert" title={t('providerName.conflict')}>{t('providerName.errorShort')}</span> : null}
+                {save.kind === 'failed' ? <span className={css.failed} role="alert" title={t('providerName.failed', { error: save.message })}>{t('providerName.errorShort')}</span> : null}
+                {dirty
+                  ? (
+                      <>
+                        <button
+                          type="button"
+                          className={css.inlineBtn}
+                          data-dsh-part="discard"
+                          disabled={save.kind === 'saving'}
+                          onClick={discard}
+                          aria-label={t('providerName.discard')}
+                        >
+                          {t('providerName.discard')}
+                        </button>
+                        <button
+                          type="button"
+                          className={css.inlineBtn}
+                          data-dsh-part="save"
+                          disabled={readOnly || save.kind === 'saving'}
+                          onClick={() => { void doSave() }}
+                        >
+                          {save.kind === 'saving' ? t('providerName.saving') : t('providerName.save')}
+                        </button>
+                      </>
+                    )
+                  : null}
               </div>
-              <div className={css.footer}>
-                {save.kind === 'saved' ? <p className={css.status} role="status">{t('providerName.saved')}</p> : null}
-                {save.kind === 'conflict' ? <p className={css.failed} role="alert">{t('providerName.conflict')}</p> : null}
-                {save.kind === 'failed' ? <p className={css.failed} role="alert">{t('providerName.failed', { error: save.message })}</p> : null}
-                <span className={css.spacer} />
-                <button
-                  type="button"
-                  className={css.ghost}
-                  data-dsh-part="discard"
-                  disabled={!dirty || save.kind === 'saving'}
-                  onClick={discard}
-                >
-                  {t('providerName.discard')}
-                </button>
-                <button
-                  type="button"
-                  className={css.primary}
-                  data-dsh-part="save"
-                  disabled={!dirty || readOnly || save.kind === 'saving'}
-                  onClick={() => { void doSave() }}
-                >
-                  {save.kind === 'saving' ? t('providerName.saving') : t('providerName.save')}
-                </button>
-              </div>
+              {readOnly ? <p className={css.readOnly} role="status">{t('providerName.readOnly')}</p> : null}
             </>
           )
         : null}

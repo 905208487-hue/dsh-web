@@ -17,6 +17,7 @@ export const ru: Record<string, string> = {
   'providerName.saving': 'Сохранение…',
   'providerName.discard': 'Сбросить',
   'providerName.saved': 'Сохранено',
+  'providerName.errorShort': 'Не сохранено (наведите для причины)',
   'providerName.conflict': 'Конфигурация изменена в другом окне; перечитано — повторите попытку.',
   'providerName.failed': 'Не удалось сохранить: {error}',
   'caps.conflict': 'Конфигурация изменена в другом окне; перечитано — повторите попытку.',

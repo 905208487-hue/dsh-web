@@ -41190,6 +41190,7 @@ window.__ModuleLoader__.load({
 			"providerName.saving": "保存中…",
 			"providerName.discard": "重置",
 			"providerName.saved": "已保存",
+			"providerName.errorShort": "未保存(悬停查看原因)",
 			"providerName.conflict": "配置已被其他界面修改，已重新读取，请重试。",
 			"providerName.failed": "保存失败：{error}",
 			"caps.conflict": "配置已被其他界面修改，已重新读取，请重试。",
@@ -41215,6 +41216,7 @@ window.__ModuleLoader__.load({
 			"providerName.saving": "Saving…",
 			"providerName.discard": "Reset",
 			"providerName.saved": "Saved",
+			"providerName.errorShort": "Not saved (hover for reason)",
 			"providerName.conflict": "The configuration changed in another surface; reloaded — please retry.",
 			"providerName.failed": "Save failed: {error}",
 			"caps.conflict": "The configuration changed in another surface; reloaded — please retry.",
@@ -41242,7 +41244,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-model-capabilities/src/client/capabilities.module.css.mjs
-		const css = ".Qzh-QG_namePanel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;flex-direction:column;gap:8px;margin:0 16px 12px;padding:10px 12px;display:flex}.Qzh-QG_nameHint{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_nameRows{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.Qzh-QG_nameRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:flex}.Qzh-QG_nameId{color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;flex:0 auto;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}.Qzh-QG_nameInput{appearance:none;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;min-width:0;padding:4px 8px;font-size:12px}.Qzh-QG_nameInput:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-1px}.Qzh-QG_nameInput::placeholder{color:var(--dsw-alias-label-dimmed)}.Qzh-QG_status{color:var(--dsw-alias-label-dimmed);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_readOnly{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.Qzh-QG_statusRow{align-items:center;gap:10px;display:flex}.Qzh-QG_footer{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.Qzh-QG_primary{appearance:none;font:inherit;cursor:pointer;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border:1px solid #0000;border-radius:8px;padding:4px 14px;font-size:13px;line-height:1.5}.Qzh-QG_primary:hover:enabled{background:var(--dsw-alias-button-primary-hover)}.Qzh-QG_primary:disabled{opacity:.4;cursor:default}.Qzh-QG_primary:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_archive{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Qzh-QG_archiveTitle{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:600}.Qzh-QG_archiveRows{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.Qzh-QG_archiveRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:flex}.Qzh-QG_modelId{color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;font-size:13px;font-weight:500}.Qzh-QG_modelName{color:var(--dsw-alias-label-dimmed);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.Qzh-QG_spacer{flex:1}.Qzh-QG_ghost{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;padding:4px 12px;font-size:13px;line-height:1.5}.Qzh-QG_ghost:disabled{opacity:.4;cursor:default}.Qzh-QG_ghost:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_hint{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_failed{color:var(--dsw-alias-status-danger,#d0342c);margin:0;font-size:12px;line-height:1.5}";
+		const css = ".Qzh-QG_namePanel{align-items:center;gap:8px;margin:0 16px 8px;display:flex}.Qzh-QG_nameRow{flex:1;align-items:center;gap:8px;min-width:0;display:flex}.Qzh-QG_inlineBtn{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:0 0;border-radius:6px;flex-shrink:0;padding:2px 10px;font-size:12px;line-height:1.5}.Qzh-QG_inlineBtn:disabled{opacity:.4;cursor:default}.Qzh-QG_inlineBtn:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_nameId{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex:0 auto;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}.Qzh-QG_nameInput{appearance:none;font:inherit;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid #0000;border-radius:6px;flex:1;min-width:0;padding:3px 6px;font-size:12px}.Qzh-QG_nameInput:hover{border-color:var(--dsw-alias-border-l2)}.Qzh-QG_nameInput:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-1px;background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2)}.Qzh-QG_nameInput::placeholder{color:var(--dsw-alias-label-dimmed)}.Qzh-QG_status{color:var(--dsw-alias-label-dimmed);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_readOnly{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.Qzh-QG_statusRow{align-items:center;gap:10px;display:flex}.Qzh-QG_archive{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Qzh-QG_archiveTitle{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:600}.Qzh-QG_archiveRows{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.Qzh-QG_archiveRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:flex}.Qzh-QG_modelId{color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;font-size:13px;font-weight:500}.Qzh-QG_modelName{color:var(--dsw-alias-label-dimmed);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.Qzh-QG_spacer{flex:1}.Qzh-QG_ghost{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;padding:4px 12px;font-size:13px;line-height:1.5}.Qzh-QG_ghost:disabled{opacity:.4;cursor:default}.Qzh-QG_ghost:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_hint{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_failed{color:var(--dsw-alias-status-danger,#d0342c);margin:0;font-size:12px;line-height:1.5}";
 		const tagId = "@linxin666/dsh-web-all/packages/dsh-model-capabilities/src/client/capabilities.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -41257,18 +41259,15 @@ window.__ModuleLoader__.load({
 			"archiveRows": "Qzh-QG_archiveRows",
 			"archiveTitle": "Qzh-QG_archiveTitle",
 			"failed": "Qzh-QG_failed",
-			"footer": "Qzh-QG_footer",
 			"ghost": "Qzh-QG_ghost",
 			"hint": "Qzh-QG_hint",
+			"inlineBtn": "Qzh-QG_inlineBtn",
 			"modelId": "Qzh-QG_modelId",
 			"modelName": "Qzh-QG_modelName",
-			"nameHint": "Qzh-QG_nameHint",
 			"nameId": "Qzh-QG_nameId",
 			"nameInput": "Qzh-QG_nameInput",
 			"namePanel": "Qzh-QG_namePanel",
 			"nameRow": "Qzh-QG_nameRow",
-			"nameRows": "Qzh-QG_nameRows",
-			"primary": "Qzh-QG_primary",
 			"readOnly": "Qzh-QG_readOnly",
 			"spacer": "Qzh-QG_spacer",
 			"status": "Qzh-QG_status",
@@ -41547,24 +41546,20 @@ window.__ModuleLoader__.load({
 				"data-dsh-plugin": "model-capabilities",
 				"data-dsh-part": "provider-name",
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: capabilities_module_css_default.nameHint,
-						children: t$1("providerName.hint")
-					}),
-					phase.kind === "loading" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					phase.kind === "loading" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: capabilities_module_css_default.status,
 						role: "status",
 						children: t$1("providerName.loading")
 					}) : null,
-					phase.kind === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					phase.kind === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 						className: capabilities_module_css_default.statusRow,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: capabilities_module_css_default.failed,
 							role: "alert",
 							children: t$1("providerName.loadFailed", { error: phase.message })
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 							type: "button",
-							className: capabilities_module_css_default.ghost,
+							className: capabilities_module_css_default.inlineBtn,
 							"data-dsh-part": "reload",
 							onClick: () => {
 								load(settings);
@@ -41572,70 +41567,67 @@ window.__ModuleLoader__.load({
 							children: t$1("providerName.reload")
 						})]
 					}) : null,
-					phase.kind === "ready" && snapshot !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-						readOnly ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: capabilities_module_css_default.readOnly,
-							role: "status",
-							children: t$1("providerName.readOnly")
-						}) : null,
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: capabilities_module_css_default.nameRow,
-							"data-dsh-part": "name-row",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", {
+					phase.kind === "ready" && snapshot !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: capabilities_module_css_default.nameRow,
+						"data-dsh-part": "name-row",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: capabilities_module_css_default.nameId,
 								children: provider.provider
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 								className: capabilities_module_css_default.nameInput,
 								type: "text",
 								value,
 								placeholder: t$1("providerName.placeholder"),
 								"aria-label": t$1("providerName.label"),
+								title: t$1("providerName.hint"),
 								disabled: readOnly,
 								onChange: (event) => {
 									setName(event.target.value);
 								}
-							})]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: capabilities_module_css_default.footer,
-							children: [
-								save.kind === "saved" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.status,
-									role: "status",
-									children: t$1("providerName.saved")
-								}) : null,
-								save.kind === "conflict" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: t$1("providerName.conflict")
-								}) : null,
-								save.kind === "failed" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: t$1("providerName.failed", { error: save.message })
-								}) : null,
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: capabilities_module_css_default.spacer }),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: capabilities_module_css_default.ghost,
-									"data-dsh-part": "discard",
-									disabled: !dirty || save.kind === "saving",
-									onClick: discard,
-									children: t$1("providerName.discard")
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: capabilities_module_css_default.primary,
-									"data-dsh-part": "save",
-									disabled: !dirty || readOnly || save.kind === "saving",
-									onClick: () => {
-										doSave();
-									},
-									children: save.kind === "saving" ? t$1("providerName.saving") : t$1("providerName.save")
-								})
-							]
-						})
-					] }) : null
+							}),
+							save.kind === "saved" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: capabilities_module_css_default.status,
+								role: "status",
+								children: t$1("providerName.saved")
+							}) : null,
+							save.kind === "conflict" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: capabilities_module_css_default.failed,
+								role: "alert",
+								title: t$1("providerName.conflict"),
+								children: t$1("providerName.errorShort")
+							}) : null,
+							save.kind === "failed" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: capabilities_module_css_default.failed,
+								role: "alert",
+								title: t$1("providerName.failed", { error: save.message }),
+								children: t$1("providerName.errorShort")
+							}) : null,
+							dirty ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: capabilities_module_css_default.inlineBtn,
+								"data-dsh-part": "discard",
+								disabled: save.kind === "saving",
+								onClick: discard,
+								"aria-label": t$1("providerName.discard"),
+								children: t$1("providerName.discard")
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: capabilities_module_css_default.inlineBtn,
+								"data-dsh-part": "save",
+								disabled: readOnly || save.kind === "saving",
+								onClick: () => {
+									doSave();
+								},
+								children: save.kind === "saving" ? t$1("providerName.saving") : t$1("providerName.save")
+							})] }) : null
+						]
+					}), readOnly ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: capabilities_module_css_default.readOnly,
+						role: "status",
+						children: t$1("providerName.readOnly")
+					}) : null] }) : null
 				]
 			});
 		}
@@ -42231,8 +42223,7 @@ window.__ModuleLoader__.load({
 			root.querySelectorAll("[data-dsh-display-mode-option]").forEach((button) => {
 				const selected = button.dataset.dshDisplayModeOption === mode;
 				button.setAttribute("aria-pressed", String(selected));
-				button.style.border = selected ? "1px solid var(--dsw-alias-brand-primary, #3867d6)" : "1px solid var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%))";
-				button.style.background = selected ? "color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 12%, transparent)" : "var(--dsw-alias-bg-base, transparent)";
+				button.toggleAttribute("data-selected", selected);
 			});
 		}
 		function DisplayModeRow() {
@@ -42241,6 +42232,7 @@ window.__ModuleLoader__.load({
 				type: "button",
 				"data-dsh-display-mode-option": value,
 				"aria-pressed": mode === value,
+				"data-selected": mode === value ? "" : void 0,
 				onClick: (event) => {
 					writeDisplayMode(value);
 					const target = event.currentTarget;
@@ -42248,38 +42240,110 @@ window.__ModuleLoader__.load({
 						const root = target.closest("[data-dsh-display-mode-row]");
 						if (root instanceof HTMLElement) refreshDisplayModeButtons(root, value);
 					}
-				},
-				style: {
-					border: mode === value ? "1px solid var(--dsw-alias-brand-primary, #3867d6)" : "1px solid var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%))",
-					borderRadius: 10,
-					background: mode === value ? "color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 12%, transparent)" : "var(--dsw-alias-bg-base, transparent)",
-					color: "var(--dsw-alias-label-primary, inherit)",
-					cursor: "pointer",
-					font: "inherit",
-					minHeight: 34,
-					padding: "6px 12px"
 				}
-			}, label);
-			return h("div", {
-				"data-dsh-display-mode-row": "",
-				style: {
-					display: "grid",
-					gap: 8,
-					padding: "12px 0"
-				}
-			}, h("div", { style: { fontWeight: 600 } }, displayModeText("title")), h("div", { style: {
-				display: "flex",
-				flexWrap: "wrap",
-				gap: 8
-			} }, option("mario", displayModeText("mario")), option("default", displayModeText("default"))), h("div", { style: {
-				color: "var(--dsw-alias-label-secondary, rgb(0 0 0 / 58%))",
-				fontSize: 12,
-				lineHeight: "18px"
-			} }, displayModeText("hint")));
+			}, h("span", {
+				"data-dsh-display-mode-icon": value,
+				"aria-hidden": "true"
+			}), h("span", { "data-dsh-display-mode-label": "" }, label));
+			return h("div", { "data-dsh-display-mode-row": "" }, h("div", { "data-dsh-display-mode-title": "" }, displayModeText("title")), h("div", { "data-dsh-display-mode-options": "" }, option("mario", displayModeText("mario")), option("default", displayModeText("default"))), h("div", { "data-dsh-display-mode-hint": "" }, displayModeText("hint")));
 		}
 		/** Stable hooks consumed by the responsive compat layer (never text/hash selectors). */
 		const RESPONSIVE_CSS = `
 [data-dsh-frame] { min-height: 0; }
+[data-dsh-display-mode-row] {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  color: inherit;
+  font: inherit;
+}
+[data-dsh-display-mode-title] {
+  font: inherit;
+  font-weight: 600;
+}
+[data-dsh-display-mode-options] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+[data-dsh-display-mode-option] {
+  min-width: 92px;
+  min-height: 76px;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%));
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-base, transparent);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  font: inherit;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+[data-dsh-display-mode-option]:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 45%, var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%)));
+}
+[data-dsh-display-mode-option][data-selected] {
+  border-color: var(--dsw-alias-brand-primary, #3867d6);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 12%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 12%, transparent);
+}
+[data-dsh-display-mode-icon] {
+  width: 44px;
+  height: 40px;
+  position: relative;
+  display: block;
+}
+[data-dsh-display-mode-icon="mario"]::before {
+  content: "";
+  width: 28px;
+  height: 34px;
+  image-rendering: pixelated;
+  background:
+    linear-gradient(#d83a2e 0 0) 7px 0 / 17px 4px no-repeat,
+    linear-gradient(#d83a2e 0 0) 4px 4px / 22px 4px no-repeat,
+    linear-gradient(#744016 0 0) 5px 8px / 6px 9px no-repeat,
+    linear-gradient(#ffd19a 0 0) 10px 8px / 15px 10px no-repeat,
+    linear-gradient(#17110d 0 0) 21px 10px / 3px 3px no-repeat,
+    linear-gradient(#744016 0 0) 18px 15px / 8px 3px no-repeat,
+    linear-gradient(#d83a2e 0 0) 6px 20px / 17px 7px no-repeat,
+    linear-gradient(#fff5dc 0 0) 1px 27px / 6px 4px no-repeat,
+    linear-gradient(#fff5dc 0 0) 22px 27px / 6px 4px no-repeat,
+    linear-gradient(#1f61b5 0 0) 9px 20px / 12px 11px no-repeat,
+    radial-gradient(circle at 12px 25px, #ffd75a 0 1.8px, transparent 2px),
+    radial-gradient(circle at 18px 25px, #ffd75a 0 1.8px, transparent 2px),
+    linear-gradient(#744016 0 0) 4px 31px / 9px 3px no-repeat,
+    linear-gradient(#744016 0 0) 17px 31px / 9px 3px no-repeat;
+  filter: drop-shadow(0 4px 5px rgb(0 0 0 / 18%));
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+}
+[data-dsh-display-mode-icon="default"]::before {
+  content: "";
+  width: 38px;
+  height: 28px;
+  border: 2px solid color-mix(in srgb, currentColor 34%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 22%, transparent) 0 0) 7px 8px / 24px 5px no-repeat,
+    linear-gradient(color-mix(in srgb, currentColor 22%, transparent) 0 0) 9px 17px / 20px 4px no-repeat,
+    var(--dsw-alias-bg-base, transparent);
+  box-shadow: 0 6px 10px rgb(0 0 0 / 10%);
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  transform: translateX(-50%);
+}
+[data-dsh-display-mode-hint] {
+  color: var(--dsw-alias-label-secondary, currentColor);
+  font: inherit;
+  opacity: .72;
+}
+
 /* Viewport lock for installs with no active visual. The identical lock lives in
    the skin-center shell-rendering stylesheet, but that stylesheet is inert
    unless a catalog skin, custom theme or wallpaper is active, so a stock

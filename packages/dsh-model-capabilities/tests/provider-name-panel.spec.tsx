@@ -148,7 +148,7 @@ describe('ProviderNamePanel', () => {
     fireEvent.change(input, { target: { value: 'Renamed' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
     await waitFor(() => {
-      expect(screen.getByText('配置已被其他界面修改，已重新读取，请重试。')).toBeTruthy()
+      expect(screen.getByText('未保存(悬停查看原因)')).toBeTruthy()
     })
     expect(callsOf(face)).toHaveLength(1)
   })
