@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
-import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { UsageStoreInstance } from './usage-store.ts'
 import { t } from './locales.ts'
 import styles from './usage.module.css'
@@ -198,7 +198,6 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
               ? t('usage.error', { error: ui.error ?? '' })
               : t('usage.loading')}
         </span>
-        <SettingsRow settings={settings} snapshot={settingsSnapshot.status === 'ready' ? settingsSnapshot : undefined} value={settingsValue} />
       </div>
     )
   }
@@ -240,7 +239,6 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
         onRefresh={onRefresh}
         refreshing={refreshing}
       />
-      <SettingsRow settings={settings} snapshot={settingsSnapshot.status === 'ready' ? settingsSnapshot : undefined} value={settingsValue} />
     </div>
   )
 }
@@ -597,74 +595,4 @@ function cacheHitPercent(totals: UsageTokenTotals): number {
 function formatPercent(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return '0%'
   return value >= 10 ? `${value.toFixed(1)}%` : `${value.toFixed(2)}%`
-}
-
-/**
- * The compact settings row. Both controls write through the shared form the
- * moment the user changes them, and the Host answers each write with a
- * boolean: a refused (or transport-failed) write is surfaced as a failed save,
- * because a value that did not land must never read as applied.
- */
-function SettingsRow(props: {
-  settings: UsageSectionProps['settings']
-  snapshot?: ConfigFormSnapshot<UsageSettings>
-  value: UsageSettings
-}): ReactNode {
-  const { settings, snapshot, value } = props
-  const disabled = snapshot === undefined || !snapshot.writable
-  const [failure, setFailure] = useState<string | undefined>(undefined)
-
-  const write = (field: 'enabled' | 'pollIntervalSec', next: boolean | number): void => {
-    setFailure(undefined)
-    let answer: Promise<boolean>
-    try {
-      answer = settings.set(field, next)
-    } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
-      return
-    }
-    // false is the contract's refusal/skip answer (the Host rejected the value,
-    // the entry is not writable, or the write was dropped); a rejecting
-    // transport reports through the same failed-save surface.
-    Promise.resolve(answer).then(
-      (accepted) => { if (!accepted) setFailure('') },
-      (error: unknown) => { setFailure(error instanceof Error ? error.message : String(error)) },
-    )
-  }
-
-  return (
-    <div className={styles.card} data-dsh-part="settings-row">
-      <span className={styles.cardTitle}>{t('usage.config.title')}</span>
-      <div className={styles.settingsGrid}>
-        <label className={styles.settingItem}>
-          <input
-            type="checkbox"
-            checked={value.enabled ?? true}
-            disabled={disabled}
-            onChange={(event) => { write('enabled', event.target.checked) }}
-          />
-          {t('usage.config.enabled')}
-        </label>
-        <label className={styles.settingItem}>
-          {t('usage.config.pollIntervalSec')}
-          <input
-            type="number"
-            min={30}
-            max={3600}
-            value={typeof value.pollIntervalSec === 'number' ? value.pollIntervalSec : 60}
-            disabled={disabled}
-            onChange={(event) => {
-              const parsed = Number(event.target.value)
-              if (Number.isFinite(parsed) && parsed >= 30 && parsed <= 3600) write('pollIntervalSec', Math.round(parsed))
-            }}
-          />
-        </label>
-      </div>
-      {failure !== undefined && (
-        <span className={styles.errorLine} role="status">
-          {t('usage.config.saveFailed')}{failure === '' ? '' : ' - ' + failure}
-        </span>
-      )}
-    </div>
-  )
 }
