@@ -90,38 +90,6 @@ function isConfigured(provider: ProviderSnapshotView): boolean {
   return provider.credential !== 'none'
 }
 
-function TotalsRow(props: { totals: UsageTokenTotals }): ReactNode {
-  const { totals } = props
-  return (
-    <div className={styles.statRow}>
-      <div className={styles.stat}>
-        <span className={styles.statValue}>{formatTokens(totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens + totals.outputTokens)}</span>
-        <span className={styles.statLabel}>{t('usage.tokens.total')}</span>
-      </div>
-      <div className={styles.stat}>
-        <span className={styles.statValue}>{formatTokens(totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens)}</span>
-        <span className={styles.statLabel}>{t('usage.tokens.input')}</span>
-      </div>
-      <div className={styles.stat}>
-        <span className={styles.statValue}>{formatTokens(totals.outputTokens)}</span>
-        <span className={styles.statLabel}>{t('usage.tokens.output')}</span>
-      </div>
-      <div className={styles.stat}>
-        <span className={styles.statValue}>{formatTokens(totals.cacheReadTokens)}</span>
-        <span className={styles.statLabel}>{t('usage.tokens.cacheRead')}</span>
-      </div>
-      <div className={styles.stat}>
-        <span className={styles.statValue}>{formatTokens(totals.cacheWriteTokens)}</span>
-        <span className={styles.statLabel}>{t('usage.tokens.cacheWrite')}</span>
-      </div>
-      <div className={styles.stat}>
-        <span className={styles.statValue}>{formatTokens(totals.calls)}</span>
-        <span className={styles.statLabel}>{t('usage.calls', { n: totals.calls })}</span>
-      </div>
-    </div>
-  )
-}
-
 function balanceLine(provider: ProviderSnapshotView): ReactNode {
   if (provider.balance !== undefined) {
     return <span className={styles.providerBalance}>{provider.balance.currency.toUpperCase() === 'CNY' ? '¥' : provider.balance.currency.toUpperCase() === 'USD' ? '$' : ''}{provider.balance.totalBalance}{provider.balance.currency.toUpperCase() !== 'CNY' && provider.balance.currency.toUpperCase() !== 'USD' ? ' ' + provider.balance.currency.toUpperCase() : ''}</span>
@@ -245,7 +213,7 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
             ? `${currentProvider.displayName}${current.model !== undefined && current.model !== '' ? ' · ' + current.model : ''}`
             : t('usage.noData')}
         </span>
-        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span className={styles.headerMeta}>
           <span className={styles.muted}>{t('usage.updated', { time: formatTime(snapshot.updatedAt) })}</span>
           <button type="button" className={styles.refreshBtn} onClick={onRefresh} disabled={refreshing}>
             {refreshing ? t('usage.refreshing') : t('usage.refresh')}
@@ -267,61 +235,17 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
 
       {tab === 'usage' && (
         <>
-          <div className={styles.card} data-dsh-part="today-card">
-            <span className={styles.cardTitle}>{t('usage.today')}</span>
-            {deepseekVisible && (
-              <span className={styles.muted} data-dsh-part="peak-status">
-                {t(deepseekPeriod.peak ? 'usage.peak.on' : 'usage.peak.off', { time: formatClock(deepseekPeriod.boundaryMs) })}
-              </span>
-            )}
-            {snapshot.usage.today.totals.calls === 0
-              ? <span className={styles.muted}>{t('usage.noData')}</span>
-              : <TotalsRow totals={snapshot.usage.today.totals} />}
-            {snapshot.usage.today.totals.cost > 0 && (
-              <div className={styles.providerRow} data-dsh-part="today-cost">
-                <span className={styles.providerName}>{t('usage.today.cost')}</span>
-                <span className={styles.providerTokens}>{formatCost(snapshot.usage.today.totals.cost)}</span>
-              </div>
-            )}
-            {snapshot.usage.today.providers.length > 0 && (
-              <div data-dsh-part="provider-list">
-                {snapshot.usage.today.providers.map((row) => (
-                  <div key={row.provider} className={styles.providerRow}>
-                    <span className={styles.providerName}>
-                      {snapshot.providers.find((provider) => provider.provider === row.provider)?.displayName ?? row.provider}
-                      {current.provider === row.provider && <span className={styles.currentBadge}>{t('usage.current')}</span>}
-                    </span>
-                    <span className={styles.providerTokens}>{formatTokens(row.totals.inputTokens + row.totals.cacheReadTokens + row.totals.cacheWriteTokens + row.totals.outputTokens)} · {t('usage.calls', { n: row.totals.calls })}{row.totals.cost > 0 ? ` · ${formatCost(row.totals.cost)}` : ''}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className={styles.card} data-dsh-part="balance-card">
-            <span className={styles.cardTitle}>{t('usage.balance')}</span>
-            {(() => {
-              const configured = snapshot.providers.filter(isConfigured)
-              // Include rows whose balance is deliberately not applicable
-              // (another origin's endpoint): the row itself explains why, which
-              // a single generic line cannot (#1688).
-              const rows = configured.filter((provider) => provider.balanceSupported === true || provider.balanceSupported === false || (provider.balanceSupported === undefined && provider.supported))
-              if (rows.length === 0) {
-                return <span className={styles.muted}>{configured.length === 0 ? t('usage.balance.noneConfigured') : t('usage.balance.unsupported')}</span>
-              }
-              return rows.map((provider) => (
-                <ProviderRow key={provider.provider} provider={provider} current={current.provider} />
-              ))
-            })()}
-            {snapshot.providers.some((provider) => isConfigured(provider) && provider.error !== undefined) && (
-              <span className={styles.errorLine}>
-                {snapshot.providers.filter((provider) => isConfigured(provider) && provider.error !== undefined).map((provider) => `${provider.displayName}: ${t('usage.provider.error', { error: provider.error ?? '' })}`).join(t('usage.errorListSeparator'))}
-              </span>
-            )}
-          </div>
-
-          <RangeCard range={snapshot.usage.range} providers={snapshot.providers} currentProvider={current.provider} />
-
+          <UsageDashboard
+            snapshot={snapshot}
+            currentProvider={current.provider}
+            currentModel={current.model}
+            deepseekVisible={deepseekVisible}
+            deepseekPeak={deepseekPeriod.peak}
+            deepseekBoundary={formatClock(deepseekPeriod.boundaryMs)}
+            pollIntervalSec={typeof settingsValue.pollIntervalSec === 'number' ? settingsValue.pollIntervalSec : 60}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+          />
           <SettingsRow settings={settings} snapshot={settingsSnapshot.status === 'ready' ? settingsSnapshot : undefined} value={settingsValue} />
         </>
       )}
@@ -337,73 +261,268 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
   )
 }
 
-/** How many model sub-bars render under one provider bar. */
-const CHART_MODEL_CAP = 3
+function UsageDashboard(props: {
+  snapshot: UsageOverviewView
+  currentProvider?: string
+  currentModel?: string
+  deepseekVisible: boolean
+  deepseekPeak: boolean
+  deepseekBoundary: string
+  pollIntervalSec: number
+  onRefresh: () => void
+  refreshing: boolean
+}): ReactNode {
+  const { snapshot, currentProvider, currentModel, deepseekVisible, deepseekPeak, deepseekBoundary, pollIntervalSec, onRefresh, refreshing } = props
+  const retained = snapshot.usage.all ?? snapshot.usage.range
+  const totals = retained?.totals ?? snapshot.usage.today.totals
+  const peak = peakDay(snapshot.usage.days)
+  const streak = dayStreaks(snapshot.usage.days)
+  const cachePercent = cacheHitPercent(totals)
+  const modelRows = modelUsageRows(retained, snapshot.providers, currentProvider, currentModel)
+  const configuredBalanceRows = snapshot.providers
+    .filter(isConfigured)
+    .filter((provider) => provider.balanceSupported === true || provider.balanceSupported === false || (provider.balanceSupported === undefined && provider.supported))
 
-/**
- * The 近 30 天 card: horizontal bars per provider over the trend window,
- * each with its heaviest models as nested sub-bars. Window totals come from
- * the host's aggregated `usage.range` (an older host without it renders no
- * card instead of a wrong one).
- */
-function RangeCard(props: { range?: UsageOverviewView['usage']['range']; providers: ProviderSnapshotView[]; currentProvider?: string }): ReactNode {
-  const { range, providers, currentProvider } = props
-  if (range === undefined) return null
-  const grandTotal = range.totals.inputTokens + range.totals.outputTokens + range.totals.cacheReadTokens + range.totals.cacheWriteTokens
-  const maxProvider = Math.max(1, ...range.providers.map((row) => totalOf(row.totals)))
-  const nameOf = (id: string): string => providers.find((provider) => provider.provider === id)?.displayName ?? id
   return (
-    <div className={styles.card} data-dsh-part="trend-card">
-      <span className={styles.cardTitle}>{t('usage.trend')}</span>
-      {range.providers.length === 0 || grandTotal === 0
-        ? <span className={styles.muted}>{t('usage.noData')}</span>
-        : <div className={styles.chart} data-dsh-part="usage-chart">
-            {range.providers.map((row) => (
-              <ChartProviderRow key={row.provider} row={row} name={nameOf(row.provider)} max={maxProvider} current={currentProvider === row.provider} />
-            ))}
-            <span className={styles.trendAxis}>
-              <span>{range.from.slice(5)}</span>
-              <span>{range.to.slice(5)}</span>
+    <div className={styles.usageDashboard}>
+      <div className={styles.kpiStrip} data-dsh-part="usage-summary">
+        <MetricCard value={formatTokens(totalOf(totals))} label="累计 Token 数" />
+        <MetricCard value={formatTokens(peak.tokens)} label="峰值 Token 数" />
+        <MetricCard value={formatTokens(totals.calls)} label="总请求数" />
+        <MetricCard value={`${streak.current} 天`} label="当前连续天数" />
+        <MetricCard value={`${streak.longest} 天`} label="最长连续天数" />
+      </div>
+
+      <section className={`${styles.card} ${styles.activityCard}`} data-dsh-part="activity-card">
+        <div className={styles.dashboardCardHead}>
+          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />Token 活动</span>
+          <span className={styles.rangePill}>近 30 天</span>
+        </div>
+        <ActivityHeatmap days={snapshot.usage.days} />
+      </section>
+
+      <section className={`${styles.card} ${styles.detailCard}`} data-dsh-part="detail-card">
+        <div className={styles.dashboardCardHead}>
+          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />用量明细</span>
+          <span className={styles.detailToolbar}>
+            <span className={styles.rangePill}>全部模型</span>
+            <button type="button" className={styles.refreshBtn} onClick={onRefresh} disabled={refreshing}>↻ {refreshing ? t('usage.refreshing') : t('usage.refresh')}</button>
+            <span className={styles.autoRefreshPill}>{Math.max(10, Math.round(pollIntervalSec))}s 自动刷新</span>
+          </span>
+        </div>
+
+        <div className={styles.detailStats}>
+          <DetailStat value={formatTokens(totalOf(totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" />
+          <DetailStat value={formatTokens(totals.calls)} label="总请求数" hint="所有模型调用" />
+          <DetailStat value={totals.cost > 0 ? formatCost(totals.cost) : '未计费'} label="总成本(估算)" hint="按公开单价估算" />
+          <DetailStat value={`${formatPercent(cachePercent)}`} label="缓存命中" hint="cache read token" />
+          <DetailStat value={formatTokens(totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" />
+        </div>
+
+        <div className={styles.cacheMeter}>
+          <span className={styles.cacheLabel}>缓存命中率 <strong>{formatPercent(cachePercent)}</strong></span>
+          <span className={styles.cacheTrack}><span className={styles.cacheFill} style={{ width: `${Math.max(0, Math.min(100, cachePercent))}%` }} /></span>
+        </div>
+
+        {deepseekVisible && (
+          <span className={styles.peakStatus} data-dsh-part="peak-status">
+            {t(deepseekPeak ? 'usage.peak.on' : 'usage.peak.off', { time: deepseekBoundary })}
+          </span>
+        )}
+
+        <ModelUsageTable rows={modelRows} />
+      </section>
+
+      {configuredBalanceRows.length > 0 && (
+        <section className={`${styles.card} ${styles.balanceOverview}`} data-dsh-part="balance-card">
+          <div className={styles.dashboardCardHead}>
+            <span className={styles.dashboardTitle}>余额概览</span>
+          </div>
+          <div className={styles.balanceRows}>
+            {configuredBalanceRows.map((provider) => <ProviderRow key={provider.provider} provider={provider} current={currentProvider} />)}
+          </div>
+          {snapshot.providers.some((provider) => isConfigured(provider) && provider.error !== undefined) && (
+            <span className={styles.errorLine}>
+              {snapshot.providers.filter((provider) => isConfigured(provider) && provider.error !== undefined).map((provider) => `${provider.displayName}: ${t('usage.provider.error', { error: provider.error ?? '' })}`).join(t('usage.errorListSeparator'))}
             </span>
-          </div>}
+          )}
+        </section>
+      )}
     </div>
   )
 }
 
-function ChartProviderRow(props: { row: UsageProviderSummary; name: string; max: number; current: boolean }): ReactNode {
-  const { row, name, max, current } = props
-  const total = totalOf(row.totals)
-  const maxModel = Math.max(1, ...row.models.slice(0, CHART_MODEL_CAP).map((model) => totalOf(model.totals)))
+function MetricCard(props: { value: string; label: string }): ReactNode {
   return (
-    <div className={styles.chartProvider}>
-      <span className={styles.chartHead}>
-        <span className={styles.providerName}>
-          {name}
-          {current && <span className={styles.currentBadge}>{t('usage.current')}</span>}
-        </span>
-        <span className={styles.chartTokens}>{formatTokens(total)} · {t('usage.calls', { n: row.totals.calls })}</span>
-      </span>
-      <span className={styles.chartBar}>
-        <span className={styles.chartFill} style={{ width: `${Math.max(2, Math.round((total / max) * 100))}%` }} />
-      </span>
-      {row.models.slice(0, CHART_MODEL_CAP).map((model) => {
-        const modelTotal = totalOf(model.totals)
-        return (
-          <span key={model.model} className={styles.chartModel} title={`${row.provider} · ${model.model}: ${formatTokens(modelTotal)}`}>
-            <span className={styles.chartModelName}>{model.model}</span>
-            <span className={styles.chartModelBar}>
-              <span className={styles.chartModelFill} style={{ width: `${Math.max(3, Math.round((modelTotal / maxModel) * 100))}%` }} />
-            </span>
-            <span className={styles.chartTokens}>{formatTokens(modelTotal)}</span>
-          </span>
-        )
-      })}
+    <div className={styles.kpiCard}>
+      <span className={styles.kpiValue}>{props.value}</span>
+      <span className={styles.kpiLabel}>{props.label}</span>
     </div>
   )
+}
+
+function DetailStat(props: { value: string; label: string; hint: string }): ReactNode {
+  return (
+    <div className={styles.detailStat}>
+      <span className={styles.detailStatLabel}>{props.label}</span>
+      <span className={styles.detailStatValue}>{props.value}</span>
+      <span className={styles.detailStatHint}>{props.hint}</span>
+    </div>
+  )
+}
+
+function ActivityHeatmap(props: { days: UsageOverviewView['usage']['days'] }): ReactNode {
+  const cells = heatmapCells(props.days)
+  const max = Math.max(1, ...cells.map((cell) => cell.tokens))
+  const first = cells[0]?.date.slice(5) ?? ''
+  const last = cells[cells.length - 1]?.date.slice(5) ?? ''
+  return (
+    <div className={styles.activityBody}>
+      <div className={styles.heatmapGrid} aria-label="Token 活动热力图">
+        {cells.map((cell) => {
+          const level = cell.tokens <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil((cell.tokens / max) * 5)))
+          const levelClass = level === 0 ? styles.activityCellEmpty : styles[`activityCellLevel${level}`]
+          return <span key={cell.date} className={`${styles.activityCell} ${levelClass}`} title={`${cell.date} 使用了 ${formatTokens(cell.tokens)} 个 Token`} />
+        })}
+      </div>
+      <span className={styles.activityAxis}><span>{first}</span><span>{last}</span></span>
+    </div>
+  )
+}
+
+type ModelUsageRow = {
+  key: string
+  provider: string
+  providerName: string
+  model: string
+  totals: UsageTokenTotals
+  current: boolean
+}
+
+function ModelUsageTable(props: { rows: ModelUsageRow[] }): ReactNode {
+  const rows = props.rows.slice(0, 12)
+  if (rows.length === 0) return <span className={styles.muted}>{t('usage.noData')}</span>
+  return (
+    <div className={styles.modelTable} data-dsh-part="model-usage-list">
+      {rows.map((row) => (
+        <div key={row.key} className={row.current ? `${styles.modelRow} ${styles.modelRowCurrent}` : styles.modelRow}>
+          <span className={styles.modelIdentity}>
+            <strong>{row.model}</strong>
+            <span>{row.providerName}</span>
+          </span>
+          <ModelCell value={formatTokens(totalOf(row.totals))} label="总 token" />
+          <ModelCell value={formatTokens(row.totals.calls)} label="调用" />
+          <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" />
+          <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" />
+          <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ModelCell(props: { value: string; label: string }): ReactNode {
+  return (
+    <span className={styles.modelMetric}>
+      <strong>{props.value}</strong>
+      <span>{props.label}</span>
+    </span>
+  )
+}
+
+function modelUsageRows(window: UsageWindowSummary | undefined, providers: ProviderSnapshotView[], currentProvider?: string, currentModel?: string): ModelUsageRow[] {
+  if (window === undefined) return []
+  const nameOf = (id: string): string => providers.find((provider) => provider.provider === id)?.displayName ?? id
+  const rows: ModelUsageRow[] = []
+  for (const provider of window.providers) {
+    for (const model of provider.models) {
+      rows.push({
+        key: `${provider.provider}:${model.model}`,
+        provider: provider.provider,
+        providerName: nameOf(provider.provider),
+        model: model.model,
+        totals: model.totals,
+        current: currentProvider === provider.provider && currentModel === model.model,
+      })
+    }
+  }
+  rows.sort((a, b) => totalOf(b.totals) - totalOf(a.totals))
+  return rows
+}
+
+function heatmapCells(days: UsageOverviewView['usage']['days']): Array<{ date: string; tokens: number }> {
+  const byDate = new Map(days.map((day) => [day.date, totalOf(day.totals)]))
+  const end = days[days.length - 1]?.date ?? localDateKey(Date.now())
+  const keys = recentDateKeys(end, 30)
+  return keys.map((date) => ({ date, tokens: byDate.get(date) ?? 0 }))
+}
+
+function peakDay(days: UsageOverviewView['usage']['days']): { date: string; tokens: number } {
+  let best = { date: '', tokens: 0 }
+  for (const day of days) {
+    const tokens = totalOf(day.totals)
+    if (tokens > best.tokens) best = { date: day.date, tokens }
+  }
+  return best
+}
+
+function dayStreaks(days: UsageOverviewView['usage']['days']): { current: number; longest: number } {
+  const active = new Set(days.filter((day) => totalOf(day.totals) > 0).map((day) => day.date))
+  let longest = 0
+  let currentRun = 0
+  const ordered = recentDateKeys(days[days.length - 1]?.date ?? localDateKey(Date.now()), Math.max(30, days.length))
+  for (const key of ordered) {
+    if (active.has(key)) {
+      currentRun += 1
+      longest = Math.max(longest, currentRun)
+    } else {
+      currentRun = 0
+    }
+  }
+  let current = 0
+  for (let i = ordered.length - 1; i >= 0; i -= 1) {
+    if (!active.has(ordered[i])) break
+    current += 1
+  }
+  return { current, longest }
+}
+
+function recentDateKeys(endKey: string, count: number): string[] {
+  const end = new Date(endKey + 'T12:00:00')
+  if (!Number.isFinite(end.getTime())) return []
+  const keys: string[] = []
+  for (let offset = count - 1; offset >= 0; offset -= 1) {
+    const date = new Date(end)
+    date.setDate(end.getDate() - offset)
+    keys.push(localDateKey(date.getTime()))
+  }
+  return keys
+}
+
+function localDateKey(ms: number): string {
+  const date = new Date(ms)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
 }
 
 function totalOf(totals: UsageTokenTotals): number {
   return totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens + totals.outputTokens
+}
+
+function inputOf(totals: UsageTokenTotals): number {
+  return totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens
+}
+
+function cacheHitPercent(totals: UsageTokenTotals): number {
+  const input = inputOf(totals)
+  if (input <= 0) return 0
+  return (totals.cacheReadTokens / input) * 100
+}
+
+function formatPercent(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '0%'
+  return value >= 10 ? `${value.toFixed(1)}%` : `${value.toFixed(2)}%`
 }
 
 /**

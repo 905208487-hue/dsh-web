@@ -37188,7 +37188,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-usage/src/client/usage.module.css.mjs
-		const css$2 = ".cvtkAW_section{color:inherit;flex-direction:column;gap:16px;display:flex}.cvtkAW_header{justify-content:space-between;align-items:center;gap:12px;display:flex}.cvtkAW_currentProvider{opacity:.75;font-size:13px}.cvtkAW_refreshBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.85;background:0 0;border:1px solid;border-radius:8px;padding:4px 12px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_refreshBtn:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_refreshBtn:disabled{cursor:default;opacity:.5}.cvtkAW_refreshBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_tabs{border-bottom:1px solid color-mix(in srgb, currentColor 14%, transparent);gap:4px;display:flex}.cvtkAW_tab{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.65;background:0 0;border:none;border-bottom:2px solid #0000;margin-bottom:-1px;padding:6px 14px;font-size:13px}.cvtkAW_tab:hover{opacity:.9}.cvtkAW_tab:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_tabActive{opacity:1;border-bottom-color:currentColor;font-weight:600}.cvtkAW_card{border:1px solid color-mix(in srgb, currentColor 14%, transparent);border-radius:12px;flex-direction:column;gap:10px;padding:14px 16px;display:flex}.cvtkAW_cardTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.6;font-size:12px;font-weight:600}.cvtkAW_statRow{flex-wrap:wrap;gap:18px;display:flex}.cvtkAW_stat{flex-direction:column;gap:2px;display:flex}.cvtkAW_statValue{font-variant-numeric:tabular-nums;font-size:18px;font-weight:600}.cvtkAW_statLabel{opacity:.6;font-size:11px}.cvtkAW_providerRow{border-top:1px solid color-mix(in srgb, currentColor 8%, transparent);justify-content:space-between;align-items:center;gap:12px;padding:6px 0;font-size:13px;display:flex}.cvtkAW_providerRow:first-of-type{border-top:none}.cvtkAW_providerName{align-items:center;gap:8px;min-width:0;display:flex}.cvtkAW_providerTokens{font-variant-numeric:tabular-nums;opacity:.75;white-space:nowrap}.cvtkAW_providerBalance{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}.cvtkAW_currentBadge{border:1px solid color-mix(in srgb, currentColor 35%, transparent);opacity:.8;border-radius:999px;flex:none;padding:1px 7px;font-size:10px;font-weight:600}.cvtkAW_chart{flex-direction:column;gap:12px;display:flex}.cvtkAW_chartProvider{flex-direction:column;gap:4px;display:flex}.cvtkAW_chartHead{justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;display:flex}.cvtkAW_chartTokens{font-variant-numeric:tabular-nums;opacity:.65;white-space:nowrap;font-size:11px}.cvtkAW_chartBar{background:color-mix(in srgb, currentColor 8%, transparent);border-radius:999px;height:8px;display:block;overflow:hidden}.cvtkAW_chartFill{background:color-mix(in srgb, currentColor 55%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartModel{opacity:.8;grid-template-columns:minmax(80px,180px) 1fr auto;align-items:center;gap:8px;padding-left:14px;font-size:11px;display:grid}.cvtkAW_chartModelName{text-overflow:ellipsis;white-space:nowrap;opacity:.8;overflow:hidden}.cvtkAW_chartModelBar{background:color-mix(in srgb, currentColor 6%, transparent);border-radius:999px;height:4px;display:block;overflow:hidden}.cvtkAW_chartModelFill{background:color-mix(in srgb, currentColor 35%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_trendAxis{opacity:.5;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:10px;display:flex}.cvtkAW_muted{opacity:.6;font-size:12px}.cvtkAW_voucherPreview canvas{border-radius:8px;width:100%;height:auto;display:block}.cvtkAW_buttonRow{gap:8px;display:flex}.cvtkAW_errorLine{opacity:.75;font-size:12px}.cvtkAW_planCard{flex-direction:column;gap:8px;display:flex}.cvtkAW_planHead{justify-content:space-between;align-items:baseline;gap:10px;display:flex}.cvtkAW_planName{font-size:14px;font-weight:600}.cvtkAW_windowRow{flex-direction:column;gap:4px;display:flex}.cvtkAW_windowLabel{opacity:.8;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:12px;display:flex}.cvtkAW_bar{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:999px;height:6px;overflow:hidden}.cvtkAW_barFill{background:color-mix(in srgb, currentColor 55%, transparent);border-radius:999px;height:100%;transition:width .3s}.cvtkAW_barWarn{background:#d97706}.cvtkAW_barLow{background:#dc2626}.cvtkAW_resetLine{opacity:.55;font-variant-numeric:tabular-nums;font-size:11px}.cvtkAW_settingsGrid{flex-wrap:wrap;align-items:center;gap:16px;display:flex}.cvtkAW_settingItem{align-items:center;gap:8px;font-size:13px;display:flex}.cvtkAW_settingItem input[type=checkbox]{accent-color:currentColor}.cvtkAW_settingItem input[type=number]{border:1px solid color-mix(in srgb, currentColor 25%, transparent);width:90px;color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem select{border:1px solid color-mix(in srgb, currentColor 25%, transparent);color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem input:focus-visible,.cvtkAW_settingItem select:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footCard{box-sizing:border-box;background:color-mix(in srgb, currentColor 4%, transparent);width:100%;color:inherit;border:none;border-radius:12px;margin:2px 0 4px;transition:background-color .12s;position:relative}.cvtkAW_footCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.cvtkAW_footCardCollapsed{background:0 0}.cvtkAW_footMain{appearance:none;box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:none;border-radius:12px;flex-direction:column;gap:4px;padding:8px;display:flex}.cvtkAW_footMain:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle{appearance:none;width:20px;height:20px;color:inherit;cursor:pointer;opacity:.55;background:0 0;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex;position:absolute;top:6px;right:6px}.cvtkAW_footCard:hover .cvtkAW_footToggle{opacity:.8}.cvtkAW_footToggle:hover{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.cvtkAW_footToggle:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle svg{display:block}.cvtkAW_footHead{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.cvtkAW_footTitle{opacity:.65;white-space:nowrap;align-items:center;gap:6px;min-width:0;font-size:12px;display:inline-flex}.cvtkAW_footTitle svg{flex:none;display:block}.cvtkAW_footValue{font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:18px;font-size:15px;font-weight:600}.cvtkAW_footLine{opacity:.7;font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.cvtkAW_footMeta{opacity:.5;font-variant-numeric:tabular-nums;font-size:10px}.cvtkAW_footCardCollapsed .cvtkAW_footMain{min-height:36px;padding:7px 8px}.cvtkAW_footStrip{white-space:nowrap;align-items:center;gap:6px;padding-right:20px;font-size:12px;display:flex;overflow:hidden}.cvtkAW_footStrip svg{opacity:.65;flex:none;display:block}.cvtkAW_footStripProvider{text-overflow:ellipsis;flex:none;max-width:45%;font-weight:500;overflow:hidden}.cvtkAW_footStripLabel{opacity:.65;text-overflow:ellipsis;overflow:hidden}.cvtkAW_footStripValue{font-variant-numeric:tabular-nums;margin-left:auto;font-weight:600}[data-dsh-frame][data-sidebar-collapsed] .cvtkAW_footCard,[data-sidebar-collapsed] .cvtkAW_footCard{display:none}";
+		const css$2 = ".cvtkAW_section{color:inherit;flex-direction:column;gap:14px;display:flex}.cvtkAW_header{justify-content:space-between;align-items:center;gap:12px;padding:2px 2px 0;display:flex}.cvtkAW_headerMeta{flex:none;align-items:center;gap:8px;display:inline-flex}.cvtkAW_currentProvider{text-overflow:ellipsis;white-space:nowrap;opacity:.82;min-width:0;font-size:13px;font-weight:600;overflow:hidden}.cvtkAW_refreshBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.85;background:0 0;border:1px solid;border-radius:8px;padding:4px 12px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_refreshBtn:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_refreshBtn:disabled{cursor:default;opacity:.5}.cvtkAW_refreshBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_tabs{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 4%, transparent);border-radius:999px;align-self:flex-start;gap:3px;padding:3px;display:inline-flex}.cvtkAW_tab{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.62;background:0 0;border:none;border-radius:999px;padding:5px 14px;font-size:13px;transition:opacity .12s,background-color .12s,box-shadow .12s}.cvtkAW_tab:hover{opacity:.9}.cvtkAW_tab:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_tabActive{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 8%, transparent);font-weight:600}.cvtkAW_card{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:linear-gradient(180deg, color-mix(in srgb, currentColor 4%, transparent), transparent 80%), color-mix(in srgb, currentColor 2%, transparent);box-shadow:0 1px 0 color-mix(in srgb, currentColor 5%, transparent);border-radius:16px;flex-direction:column;gap:10px;padding:14px;display:flex}.cvtkAW_todayCard{gap:12px}.cvtkAW_cardHead{justify-content:space-between;align-items:center;gap:10px;display:flex}.cvtkAW_cardTitle{letter-spacing:.08em;text-transform:uppercase;opacity:.56;font-size:11px;font-weight:700}.cvtkAW_peakStatus{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 5%, transparent);opacity:.72;white-space:nowrap;border-radius:999px;padding:3px 8px;font-size:11px;line-height:1.2}.cvtkAW_statRow{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;display:grid}.cvtkAW_stat{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 4%, transparent);border-radius:12px;flex-direction:column;gap:3px;min-width:0;padding:10px 11px;display:flex}.cvtkAW_stat:first-child{background:radial-gradient(circle at 18% 0%, color-mix(in srgb, currentColor 11%, transparent), transparent 42%), color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_statValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:0;font-size:19px;font-weight:700;line-height:1.15;overflow:hidden}.cvtkAW_statLabel{opacity:.58;font-size:11px;line-height:1.2}@media (width>=680px){.cvtkAW_stat:first-child{grid-column:span 2}}.cvtkAW_providerList{flex-direction:column;gap:6px;display:flex}.cvtkAW_providerRow{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:11px;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:8px 10px;font-size:13px;display:flex}.cvtkAW_costRow{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_providerName{text-overflow:ellipsis;white-space:nowrap;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}.cvtkAW_providerTokens{text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums;opacity:.72;white-space:nowrap;flex:none;max-width:58%;overflow:hidden}.cvtkAW_providerBalance{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}.cvtkAW_currentBadge{border:1px solid color-mix(in srgb, currentColor 20%, transparent);background:color-mix(in srgb, currentColor 8%, transparent);opacity:.82;border-radius:999px;flex:none;padding:1px 7px;font-size:10px;font-weight:700}.cvtkAW_chart{flex-direction:column;gap:8px;display:flex}.cvtkAW_chartProvider{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:13px;flex-direction:column;gap:6px;padding:10px 11px;display:flex}.cvtkAW_chartProviderCurrent{border-color:color-mix(in srgb, currentColor 18%, transparent);background:linear-gradient(90deg, color-mix(in srgb, currentColor 6%, transparent), transparent 70%), color-mix(in srgb, currentColor 3%, transparent)}.cvtkAW_chartHead{justify-content:space-between;align-items:center;gap:10px;font-size:13px;display:flex}.cvtkAW_chartTokens{font-variant-numeric:tabular-nums;opacity:.64;white-space:nowrap;flex:none;font-size:11px}.cvtkAW_chartBar{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:9px;display:block;overflow:hidden}.cvtkAW_chartFill{background:linear-gradient(90deg, color-mix(in srgb, currentColor 62%, transparent), color-mix(in srgb, currentColor 34%, transparent));border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartModel{opacity:.76;grid-template-columns:minmax(96px,34%) 1fr 52px;align-items:center;gap:8px;padding-left:10px;font-size:11px;display:grid}.cvtkAW_chartModelName{text-overflow:ellipsis;white-space:nowrap;opacity:.82;overflow:hidden}.cvtkAW_chartModelBar{background:color-mix(in srgb, currentColor 5%, transparent);border-radius:999px;height:4px;display:block;overflow:hidden}.cvtkAW_chartModelFill{background:color-mix(in srgb, currentColor 30%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartMore{background:color-mix(in srgb, currentColor 6%, transparent);opacity:.58;border-radius:999px;align-self:flex-start;margin-left:10px;padding:2px 7px;font-size:10px;line-height:1.2}.cvtkAW_trendAxis{opacity:.5;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:10px;display:flex}.cvtkAW_muted{opacity:.6;font-size:12px}.cvtkAW_voucherPreview canvas{border-radius:8px;width:100%;height:auto;display:block}.cvtkAW_buttonRow{gap:8px;display:flex}.cvtkAW_errorLine{opacity:.75;font-size:12px}.cvtkAW_planCard{flex-direction:column;gap:8px;display:flex}.cvtkAW_planHead{justify-content:space-between;align-items:baseline;gap:10px;display:flex}.cvtkAW_planName{font-size:14px;font-weight:600}.cvtkAW_windowRow{flex-direction:column;gap:4px;display:flex}.cvtkAW_windowLabel{opacity:.8;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:12px;display:flex}.cvtkAW_bar{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:999px;height:6px;overflow:hidden}.cvtkAW_barFill{background:color-mix(in srgb, currentColor 55%, transparent);border-radius:999px;height:100%;transition:width .3s}.cvtkAW_barWarn{background:#d97706}.cvtkAW_barLow{background:#dc2626}.cvtkAW_resetLine{opacity:.55;font-variant-numeric:tabular-nums;font-size:11px}.cvtkAW_settingsGrid{flex-wrap:wrap;align-items:center;gap:16px;display:flex}.cvtkAW_settingItem{align-items:center;gap:8px;font-size:13px;display:flex}.cvtkAW_settingItem input[type=checkbox]{accent-color:currentColor}.cvtkAW_settingItem input[type=number]{border:1px solid color-mix(in srgb, currentColor 25%, transparent);width:90px;color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem select{border:1px solid color-mix(in srgb, currentColor 25%, transparent);color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem input:focus-visible,.cvtkAW_settingItem select:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_usageDashboard{flex-direction:column;gap:16px;display:flex}.cvtkAW_kpiStrip{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, canvas 92%, currentColor 2%);box-shadow:0 12px 30px color-mix(in srgb, currentColor 6%, transparent);border-radius:20px;grid-template-columns:repeat(5,minmax(0,1fr));display:grid;overflow:hidden}.cvtkAW_kpiCard{border-left:1px solid color-mix(in srgb, currentColor 8%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:7px;min-height:86px;padding:12px 10px;display:flex}.cvtkAW_kpiCard:first-child{border-left:none}.cvtkAW_kpiValue{letter-spacing:-.04em;font-variant-numeric:tabular-nums;font-size:clamp(20px,3vw,30px);font-weight:800;line-height:1}.cvtkAW_kpiLabel{color:color-mix(in srgb, currentColor 56%, transparent);white-space:nowrap;font-size:12px}.cvtkAW_activityCard,.cvtkAW_detailCard,.cvtkAW_balanceOverview{background:color-mix(in srgb, canvas 94%, currentColor 2%);border-radius:20px;padding:22px 24px}.cvtkAW_dashboardCardHead{justify-content:space-between;align-items:center;gap:12px;min-width:0;display:flex}.cvtkAW_dashboardTitle{letter-spacing:-.03em;align-items:center;gap:10px;min-width:0;font-size:20px;font-weight:800;line-height:1.2;display:inline-flex}.cvtkAW_dotBlue,.cvtkAW_dotGreen{width:10px;height:10px;box-shadow:0 0 0 4px color-mix(in srgb, currentColor 6%, transparent);border-radius:999px}.cvtkAW_dotBlue{background:#3b82f6}.cvtkAW_dotGreen{background:#34d399}.cvtkAW_rangePill,.cvtkAW_autoRefreshPill{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);white-space:nowrap;border-radius:12px;flex:none;justify-content:center;align-items:center;gap:6px;padding:7px 11px;font-size:13px;line-height:1;display:inline-flex}.cvtkAW_autoRefreshPill{color:color-mix(in srgb, #059669 86%, currentColor 14%);background:#34d39914;border-color:#34d3995c}.cvtkAW_activityBody{flex-direction:column;gap:14px;padding-top:6px;display:flex}.cvtkAW_heatmapGrid{grid-template-rows:repeat(5,22px);grid-auto-columns:22px;grid-auto-flow:column;align-self:flex-start;gap:7px;max-width:100%;padding:3px 0;display:grid;overflow:hidden}.cvtkAW_activityCell{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:5px;transition:transform .12s,box-shadow .12s;display:block}.cvtkAW_activityCell:hover{box-shadow:0 6px 14px color-mix(in srgb, currentColor 14%, transparent);transform:translateY(-1px)}.cvtkAW_activityCellEmpty{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_activityCellLevel1{background:color-mix(in srgb, #93c5fd 45%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel2{background:color-mix(in srgb, #60a5fa 58%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel3{background:color-mix(in srgb, #3b82f6 70%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel4{background:color-mix(in srgb, #2563eb 82%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel5{background:#1d4ed8}.cvtkAW_activityAxis{max-width:min(100%,168px);color:color-mix(in srgb, currentColor 54%, transparent);font-variant-numeric:tabular-nums;justify-content:space-between;font-size:12px;display:flex}.cvtkAW_detailToolbar{flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:10px;display:inline-flex}.cvtkAW_detailStats{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;display:grid}.cvtkAW_detailStat{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:14px;min-width:0;padding:13px 14px}.cvtkAW_detailStatLabel,.cvtkAW_detailStatHint{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 55%, transparent);font-size:12px;display:block;overflow:hidden}.cvtkAW_detailStatValue{text-overflow:ellipsis;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin:7px 0 4px;font-size:21px;font-weight:800;line-height:1.05;display:block;overflow:hidden}.cvtkAW_cacheMeter{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2%, transparent);border-radius:14px;grid-template-columns:auto 1fr;align-items:center;gap:18px;padding:13px 16px;display:grid}.cvtkAW_cacheLabel{min-width:150px;color:color-mix(in srgb, currentColor 66%, transparent);font-size:14px}.cvtkAW_cacheLabel strong{color:currentColor;font-variant-numeric:tabular-nums;margin-left:8px;font-size:18px}.cvtkAW_cacheTrack{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:12px;overflow:hidden}.cvtkAW_cacheFill{border-radius:inherit;background:linear-gradient(90deg,#34d399,#10b981);height:100%;transition:width .3s;display:block}.cvtkAW_modelTable{flex-direction:column;gap:10px;display:flex}.cvtkAW_modelRow{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 1.8%, transparent);border-radius:16px;grid-template-columns:minmax(150px,1.45fr) repeat(5,minmax(66px,.72fr));align-items:center;gap:14px;padding:15px 16px;display:grid}.cvtkAW_modelRowCurrent{border-color:color-mix(in srgb, #3b82f6 26%, currentColor 8%);background:linear-gradient(90deg,#3b82f612,#0000 72%)}.cvtkAW_modelIdentity{flex-direction:column;gap:4px;min-width:0;display:flex}.cvtkAW_modelIdentity strong{text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.02em;font-size:16px;font-weight:800;line-height:1.15;overflow:hidden}.cvtkAW_modelIdentity span{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 52%, transparent);font-size:12px;overflow:hidden}.cvtkAW_modelMetric{font-variant-numeric:tabular-nums;flex-direction:column;align-items:flex-end;gap:4px;min-width:0;display:flex}.cvtkAW_modelMetric strong{text-overflow:ellipsis;max-width:100%;font-size:17px;font-weight:800;line-height:1;overflow:hidden}.cvtkAW_modelMetric span{color:color-mix(in srgb, currentColor 52%, transparent);font-size:12px}.cvtkAW_balanceRows{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;display:grid}@media (width<=860px){.cvtkAW_kpiStrip,.cvtkAW_detailStats{grid-template-columns:repeat(2,minmax(0,1fr))}.cvtkAW_kpiCard:nth-child(odd){border-left:none}.cvtkAW_modelRow{grid-template-columns:minmax(0,1fr) repeat(2,minmax(62px,auto))}.cvtkAW_modelMetric:nth-child(n+4){display:none}}@media (width<=560px){.cvtkAW_activityCard,.cvtkAW_detailCard,.cvtkAW_balanceOverview{padding:16px}.cvtkAW_dashboardCardHead,.cvtkAW_cacheMeter{grid-template-columns:1fr;align-items:stretch}.cvtkAW_dashboardCardHead{flex-direction:column;align-items:flex-start}.cvtkAW_detailToolbar{justify-content:flex-start}.cvtkAW_kpiStrip,.cvtkAW_detailStats{grid-template-columns:1fr}.cvtkAW_kpiCard,.cvtkAW_kpiCard:first-child{border-left:none;border-top:1px solid color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_kpiCard:first-child{border-top:none}.cvtkAW_modelRow{grid-template-columns:1fr;align-items:start}.cvtkAW_modelMetric{align-items:flex-start}}.cvtkAW_footCard{box-sizing:border-box;background:color-mix(in srgb, currentColor 4%, transparent);width:100%;color:inherit;border:none;border-radius:12px;margin:2px 0 4px;transition:background-color .12s;position:relative}.cvtkAW_footCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.cvtkAW_footCardCollapsed{background:0 0}.cvtkAW_footMain{appearance:none;box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:none;border-radius:12px;flex-direction:column;gap:4px;padding:8px;display:flex}.cvtkAW_footMain:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle{appearance:none;width:20px;height:20px;color:inherit;cursor:pointer;opacity:.55;background:0 0;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex;position:absolute;top:6px;right:6px}.cvtkAW_footCard:hover .cvtkAW_footToggle{opacity:.8}.cvtkAW_footToggle:hover{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.cvtkAW_footToggle:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle svg{display:block}.cvtkAW_footHead{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.cvtkAW_footTitle{opacity:.65;white-space:nowrap;align-items:center;gap:6px;min-width:0;font-size:12px;display:inline-flex}.cvtkAW_footTitle svg{flex:none;display:block}.cvtkAW_footValue{font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:18px;font-size:15px;font-weight:600}.cvtkAW_footLine{opacity:.7;font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.cvtkAW_footMeta{opacity:.5;font-variant-numeric:tabular-nums;font-size:10px}.cvtkAW_footCardCollapsed .cvtkAW_footMain{min-height:36px;padding:7px 8px}.cvtkAW_footStrip{white-space:nowrap;align-items:center;gap:6px;padding-right:20px;font-size:12px;display:flex;overflow:hidden}.cvtkAW_footStrip svg{opacity:.65;flex:none;display:block}.cvtkAW_footStripProvider{text-overflow:ellipsis;flex:none;max-width:45%;font-weight:500;overflow:hidden}.cvtkAW_footStripLabel{opacity:.65;text-overflow:ellipsis;overflow:hidden}.cvtkAW_footStripValue{font-variant-numeric:tabular-nums;margin-left:auto;font-weight:600}[data-dsh-frame][data-sidebar-collapsed] .cvtkAW_footCard,[data-sidebar-collapsed] .cvtkAW_footCard{display:none}";
 		const tagId$2 = "@linxin666/dsh-web-all/packages/dsh-usage/src/client/usage.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -37198,12 +37198,30 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var usage_module_css_default = {
+			"activityAxis": "cvtkAW_activityAxis",
+			"activityBody": "cvtkAW_activityBody",
+			"activityCard": "cvtkAW_activityCard",
+			"activityCell": "cvtkAW_activityCell",
+			"activityCellEmpty": "cvtkAW_activityCellEmpty",
+			"activityCellLevel1": "cvtkAW_activityCellLevel1",
+			"activityCellLevel2": "cvtkAW_activityCellLevel2",
+			"activityCellLevel3": "cvtkAW_activityCellLevel3",
+			"activityCellLevel4": "cvtkAW_activityCellLevel4",
+			"activityCellLevel5": "cvtkAW_activityCellLevel5",
+			"autoRefreshPill": "cvtkAW_autoRefreshPill",
+			"balanceOverview": "cvtkAW_balanceOverview",
+			"balanceRows": "cvtkAW_balanceRows",
 			"bar": "cvtkAW_bar",
 			"barFill": "cvtkAW_barFill",
 			"barLow": "cvtkAW_barLow",
 			"barWarn": "cvtkAW_barWarn",
 			"buttonRow": "cvtkAW_buttonRow",
+			"cacheFill": "cvtkAW_cacheFill",
+			"cacheLabel": "cvtkAW_cacheLabel",
+			"cacheMeter": "cvtkAW_cacheMeter",
+			"cacheTrack": "cvtkAW_cacheTrack",
 			"card": "cvtkAW_card",
+			"cardHead": "cvtkAW_cardHead",
 			"cardTitle": "cvtkAW_cardTitle",
 			"chart": "cvtkAW_chart",
 			"chartBar": "cvtkAW_chartBar",
@@ -37213,10 +37231,24 @@ window.__ModuleLoader__.load({
 			"chartModelBar": "cvtkAW_chartModelBar",
 			"chartModelFill": "cvtkAW_chartModelFill",
 			"chartModelName": "cvtkAW_chartModelName",
+			"chartMore": "cvtkAW_chartMore",
 			"chartProvider": "cvtkAW_chartProvider",
+			"chartProviderCurrent": "cvtkAW_chartProviderCurrent",
 			"chartTokens": "cvtkAW_chartTokens",
+			"costRow": "cvtkAW_costRow",
 			"currentBadge": "cvtkAW_currentBadge",
 			"currentProvider": "cvtkAW_currentProvider",
+			"dashboardCardHead": "cvtkAW_dashboardCardHead",
+			"dashboardTitle": "cvtkAW_dashboardTitle",
+			"detailCard": "cvtkAW_detailCard",
+			"detailStat": "cvtkAW_detailStat",
+			"detailStatHint": "cvtkAW_detailStatHint",
+			"detailStatLabel": "cvtkAW_detailStatLabel",
+			"detailStatValue": "cvtkAW_detailStatValue",
+			"detailStats": "cvtkAW_detailStats",
+			"detailToolbar": "cvtkAW_detailToolbar",
+			"dotBlue": "cvtkAW_dotBlue",
+			"dotGreen": "cvtkAW_dotGreen",
 			"errorLine": "cvtkAW_errorLine",
 			"footCard": "cvtkAW_footCard",
 			"footCardCollapsed": "cvtkAW_footCardCollapsed",
@@ -37232,14 +37264,28 @@ window.__ModuleLoader__.load({
 			"footToggle": "cvtkAW_footToggle",
 			"footValue": "cvtkAW_footValue",
 			"header": "cvtkAW_header",
+			"headerMeta": "cvtkAW_headerMeta",
+			"heatmapGrid": "cvtkAW_heatmapGrid",
+			"kpiCard": "cvtkAW_kpiCard",
+			"kpiLabel": "cvtkAW_kpiLabel",
+			"kpiStrip": "cvtkAW_kpiStrip",
+			"kpiValue": "cvtkAW_kpiValue",
+			"modelIdentity": "cvtkAW_modelIdentity",
+			"modelMetric": "cvtkAW_modelMetric",
+			"modelRow": "cvtkAW_modelRow",
+			"modelRowCurrent": "cvtkAW_modelRowCurrent",
+			"modelTable": "cvtkAW_modelTable",
 			"muted": "cvtkAW_muted",
+			"peakStatus": "cvtkAW_peakStatus",
 			"planCard": "cvtkAW_planCard",
 			"planHead": "cvtkAW_planHead",
 			"planName": "cvtkAW_planName",
 			"providerBalance": "cvtkAW_providerBalance",
+			"providerList": "cvtkAW_providerList",
 			"providerName": "cvtkAW_providerName",
 			"providerRow": "cvtkAW_providerRow",
 			"providerTokens": "cvtkAW_providerTokens",
+			"rangePill": "cvtkAW_rangePill",
 			"refreshBtn": "cvtkAW_refreshBtn",
 			"resetLine": "cvtkAW_resetLine",
 			"section": "cvtkAW_section",
@@ -37252,7 +37298,9 @@ window.__ModuleLoader__.load({
 			"tab": "cvtkAW_tab",
 			"tabActive": "cvtkAW_tabActive",
 			"tabs": "cvtkAW_tabs",
+			"todayCard": "cvtkAW_todayCard",
 			"trendAxis": "cvtkAW_trendAxis",
+			"usageDashboard": "cvtkAW_usageDashboard",
 			"voucherPreview": "cvtkAW_voucherPreview",
 			"windowLabel": "cvtkAW_windowLabel",
 			"windowRow": "cvtkAW_windowRow"
@@ -37928,74 +37976,6 @@ window.__ModuleLoader__.load({
 		function isConfigured(provider) {
 			return provider.credential !== "none";
 		}
-		function TotalsRow(props) {
-			const { totals } = props;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: usage_module_css_default.statRow,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: usage_module_css_default.stat,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statValue,
-							children: formatTokens(totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens + totals.outputTokens)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statLabel,
-							children: t$3("usage.tokens.total")
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: usage_module_css_default.stat,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statValue,
-							children: formatTokens(totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statLabel,
-							children: t$3("usage.tokens.input")
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: usage_module_css_default.stat,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statValue,
-							children: formatTokens(totals.outputTokens)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statLabel,
-							children: t$3("usage.tokens.output")
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: usage_module_css_default.stat,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statValue,
-							children: formatTokens(totals.cacheReadTokens)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statLabel,
-							children: t$3("usage.tokens.cacheRead")
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: usage_module_css_default.stat,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statValue,
-							children: formatTokens(totals.cacheWriteTokens)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statLabel,
-							children: t$3("usage.tokens.cacheWrite")
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: usage_module_css_default.stat,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statValue,
-							children: formatTokens(totals.calls)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.statLabel,
-							children: t$3("usage.calls", { n: totals.calls })
-						})]
-					})
-				]
-			});
-		}
 		function balanceLine$1(provider) {
 			if (provider.balance !== void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: usage_module_css_default.providerBalance,
@@ -38112,11 +38092,7 @@ window.__ModuleLoader__.load({
 							className: usage_module_css_default.currentProvider,
 							children: currentProvider !== void 0 ? `${currentProvider.displayName}${current.model !== void 0 && current.model !== "" ? " · " + current.model : ""}` : t$3("usage.noData")
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							style: {
-								display: "flex",
-								gap: 8,
-								alignItems: "center"
-							},
+							className: usage_module_css_default.headerMeta,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: usage_module_css_default.muted,
 								children: t$3("usage.updated", { time: formatTime$1(snapshot.updatedAt) })
@@ -38160,95 +38136,21 @@ window.__ModuleLoader__.load({
 							})
 						]
 					}),
-					tab === "usage" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: usage_module_css_default.card,
-							"data-dsh-part": "today-card",
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.cardTitle,
-									children: t$3("usage.today")
-								}),
-								deepseekVisible && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.muted,
-									"data-dsh-part": "peak-status",
-									children: t$3(deepseekPeriod.peak ? "usage.peak.on" : "usage.peak.off", { time: formatClock$1(deepseekPeriod.boundaryMs) })
-								}),
-								snapshot.usage.today.totals.calls === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.muted,
-									children: t$3("usage.noData")
-								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TotalsRow, { totals: snapshot.usage.today.totals }),
-								snapshot.usage.today.totals.cost > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: usage_module_css_default.providerRow,
-									"data-dsh-part": "today-cost",
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: usage_module_css_default.providerName,
-										children: t$3("usage.today.cost")
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: usage_module_css_default.providerTokens,
-										children: formatCost(snapshot.usage.today.totals.cost)
-									})]
-								}),
-								snapshot.usage.today.providers.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-									"data-dsh-part": "provider-list",
-									children: snapshot.usage.today.providers.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: usage_module_css_default.providerRow,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-											className: usage_module_css_default.providerName,
-											children: [snapshot.providers.find((provider) => provider.provider === row.provider)?.displayName ?? row.provider, current.provider === row.provider && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: usage_module_css_default.currentBadge,
-												children: t$3("usage.current")
-											})]
-										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-											className: usage_module_css_default.providerTokens,
-											children: [
-												formatTokens(row.totals.inputTokens + row.totals.cacheReadTokens + row.totals.cacheWriteTokens + row.totals.outputTokens),
-												" · ",
-												t$3("usage.calls", { n: row.totals.calls }),
-												row.totals.cost > 0 ? ` · ${formatCost(row.totals.cost)}` : ""
-											]
-										})]
-									}, row.provider))
-								})
-							]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: usage_module_css_default.card,
-							"data-dsh-part": "balance-card",
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.cardTitle,
-									children: t$3("usage.balance")
-								}),
-								(() => {
-									const configured = snapshot.providers.filter(isConfigured);
-									const rows = configured.filter((provider) => provider.balanceSupported === true || provider.balanceSupported === false || provider.balanceSupported === void 0 && provider.supported);
-									if (rows.length === 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: usage_module_css_default.muted,
-										children: configured.length === 0 ? t$3("usage.balance.noneConfigured") : t$3("usage.balance.unsupported")
-									});
-									return rows.map((provider) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProviderRow, {
-										provider,
-										current: current.provider
-									}, provider.provider));
-								})(),
-								snapshot.providers.some((provider) => isConfigured(provider) && provider.error !== void 0) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.errorLine,
-									children: snapshot.providers.filter((provider) => isConfigured(provider) && provider.error !== void 0).map((provider) => `${provider.displayName}: ${t$3("usage.provider.error", { error: provider.error ?? "" })}`).join(t$3("usage.errorListSeparator"))
-								})
-							]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RangeCard, {
-							range: snapshot.usage.range,
-							providers: snapshot.providers,
-							currentProvider: current.provider
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SettingsRow, {
-							settings,
-							snapshot: settingsSnapshot.status === "ready" ? settingsSnapshot : void 0,
-							value: settingsValue
-						})
-					] }),
+					tab === "usage" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(UsageDashboard, {
+						snapshot,
+						currentProvider: current.provider,
+						currentModel: current.model,
+						deepseekVisible,
+						deepseekPeak: deepseekPeriod.peak,
+						deepseekBoundary: formatClock$1(deepseekPeriod.boundaryMs),
+						pollIntervalSec: typeof settingsValue.pollIntervalSec === "number" ? settingsValue.pollIntervalSec : 60,
+						onRefresh,
+						refreshing
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SettingsRow, {
+						settings,
+						snapshot: settingsSnapshot.status === "ready" ? settingsSnapshot : void 0,
+						value: settingsValue
+					})] }),
 					tab === "plans" && (planProviders.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: usage_module_css_default.card,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -38266,104 +38168,353 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		/** How many model sub-bars render under one provider bar. */
-		const CHART_MODEL_CAP = 3;
-		/**
-		* The 近 30 天 card: horizontal bars per provider over the trend window,
-		* each with its heaviest models as nested sub-bars. Window totals come from
-		* the host's aggregated `usage.range` (an older host without it renders no
-		* card instead of a wrong one).
-		*/
-		function RangeCard(props) {
-			const { range, providers, currentProvider } = props;
-			if (range === void 0) return null;
-			const grandTotal = range.totals.inputTokens + range.totals.outputTokens + range.totals.cacheReadTokens + range.totals.cacheWriteTokens;
-			const maxProvider = Math.max(1, ...range.providers.map((row) => totalOf(row.totals)));
-			const nameOf = (id) => providers.find((provider) => provider.provider === id)?.displayName ?? id;
+		function UsageDashboard(props) {
+			const { snapshot, currentProvider, currentModel, deepseekVisible, deepseekPeak, deepseekBoundary, pollIntervalSec, onRefresh, refreshing } = props;
+			const retained = snapshot.usage.all ?? snapshot.usage.range;
+			const totals = retained?.totals ?? snapshot.usage.today.totals;
+			const peak = peakDay(snapshot.usage.days);
+			const streak = dayStreaks(snapshot.usage.days);
+			const cachePercent = cacheHitPercent(totals);
+			const modelRows = modelUsageRows(retained, snapshot.providers, currentProvider, currentModel);
+			const configuredBalanceRows = snapshot.providers.filter(isConfigured).filter((provider) => provider.balanceSupported === true || provider.balanceSupported === false || provider.balanceSupported === void 0 && provider.supported);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: usage_module_css_default.card,
-				"data-dsh-part": "trend-card",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: usage_module_css_default.cardTitle,
-					children: t$3("usage.trend")
-				}), range.providers.length === 0 || grandTotal === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: usage_module_css_default.muted,
-					children: t$3("usage.noData")
-				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: usage_module_css_default.chart,
-					"data-dsh-part": "usage-chart",
-					children: [range.providers.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChartProviderRow, {
-						row,
-						name: nameOf(row.provider),
-						max: maxProvider,
-						current: currentProvider === row.provider
-					}, row.provider)), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: usage_module_css_default.trendAxis,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: range.from.slice(5) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: range.to.slice(5) })]
-					})]
-				})]
-			});
-		}
-		function ChartProviderRow(props) {
-			const { row, name, max, current } = props;
-			const total = totalOf(row.totals);
-			const maxModel = Math.max(1, ...row.models.slice(0, CHART_MODEL_CAP).map((model) => totalOf(model.totals)));
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: usage_module_css_default.chartProvider,
+				className: usage_module_css_default.usageDashboard,
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: usage_module_css_default.chartHead,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: usage_module_css_default.providerName,
-							children: [name, current && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: usage_module_css_default.currentBadge,
-								children: t$3("usage.current")
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: usage_module_css_default.kpiStrip,
+						"data-dsh-part": "usage-summary",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MetricCard, {
+								value: formatTokens(totalOf(totals)),
+								label: "累计 Token 数"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MetricCard, {
+								value: formatTokens(peak.tokens),
+								label: "峰值 Token 数"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MetricCard, {
+								value: formatTokens(totals.calls),
+								label: "总请求数"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MetricCard, {
+								value: `${streak.current} 天`,
+								label: "当前连续天数"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MetricCard, {
+								value: `${streak.longest} 天`,
+								label: "最长连续天数"
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: `${usage_module_css_default.card} ${usage_module_css_default.activityCard}`,
+						"data-dsh-part": "activity-card",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: usage_module_css_default.dashboardCardHead,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: usage_module_css_default.dashboardTitle,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: usage_module_css_default.dotBlue }), "Token 活动"]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: usage_module_css_default.rangePill,
+								children: "近 30 天"
 							})]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: usage_module_css_default.chartTokens,
-							children: [
-								formatTokens(total),
-								" · ",
-								t$3("usage.calls", { n: row.totals.calls })
-							]
-						})]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityHeatmap, { days: snapshot.usage.days })]
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: usage_module_css_default.chartBar,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: usage_module_css_default.chartFill,
-							style: { width: `${Math.max(2, Math.round(total / max * 100))}%` }
-						})
-					}),
-					row.models.slice(0, CHART_MODEL_CAP).map((model) => {
-						const modelTotal = totalOf(model.totals);
-						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: usage_module_css_default.chartModel,
-							title: `${row.provider} · ${model.model}: ${formatTokens(modelTotal)}`,
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.chartModelName,
-									children: model.model
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.chartModelBar,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: usage_module_css_default.chartModelFill,
-										style: { width: `${Math.max(3, Math.round(modelTotal / maxModel * 100))}%` }
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: `${usage_module_css_default.card} ${usage_module_css_default.detailCard}`,
+						"data-dsh-part": "detail-card",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: usage_module_css_default.dashboardCardHead,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: usage_module_css_default.dashboardTitle,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: usage_module_css_default.dotGreen }), "用量明细"]
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: usage_module_css_default.detailToolbar,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: usage_module_css_default.rangePill,
+											children: "全部模型"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+											type: "button",
+											className: usage_module_css_default.refreshBtn,
+											onClick: onRefresh,
+											disabled: refreshing,
+											children: ["↻ ", refreshing ? t$3("usage.refreshing") : t$3("usage.refresh")]
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: usage_module_css_default.autoRefreshPill,
+											children: [Math.max(10, Math.round(pollIntervalSec)), "s 自动刷新"]
+										})
+									]
+								})]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: usage_module_css_default.detailStats,
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
+										value: formatTokens(totalOf(totals)),
+										label: "真实消耗 Tokens",
+										hint: "输入 + 输出 + 缓存"
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
+										value: formatTokens(totals.calls),
+										label: "总请求数",
+										hint: "所有模型调用"
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
+										value: totals.cost > 0 ? formatCost(totals.cost) : "未计费",
+										label: "总成本(估算)",
+										hint: "按公开单价估算"
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
+										value: `${formatPercent(cachePercent)}`,
+										label: "缓存命中",
+										hint: "cache read token"
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
+										value: formatTokens(totals.reasoningTokens),
+										label: "推理 Tokens",
+										hint: "reasoning tokens"
 									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: usage_module_css_default.chartTokens,
-									children: formatTokens(modelTotal)
+								]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: usage_module_css_default.cacheMeter,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: usage_module_css_default.cacheLabel,
+									children: ["缓存命中率 ", /* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: formatPercent(cachePercent) })]
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: usage_module_css_default.cacheTrack,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: usage_module_css_default.cacheFill,
+										style: { width: `${Math.max(0, Math.min(100, cachePercent))}%` }
+									})
+								})]
+							}),
+							deepseekVisible && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: usage_module_css_default.peakStatus,
+								"data-dsh-part": "peak-status",
+								children: t$3(deepseekPeak ? "usage.peak.on" : "usage.peak.off", { time: deepseekBoundary })
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelUsageTable, { rows: modelRows })
+						]
+					}),
+					configuredBalanceRows.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: `${usage_module_css_default.card} ${usage_module_css_default.balanceOverview}`,
+						"data-dsh-part": "balance-card",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								className: usage_module_css_default.dashboardCardHead,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: usage_module_css_default.dashboardTitle,
+									children: "余额概览"
 								})
-							]
-						}, model.model);
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								className: usage_module_css_default.balanceRows,
+								children: configuredBalanceRows.map((provider) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProviderRow, {
+									provider,
+									current: currentProvider
+								}, provider.provider))
+							}),
+							snapshot.providers.some((provider) => isConfigured(provider) && provider.error !== void 0) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: usage_module_css_default.errorLine,
+								children: snapshot.providers.filter((provider) => isConfigured(provider) && provider.error !== void 0).map((provider) => `${provider.displayName}: ${t$3("usage.provider.error", { error: provider.error ?? "" })}`).join(t$3("usage.errorListSeparator"))
+							})
+						]
 					})
 				]
 			});
 		}
+		function MetricCard(props) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: usage_module_css_default.kpiCard,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: usage_module_css_default.kpiValue,
+					children: props.value
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: usage_module_css_default.kpiLabel,
+					children: props.label
+				})]
+			});
+		}
+		function DetailStat(props) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: usage_module_css_default.detailStat,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: usage_module_css_default.detailStatLabel,
+						children: props.label
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: usage_module_css_default.detailStatValue,
+						children: props.value
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: usage_module_css_default.detailStatHint,
+						children: props.hint
+					})
+				]
+			});
+		}
+		function ActivityHeatmap(props) {
+			const cells = heatmapCells(props.days);
+			const max = Math.max(1, ...cells.map((cell) => cell.tokens));
+			const first = cells[0]?.date.slice(5) ?? "";
+			const last = cells[cells.length - 1]?.date.slice(5) ?? "";
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: usage_module_css_default.activityBody,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: usage_module_css_default.heatmapGrid,
+					"aria-label": "Token 活动热力图",
+					children: cells.map((cell) => {
+						const level = cell.tokens <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil(cell.tokens / max * 5)));
+						const levelClass = level === 0 ? usage_module_css_default.activityCellEmpty : usage_module_css_default[`activityCellLevel${level}`];
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: `${usage_module_css_default.activityCell} ${levelClass}`,
+							title: `${cell.date} 使用了 ${formatTokens(cell.tokens)} 个 Token`
+						}, cell.date);
+					})
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+					className: usage_module_css_default.activityAxis,
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: first }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: last })]
+				})]
+			});
+		}
+		function ModelUsageTable(props) {
+			const rows = props.rows.slice(0, 12);
+			if (rows.length === 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				className: usage_module_css_default.muted,
+				children: t$3("usage.noData")
+			});
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: usage_module_css_default.modelTable,
+				"data-dsh-part": "model-usage-list",
+				children: rows.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: row.current ? `${usage_module_css_default.modelRow} ${usage_module_css_default.modelRowCurrent}` : usage_module_css_default.modelRow,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: usage_module_css_default.modelIdentity,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: row.model }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: row.providerName })]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
+							value: formatTokens(totalOf(row.totals)),
+							label: "总 token"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
+							value: formatTokens(row.totals.calls),
+							label: "调用"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
+							value: formatTokens(inputOf(row.totals)),
+							label: "输入"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
+							value: formatTokens(row.totals.outputTokens),
+							label: "输出"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
+							value: formatTokens(row.totals.reasoningTokens),
+							label: "推理"
+						})
+					]
+				}, row.key))
+			});
+		}
+		function ModelCell(props) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				className: usage_module_css_default.modelMetric,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: props.value }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: props.label })]
+			});
+		}
+		function modelUsageRows(window, providers, currentProvider, currentModel) {
+			if (window === void 0) return [];
+			const nameOf = (id) => providers.find((provider) => provider.provider === id)?.displayName ?? id;
+			const rows = [];
+			for (const provider of window.providers) for (const model of provider.models) rows.push({
+				key: `${provider.provider}:${model.model}`,
+				provider: provider.provider,
+				providerName: nameOf(provider.provider),
+				model: model.model,
+				totals: model.totals,
+				current: currentProvider === provider.provider && currentModel === model.model
+			});
+			rows.sort((a, b) => totalOf(b.totals) - totalOf(a.totals));
+			return rows;
+		}
+		function heatmapCells(days) {
+			const byDate = new Map(days.map((day) => [day.date, totalOf(day.totals)]));
+			return recentDateKeys(days[days.length - 1]?.date ?? localDateKey(Date.now()), 30).map((date) => ({
+				date,
+				tokens: byDate.get(date) ?? 0
+			}));
+		}
+		function peakDay(days) {
+			let best = {
+				date: "",
+				tokens: 0
+			};
+			for (const day of days) {
+				const tokens = totalOf(day.totals);
+				if (tokens > best.tokens) best = {
+					date: day.date,
+					tokens
+				};
+			}
+			return best;
+		}
+		function dayStreaks(days) {
+			const active = new Set(days.filter((day) => totalOf(day.totals) > 0).map((day) => day.date));
+			let longest = 0;
+			let currentRun = 0;
+			const ordered = recentDateKeys(days[days.length - 1]?.date ?? localDateKey(Date.now()), Math.max(30, days.length));
+			for (const key of ordered) if (active.has(key)) {
+				currentRun += 1;
+				longest = Math.max(longest, currentRun);
+			} else currentRun = 0;
+			let current = 0;
+			for (let i = ordered.length - 1; i >= 0; i -= 1) {
+				if (!active.has(ordered[i])) break;
+				current += 1;
+			}
+			return {
+				current,
+				longest
+			};
+		}
+		function recentDateKeys(endKey, count) {
+			const end = /* @__PURE__ */ new Date(endKey + "T12:00:00");
+			if (!Number.isFinite(end.getTime())) return [];
+			const keys = [];
+			for (let offset = count - 1; offset >= 0; offset -= 1) {
+				const date = new Date(end);
+				date.setDate(end.getDate() - offset);
+				keys.push(localDateKey(date.getTime()));
+			}
+			return keys;
+		}
+		function localDateKey(ms) {
+			const date = new Date(ms);
+			const month = String(date.getMonth() + 1).padStart(2, "0");
+			const day = String(date.getDate()).padStart(2, "0");
+			return `${date.getFullYear()}-${month}-${day}`;
+		}
 		function totalOf(totals) {
 			return totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens + totals.outputTokens;
+		}
+		function inputOf(totals) {
+			return totals.inputTokens + totals.cacheReadTokens + totals.cacheWriteTokens;
+		}
+		function cacheHitPercent(totals) {
+			const input = inputOf(totals);
+			if (input <= 0) return 0;
+			return totals.cacheReadTokens / input * 100;
+		}
+		function formatPercent(value) {
+			if (!Number.isFinite(value) || value <= 0) return "0%";
+			return value >= 10 ? `${value.toFixed(1)}%` : `${value.toFixed(2)}%`;
 		}
 		/**
 		* The Token 银行 card: the DeepSeek official family's retained-ledger usage
@@ -41449,160 +41600,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region ../dsh-model-capabilities/src/core/capabilities.ts
-		/** The official adapter family this plugin extends (the card slot's key). */
-		const PI_AI_SETTINGS_NAMESPACE = "llm-pi-ai";
-		/** The levels a capability draft may toggle, in escalation order. */
-		const THINKING_LEVELS = [
-			"off",
-			"minimal",
-			"low",
-			"medium",
-			"high",
-			"xhigh",
-			"max"
-		];
-		/**
-		* Read the value at a settings path. Plain-object walk only; an absent or
-		* non-object link yields undefined. (Mirrors the redacted view's shape, not
-		* the host's op walker: reads never need array indexing because the whole
-		* `models` array is one value.)
-		*/
-		function readAt(section, path) {
-			let current = section;
-			for (const key of path) {
-				if (typeof current !== "object" || current === null || Array.isArray(current)) return void 0;
-				current = current[key];
-			}
-			return current;
-		}
-		/**
-		* Coerce a stored `models` value into drafts. Returns undefined when the value
-		* is not an array; entries without a non-empty string id are skipped (the
-		* adapter refuses them anyway, and dropping them here keeps the editor
-		* renderable). Unknown fields are preserved by reference.
-		*/
-		function modelsArrayOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const entries = [];
-			for (const item of value) {
-				if (typeof item !== "object" || item === null || Array.isArray(item)) continue;
-				const record = item;
-				if (typeof record["id"] !== "string" || record["id"].length === 0) continue;
-				entries.push(record);
-			}
-			return entries;
-		}
-		/** Classify one entry's reasoning disposition for the tri-state editor. */
-		function effortsModeOf(entry) {
-			const efforts = entry["reasoningEfforts"];
-			if (efforts === void 0) return "inherit";
-			if (efforts === false) return "none";
-			if (typeof efforts === "object" && efforts !== null && !Array.isArray(efforts)) return "levels";
-			return "inherit";
-		}
-		/**
-		* Normalize one entry's declared levels to wire spellings, escalation order.
-		* `off` normalizes null/empty to '' ("supported, send nothing"); every other
-		* declared level keeps its wire spelling (empty normalizes to '', which
-		* validation reports).
-		*/
-		function declaredLevelsOf(entry) {
-			if (effortsModeOf(entry) !== "levels") return [];
-			const efforts = entry["reasoningEfforts"];
-			const declared = [];
-			for (const level of THINKING_LEVELS) {
-				if (!(level in efforts)) continue;
-				const wire = efforts[level];
-				declared.push({
-					level,
-					wire: typeof wire === "string" ? wire : ""
-				});
-			}
-			return declared;
-		}
-		/**
-		* Validate one draft against the rules the pi-ai adapter enforces on apply
-		* (an invalid write would be refused after the fact; this reports it before):
-		* a levels dict must declare at least one level beyond `off`, and every
-		* non-off level must name a non-empty wire spelling.
-		*/
-		function validateEntry(entry) {
-			if (effortsModeOf(entry) !== "levels") return void 0;
-			const declared = declaredLevelsOf(entry);
-			let hasBeyondOff = false;
-			for (const { level, wire } of declared) if (level !== "off") {
-				hasBeyondOff = true;
-				if (wire.length === 0) return {
-					kind: "effortsWireMissing",
-					level
-				};
-			}
-			if (!hasBeyondOff) return { kind: "effortsOffOnly" };
-		}
-		/**
-		* Immutable draft update: set the reasoning disposition.
-		* - `inherit` drops the field.
-		* - `none` writes `false`.
-		* - `levels` writes a dict; toggled levels keep a previously stored wire
-		*   spelling, new ones default to the identity (the level name itself). An
-		*   empty dict is invalid downstream, so a fresh switch materializes the
-		*   common OpenAI-style preset (low/medium/high) instead of starting empty.
-		*/
-		function withEffortsMode(entry, mode, levels) {
-			if (mode === "inherit") {
-				const { reasoningEfforts: _efforts, ...rest } = entry;
-				return rest;
-			}
-			if (mode === "none") return {
-				...entry,
-				reasoningEfforts: false
-			};
-			const efforts = {};
-			for (const level of THINKING_LEVELS) {
-				if (levels === void 0 || !levels.has(level)) continue;
-				efforts[level] = levels.get(level) ?? level;
-			}
-			return {
-				...entry,
-				reasoningEfforts: efforts
-			};
-		}
-		/** The common reasoning preset a fresh levels-mode editor starts from. */
-		const COMMON_EFFORTS_PRESET = [
-			["low", "low"],
-			["medium", "medium"],
-			["high", "high"]
-		];
-		/**
-		* Sanitize a draft for storage: drop keys whose value is undefined (JSON has
-		* no undefined) and clone plain objects/arrays one level deep so later draft
-		* edits cannot alias stored state. Unknown fields ride along untouched.
-		*/
-		function sanitizeEntry(entry) {
-			const out = {};
-			for (const [key, value] of Object.entries(entry)) {
-				if (value === void 0) continue;
-				if (typeof value === "object" && value !== null && !Array.isArray(value)) out[key] = { ...value };
-				else if (Array.isArray(value)) out[key] = [...value];
-				else out[key] = value;
-			}
-			return out;
-		}
-		/**
-		* Build the single op a save performs: replace the provider's whole `models`
-		* array. The empty path suffix works on a stored section that does not carry
-		* the array yet — the walker creates the intermediate objects, and every
-		* other profile field keeps inheriting from its layer.
-		*/
-		function buildModelsOp(settingsPath, entries) {
-			return {
-				op: "set",
-				path: [...settingsPath, "models"],
-				value: entries.map(sanitizeEntry)
-			};
-		}
-		//#endregion
 		//#region ../dsh-model-capabilities/src/core/provider-toggle.ts
 		/**
 		* Profile entry ids this plugin's own row carries, in resolution order.
@@ -41705,26 +41702,11 @@ window.__ModuleLoader__.load({
 			if (view.base !== void 0) return hasProfileAt(view.base, route);
 			return !hasProfileAt(view.user, route) && hasProfileAt(view.value, route);
 		}
-		/** Archive one profile: `disabled.<route> = stash` in the plugin namespace. */
-		function buildStashOp(route, stash) {
-			return {
-				op: "set",
-				path: ["disabled", route],
-				value: stash
-			};
-		}
 		/** Drop one archive entry: unset `disabled.<route>` in the plugin namespace. */
 		function buildUnstashOp(route) {
 			return {
 				op: "unset",
 				path: ["disabled", route]
-			};
-		}
-		/** Take the route down: unset `providers.<route>` in the pi-ai namespace. */
-		function buildUnsetProviderOp(route) {
-			return {
-				op: "unset",
-				path: ["providers", route]
 			};
 		}
 		/** Bring the route back: restore the archived profile verbatim. */
@@ -41735,6 +41717,10 @@ window.__ModuleLoader__.load({
 				value: profile
 			};
 		}
+		//#endregion
+		//#region ../dsh-model-capabilities/src/core/capabilities.ts
+		/** The official adapter family this plugin extends (the card slot's key). */
+		const PI_AI_SETTINGS_NAMESPACE = "llm-pi-ai";
 		//#endregion
 		//#region ../dsh-model-capabilities/src/client/provider-toggle.ts
 		function refused(error) {
@@ -41751,37 +41737,6 @@ window.__ModuleLoader__.load({
 		}
 		function viewOf(namespaces, ns) {
 			return namespaces.find((candidate) => candidate.ns === ns);
-		}
-		function profileAt(userSection, route) {
-			const profile = readAt(userSection, ["providers", route]);
-			return typeof profile === "object" && profile !== null && !Array.isArray(profile) ? profile : void 0;
-		}
-		/**
-		* Take one provider down: archive its user-layer profile, then unset the
-		* profile so the route unregisters.
-		* @param face - the settings namespace face.
-		* @param llmNs - the pi-ai namespace the provider is declared in.
-		* @param route - provider route id.
-		* @param displayName - display name for the archive listing, when known.
-		*/
-		async function disableProvider(face, llmNs, route, displayName) {
-			const described = await face.describe();
-			if (!described.ok) return refused(described.error);
-			const llmView = viewOf(described.value.namespaces, llmNs);
-			const archive = resolveArchiveEntry(described.value.namespaces);
-			if (llmView === void 0 || archive === void 0) return { kind: "unavailable" };
-			const profile = profileAt(llmView.user, route);
-			if (profile === void 0) return { kind: "no-profile" };
-			if (hasNonUserProfile(llmView, route)) return { kind: "base-profile" };
-			const stash = {
-				profile,
-				...displayName !== void 0 ? { displayName } : {}
-			};
-			const stashed = await face.mutate(archive.entryId, [buildStashOp(route, stash)], archive.view.revision);
-			if (!stashed.ok) return failureOf(archive.entryId, stashed.error);
-			const taken = await face.mutate(llmNs, [buildUnsetProviderOp(route)], llmView.revision);
-			if (!taken.ok) return failureOf(llmNs, taken.error);
-			return { kind: "ok" };
 		}
 		/**
 		* Bring one provider back: restore the archived profile verbatim, then clear
@@ -41821,100 +41776,26 @@ window.__ModuleLoader__.load({
 		const NS$1 = "model-caps";
 		/** Chinese copy (key source). */
 		const zh$1 = {
-			"caps.title": "模型能力",
-			"caps.hint": "为目录里的每个模型声明推理档位，保存写入设置文档并立即生效。",
-			"caps.loading": "正在读取模型能力…",
-			"caps.loadFailed": "读取失败：{error}",
-			"caps.reload": "重新读取",
-			"caps.empty": "此提供方还没有可编辑的模型目录。先在上方模型目录中添加模型行，再回到这里为每个模型声明能力。",
-			"caps.readOnly": "当前设置文档只读，无法修改。",
-			"caps.model.count": "{n} 个模型",
-			"caps.model.expand": "展开模型能力",
-			"caps.model.collapse": "收起模型能力",
-			"caps.model.efforts": "推理档位",
-			"caps.efforts.inherit": "不声明",
-			"caps.efforts.none": "无推理",
-			"caps.efforts.levels": "声明档位",
-			"caps.efforts.inheritHint": "跟随内置目录的声明；自定义模型没有目录可跟随，等同无推理。",
-			"caps.efforts.noneHint": "声明该模型不参与推理（reasoningEfforts: false），模型选择器不再提供思考档位。",
-			"caps.efforts.levelsHint": "勾选模型支持的档位，并填写请求里实际发送的取值。",
-			"caps.wire.label": "发送值",
-			"caps.wire.placeholder": "请求参数取值",
-			"caps.wire.offHint": "off 可留空：表示「支持，但发送时不带参数」。",
-			"caps.preset.common": "填入常用 low / medium / high",
-			"caps.summary.noReasoning": "无推理",
-			"caps.summary.efforts": "推理：{levels}",
-			"caps.save": "保存",
-			"caps.saving": "保存中…",
-			"caps.discard": "重置",
-			"caps.dirty": "有未保存的修改",
-			"caps.saved": "已保存",
-			"caps.staleDraft": "配置已被其他界面修改；你的未保存修改仍保留，保存时会再次校验。",
 			"caps.conflict": "配置已被其他界面修改，已重新读取，请重试。",
-			"caps.failed": "保存失败：{error}",
-			"caps.invalid.wire": "档位 {level} 需要非空的发送值。",
-			"caps.invalid.offOnly": "至少声明一个 off 以外的档位，或改选「无推理」。",
-			"caps.action.disable": "禁用此提供方",
+			"caps.failed": "操作失败：{error}",
 			"caps.action.enable": "启用",
-			"caps.busy.disabling": "禁用中…",
 			"caps.busy.enabling": "启用中…",
-			"caps.disable.hint": "禁用后该提供方立即从输入框模型选择器与子代理可选模型中消失；配置会存档，可随时启用恢复。",
-			"caps.state.badge": "已禁用",
-			"caps.state.disabled": "该提供方已禁用：模型不出现在输入框模型选择器与子代理可选列表中。配置已存档，启用即恢复。",
 			"caps.footer.title": "已禁用的提供方",
 			"caps.footer.hint": "这些提供方的配置已存档；启用后恢复原配置，并重新出现在模型选择器与子代理可选列表中。",
 			"caps.error.routeExists": "该提供方已存在新配置，无法恢复存档；请先移除现有配置再启用。",
 			"caps.error.partialEnable": "已启用，但清理存档失败：{error}",
-			"caps.error.baseProfile": "该提供方在组合层也声明了配置，禁用无法让它下线，因此不提供此操作。",
 			"caps.error.unavailable": "无法切换：未找到插件的存档设置项。"
 		};
 		/** English copy (full key parity with zh). */
 		const en$1 = {
-			"caps.title": "Model capabilities",
-			"caps.hint": "Declare reasoning efforts per catalog model; saving writes the settings document and applies immediately.",
-			"caps.loading": "Loading model capabilities…",
-			"caps.loadFailed": "Failed to load: {error}",
-			"caps.reload": "Reload",
-			"caps.empty": "No editable model catalog for this provider yet. Add model rows in the catalog above, then come back here to declare capabilities per model.",
-			"caps.readOnly": "The settings document is read-only; changes are disabled.",
-			"caps.model.count": "{n} models",
-			"caps.model.expand": "Expand model capabilities",
-			"caps.model.collapse": "Collapse model capabilities",
-			"caps.model.efforts": "Reasoning efforts",
-			"caps.efforts.inherit": "Undeclared",
-			"caps.efforts.none": "No reasoning",
-			"caps.efforts.levels": "Declare levels",
-			"caps.efforts.inheritHint": "Follows the built-in catalog; a hand-declared model has nothing to follow, which behaves like no reasoning.",
-			"caps.efforts.noneHint": "Declare this model as non-reasoning (reasoningEfforts: false); the model picker stops offering thinking levels.",
-			"caps.efforts.levelsHint": "Check the levels the model supports and fill in the wire value each one sends.",
-			"caps.wire.label": "Wire value",
-			"caps.wire.placeholder": "request parameter value",
-			"caps.wire.offHint": "off may stay empty: \"supported, but send nothing when chosen\".",
-			"caps.preset.common": "Fill the common low / medium / high",
-			"caps.summary.noReasoning": "no reasoning",
-			"caps.summary.efforts": "reasoning: {levels}",
-			"caps.save": "Save",
-			"caps.saving": "Saving…",
-			"caps.discard": "Reset",
-			"caps.dirty": "Unsaved changes",
-			"caps.saved": "Saved",
-			"caps.staleDraft": "The configuration changed in another surface; your unsaved changes are kept and re-checked when you save.",
 			"caps.conflict": "The configuration changed in another surface; reloaded — please retry.",
-			"caps.failed": "Save failed: {error}",
-			"caps.invalid.wire": "Level {level} needs a non-empty wire value.",
-			"caps.invalid.offOnly": "Declare at least one level beyond off, or switch to \"No reasoning\".",
-			"caps.action.disable": "Disable provider",
+			"caps.failed": "Operation failed: {error}",
 			"caps.action.enable": "Enable",
-			"caps.busy.disabling": "Disabling…",
 			"caps.busy.enabling": "Enabling…",
-			"caps.disable.hint": "A disabled provider leaves the composer model picker and the subagent selection immediately; its configuration is archived and can be restored at any time.",
-			"caps.state.badge": "disabled",
-			"caps.state.disabled": "This provider is disabled: its models are absent from the composer picker and the subagent selection. The configuration is archived; enabling restores it.",
 			"caps.footer.title": "Disabled providers",
 			"caps.footer.hint": "These providers have archived configurations; enabling restores the original profile and puts it back into the model picker and the subagent selection.",
 			"caps.error.routeExists": "The provider already has a newer configuration; the archive cannot be restored. Remove the current configuration first, then enable.",
 			"caps.error.partialEnable": "Enabled, but clearing the archive failed: {error}",
-			"caps.error.baseProfile": "The composition layer also declares this provider, so disabling cannot take it down; the action is not offered.",
 			"caps.error.unavailable": "Cannot toggle: the plugin archive settings entry is not served."
 		};
 		/**
@@ -41932,7 +41813,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-model-capabilities/src/client/capabilities.module.css.mjs
-		const css = ".Qzh-QG_panel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;margin:0 16px 12px;padding:0 12px}.Qzh-QG_header{appearance:none;box-sizing:border-box;width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;align-items:center;gap:8px;padding:10px 2px;display:flex}.Qzh-QG_header:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}.Qzh-QG_title{color:var(--dsw-alias-label-primary);flex:1;font-size:13px;font-weight:600}.Qzh-QG_pending{color:var(--dsw-alias-label-secondary);font-size:12px}.Qzh-QG_chevron{color:var(--dsw-alias-label-dimmed);flex-shrink:0;transition:transform .16s}.Qzh-QG_chevronOpen{transform:rotate(180deg)}.Qzh-QG_body{border-top:1px solid var(--dsw-alias-border-l1);flex-direction:column;gap:8px;padding:8px 2px 10px;display:flex}.Qzh-QG_hint{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_status{color:var(--dsw-alias-label-dimmed);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_readOnly{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.Qzh-QG_failed{color:var(--dsw-alias-status-danger,#d0342c);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_notice{color:var(--dsw-alias-state-warn-label);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_statusRow{align-items:center;gap:10px;display:flex}.Qzh-QG_rows{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.Qzh-QG_row{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);border-radius:8px}.Qzh-QG_rowHeader{appearance:none;box-sizing:border-box;width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;border-radius:8px;align-items:center;gap:8px;padding:8px 10px;display:flex}.Qzh-QG_rowHeader:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}.Qzh-QG_modelId{color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;font-size:13px;font-weight:500}.Qzh-QG_modelName{color:var(--dsw-alias-label-dimmed);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.Qzh-QG_chips{flex-wrap:wrap;gap:4px;margin-left:auto;display:flex}.Qzh-QG_chip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:0 8px;font-size:11px;line-height:18px}.Qzh-QG_rowBody{border-top:1px solid var(--dsw-alias-border-l1);flex-direction:column;gap:12px;padding:10px;display:flex}.Qzh-QG_field{flex-direction:column;gap:4px;display:flex}.Qzh-QG_fieldLabel{color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600}.Qzh-QG_checkLabel{color:var(--dsw-alias-label-primary);cursor:pointer;align-items:center;gap:6px;font-size:13px;display:flex}.Qzh-QG_checkLabel:has(input:disabled){cursor:default;opacity:.6}.Qzh-QG_modeGroup{flex-wrap:wrap;gap:4px;display:flex}.Qzh-QG_modeOption{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;align-items:center;gap:6px;padding:3px 10px;font-size:12px;display:flex}.Qzh-QG_modeOption:has(input:disabled){cursor:default;opacity:.6}.Qzh-QG_modeOptionActive{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.Qzh-QG_levels{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;flex-direction:column;gap:8px;padding:8px;display:flex}.Qzh-QG_levelChips{flex-wrap:wrap;gap:4px;display:flex}.Qzh-QG_levelChip{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);background:0 0;border-radius:999px;padding:2px 10px;font-size:12px;line-height:1.4}.Qzh-QG_levelChip:disabled{cursor:default;opacity:.6}.Qzh-QG_levelChipActive{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-brand-primary-softer,transparent)}.Qzh-QG_wireRow{align-items:center;gap:8px;display:flex}.Qzh-QG_wireLabel{min-width:130px;color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-size:12px;display:flex}.Qzh-QG_wireLabel code{color:var(--dsw-alias-label-primary);font-size:12px}.Qzh-QG_wireInput{appearance:none;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;min-width:0;padding:4px 8px;font-size:12px}.Qzh-QG_wireInput:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-1px}.Qzh-QG_wireInput::placeholder{color:var(--dsw-alias-label-dimmed)}.Qzh-QG_footer{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.Qzh-QG_spacer{flex:1}.Qzh-QG_ghost{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;padding:4px 12px;font-size:13px;line-height:1.5}.Qzh-QG_ghost:disabled{opacity:.4;cursor:default}.Qzh-QG_ghost:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_primary{appearance:none;font:inherit;cursor:pointer;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border:1px solid #0000;border-radius:8px;padding:4px 14px;font-size:13px;line-height:1.5}.Qzh-QG_primary:hover:enabled{background:var(--dsw-alias-button-primary-hover)}.Qzh-QG_primary:disabled{opacity:.4;cursor:default}.Qzh-QG_primary:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_offBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:0 8px;font-size:11px;line-height:18px}.Qzh-QG_disabledBox{border:1px dashed var(--dsw-alias-border-l2);border-radius:8px;align-items:center;gap:10px;padding:10px;display:flex}.Qzh-QG_disabledBox p{flex:1}.Qzh-QG_danger{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-status-danger,#d0342c);color:var(--dsw-alias-status-danger,#d0342c);background:0 0;border-radius:8px;padding:4px 12px;font-size:13px;line-height:1.5}.Qzh-QG_danger:disabled{opacity:.4;cursor:default}.Qzh-QG_danger:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_archive{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Qzh-QG_archiveTitle{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:600}.Qzh-QG_archiveRows{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.Qzh-QG_archiveRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:flex}";
+		const css = ".Qzh-QG_archive{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Qzh-QG_archiveTitle{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:600}.Qzh-QG_archiveRows{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.Qzh-QG_archiveRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:flex}.Qzh-QG_modelId{color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;font-size:13px;font-weight:500}.Qzh-QG_modelName{color:var(--dsw-alias-label-dimmed);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.Qzh-QG_spacer{flex:1}.Qzh-QG_ghost{appearance:none;font:inherit;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;padding:4px 12px;font-size:13px;line-height:1.5}.Qzh-QG_ghost:disabled{opacity:.4;cursor:default}.Qzh-QG_ghost:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.Qzh-QG_hint{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;line-height:1.5}.Qzh-QG_failed{color:var(--dsw-alias-status-danger,#d0342c);margin:0;font-size:12px;line-height:1.5}";
 		const tagId = "@linxin666/dsh-web-all/packages/dsh-model-capabilities/src/client/capabilities.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -41946,627 +41827,13 @@ window.__ModuleLoader__.load({
 			"archiveRow": "Qzh-QG_archiveRow",
 			"archiveRows": "Qzh-QG_archiveRows",
 			"archiveTitle": "Qzh-QG_archiveTitle",
-			"body": "Qzh-QG_body",
-			"checkLabel": "Qzh-QG_checkLabel",
-			"chevron": "Qzh-QG_chevron",
-			"chevronOpen": "Qzh-QG_chevronOpen",
-			"chip": "Qzh-QG_chip",
-			"chips": "Qzh-QG_chips",
-			"danger": "Qzh-QG_danger",
-			"disabledBox": "Qzh-QG_disabledBox",
 			"failed": "Qzh-QG_failed",
-			"field": "Qzh-QG_field",
-			"fieldLabel": "Qzh-QG_fieldLabel",
-			"footer": "Qzh-QG_footer",
 			"ghost": "Qzh-QG_ghost",
-			"header": "Qzh-QG_header",
 			"hint": "Qzh-QG_hint",
-			"levelChip": "Qzh-QG_levelChip",
-			"levelChipActive": "Qzh-QG_levelChipActive",
-			"levelChips": "Qzh-QG_levelChips",
-			"levels": "Qzh-QG_levels",
-			"modeGroup": "Qzh-QG_modeGroup",
-			"modeOption": "Qzh-QG_modeOption",
-			"modeOptionActive": "Qzh-QG_modeOptionActive",
 			"modelId": "Qzh-QG_modelId",
 			"modelName": "Qzh-QG_modelName",
-			"notice": "Qzh-QG_notice",
-			"offBadge": "Qzh-QG_offBadge",
-			"panel": "Qzh-QG_panel",
-			"pending": "Qzh-QG_pending",
-			"primary": "Qzh-QG_primary",
-			"readOnly": "Qzh-QG_readOnly",
-			"row": "Qzh-QG_row",
-			"rowBody": "Qzh-QG_rowBody",
-			"rowHeader": "Qzh-QG_rowHeader",
-			"rows": "Qzh-QG_rows",
-			"spacer": "Qzh-QG_spacer",
-			"status": "Qzh-QG_status",
-			"statusRow": "Qzh-QG_statusRow",
-			"title": "Qzh-QG_title",
-			"wireInput": "Qzh-QG_wireInput",
-			"wireLabel": "Qzh-QG_wireLabel",
-			"wireRow": "Qzh-QG_wireRow"
+			"spacer": "Qzh-QG_spacer"
 		};
-		//#endregion
-		//#region ../dsh-model-capabilities/src/client/CapabilitiesPanel.tsx
-		/**
-		* Models-page provider-card extension area: per-model capability declarations
-		* and the provider disable/enable toggle for one pi-ai provider route.
-		*
-		* The slot owner passes the card's directory row (`provider.settingsNs` /
-		* `provider.settingsPath` address the profile inside the settings document)
-		* and the apply body injects the settings namespace face plus the refresh
-		* bus; this panel reads the redacted entry views over the remote settings
-		* wire, drafts reasoning-effort declarations per model, and saves them as one
-		* whole-array path op with revision fencing — the same write granularity and
-		* conflict posture the official card uses. Model input types belong to the
-		* Models page's own editor since 0.1.6-alpha.2, so the draft preserves the
-		* `input` claim instead of rewriting it.
-		*
-		* The toggle uses this plugin's own settings entry: disabling stashes the
-		* user-layer profile and unsets `providers.<route>` (the official
-		* Remove-provider seam), which takes the provider out of the model catalog
-		* both pickers read; enabling restores it. A missing entry or a refused
-		* read renders the failure inline, never a blank.
-		* @module @linxin666/dsh-client-ui-model-capabilities/client/CapabilitiesPanel
-		*/
-		/** Extract a display text from a remote failure (the host diagnostic, or its code). */
-		function failureText(error) {
-			return typeof error.message === "string" && error.message.length > 0 ? error.message : error.code;
-		}
-		/** Deep-clone one entry through JSON so draft edits never alias stored state. */
-		function cloneEntry(entry) {
-			return JSON.parse(JSON.stringify(sanitizeEntry(entry)));
-		}
-		/**
-		* Render the capability editor for one provider card.
-		* @param props - the card's directory row, its configured facts, and the injected faces.
-		* @returns the extension area.
-		*/
-		function CapabilitiesPanel(props) {
-			const { provider, settings, refresh } = props;
-			const [phase, setPhase] = (0, react.useState)({ kind: "loading" });
-			const [snapshot, setSnapshot] = (0, react.useState)(void 0);
-			const [draft, setDraft] = (0, react.useState)(null);
-			const [expandedId, setExpandedId] = (0, react.useState)(null);
-			const [open, setOpen] = (0, react.useState)(false);
-			const [save, setSave] = (0, react.useState)({ kind: "idle" });
-			const [toggleBusy, setToggleBusy] = (0, react.useState)(void 0);
-			const [toggleFailure, setToggleFailure] = (0, react.useState)(void 0);
-			const [toggleConflict, setToggleConflict] = (0, react.useState)(false);
-			const [staleDraft, setStaleDraft] = (0, react.useState)(false);
-			/** Revision the open draft was read from (the write's fence while it is open). */
-			const draftBasis = (0, react.useRef)(void 0);
-			const settingsPath = (0, react.useMemo)(() => [...provider.settingsPath], [provider.settingsPath]);
-			/** The models array lives one level below the profile the settings path addresses. */
-			const modelsPath = (0, react.useMemo)(() => [...settingsPath, "models"], [settingsPath]);
-			const entries = draft ?? snapshot?.entries ?? [];
-			const load = (0, react.useCallback)(async (face) => {
-				setPhase({ kind: "loading" });
-				try {
-					const described = await face.describe();
-					if (!described.ok) throw new Error(failureText(described.error));
-					const namespaces = described.value.namespaces;
-					const view = namespaces.find((candidate) => candidate.ns === provider.settingsNs);
-					if (view === void 0) throw new Error(`settings entry "${provider.settingsNs}" is not served on this host`);
-					const archive = resolveArchiveEntry(namespaces);
-					const stash = readDisabledStore(archive?.view.value);
-					const userProfile = hasProfileAt(view.user, provider.provider);
-					const userModels = modelsArrayOf(readAt(view.user, modelsPath));
-					const effective = userModels ?? modelsArrayOf(readAt(view.value, modelsPath)) ?? [];
-					const basis = draftBasis.current;
-					setSnapshot({
-						entries: effective,
-						inherited: userModels === void 0,
-						revision: basis ?? view.revision,
-						writable: described.value.writable,
-						userProfile,
-						baseProfile: hasNonUserProfile(view, provider.provider),
-						disabledHere: stash[provider.provider] !== void 0 && !userProfile,
-						capsKnown: archive !== void 0
-					});
-					if (basis === void 0) setDraft(null);
-					setStaleDraft(basis !== void 0 && basis !== view.revision);
-					setPhase({ kind: "ready" });
-				} catch (error) {
-					setPhase({
-						kind: "error",
-						message: error instanceof Error ? error.message : String(error)
-					});
-				}
-			}, [
-				modelsPath,
-				provider.provider,
-				provider.settingsNs
-			]);
-			(0, react.useEffect)(() => {
-				load(settings);
-			}, [load, settings]);
-			(0, react.useEffect)(() => {
-				return refresh?.subscribe(() => {
-					load(settings);
-				});
-			}, [
-				load,
-				refresh,
-				settings
-			]);
-			const editing = phase.kind === "ready" && snapshot !== void 0;
-			const readOnly = editing && !snapshot.writable;
-			const dirty = draft !== null;
-			const disabledHere = editing && snapshot.disabledHere;
-			const toggleUnavailable = !editing || !snapshot.capsKnown || readOnly || toggleBusy !== void 0;
-			const updateEntry = (index, next) => {
-				if (!editing || readOnly) return;
-				if (draft === null) draftBasis.current = snapshot.revision;
-				setDraft((current) => {
-					const clone = (current ?? snapshot.entries.map(cloneEntry)).map((entry) => ({ ...entry }));
-					clone[index] = next;
-					return clone;
-				});
-				setSave({ kind: "idle" });
-			};
-			const discard = () => {
-				draftBasis.current = void 0;
-				setStaleDraft(false);
-				setDraft(null);
-				setSave({ kind: "idle" });
-			};
-			const firstIssue = (0, react.useMemo)(() => {
-				for (const entry of draft ?? []) {
-					const issue = validateEntry(entry);
-					if (issue !== void 0) return issue;
-				}
-			}, [draft]);
-			const doSave = async () => {
-				if (!editing || readOnly || draft === null || snapshot === void 0) return;
-				if (firstIssue !== void 0) return;
-				const op = buildModelsOp(settingsPath, draft);
-				setSave({ kind: "saving" });
-				try {
-					const written = await settings.mutate(provider.settingsNs, [op], snapshot.revision);
-					if (written.ok) {
-						const userModels = modelsArrayOf(readAt(written.value.user, modelsPath)) ?? [];
-						setSnapshot((current) => current === void 0 ? current : {
-							...current,
-							entries: userModels,
-							inherited: false,
-							revision: written.value.revision,
-							userProfile: true
-						});
-						draftBasis.current = void 0;
-						setStaleDraft(false);
-						setDraft(null);
-						setSave({ kind: "saved" });
-						return;
-					}
-					if (written.error.code === "settings/conflict") {
-						draftBasis.current = void 0;
-						setStaleDraft(false);
-						setSave({ kind: "conflict" });
-						await load(settings);
-						return;
-					}
-					setSave({
-						kind: "failed",
-						message: failureText(written.error)
-					});
-				} catch (error) {
-					setSave({
-						kind: "failed",
-						message: error instanceof Error ? error.message : String(error)
-					});
-				}
-			};
-			const applyToggleOutcome = async (outcome) => {
-				if (outcome.kind === "ok") {
-					setToggleFailure(void 0);
-					setToggleConflict(false);
-					refresh?.notify();
-					await load(settings);
-					return;
-				}
-				if (outcome.kind === "conflict") {
-					setToggleFailure(void 0);
-					setToggleConflict(true);
-					await load(settings);
-					return;
-				}
-				if (outcome.kind === "route-exists") setToggleFailure(t$1("caps.error.routeExists"));
-				else if (outcome.kind === "base-profile") setToggleFailure(t$1("caps.error.baseProfile"));
-				else if (outcome.kind === "unavailable") setToggleFailure(t$1("caps.error.unavailable"));
-				else if (outcome.kind === "partial") setToggleFailure(t$1("caps.error.partialEnable", { error: outcome.message }));
-				else setToggleFailure(t$1("caps.failed", { error: outcome.kind }));
-				await load(settings);
-			};
-			const doDisable = async () => {
-				if (toggleUnavailable || snapshot === void 0 || !snapshot.userProfile || snapshot.baseProfile) return;
-				setToggleBusy("disabling");
-				setToggleFailure(void 0);
-				setToggleConflict(false);
-				try {
-					await applyToggleOutcome(await disableProvider(settings, provider.settingsNs, provider.provider, provider.displayName));
-				} finally {
-					setToggleBusy(void 0);
-				}
-			};
-			const doEnable = async () => {
-				if (toggleUnavailable) return;
-				setToggleBusy("enabling");
-				setToggleFailure(void 0);
-				setToggleConflict(false);
-				try {
-					await applyToggleOutcome(await enableProvider(settings, provider.settingsNs, provider.provider));
-				} finally {
-					setToggleBusy(void 0);
-				}
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-				className: capabilities_module_css_default.panel,
-				"data-dsh-plugin": "model-capabilities",
-				"data-dsh-part": "panel",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-					type: "button",
-					className: capabilities_module_css_default.header,
-					"aria-expanded": open,
-					"data-dsh-part": "toggle",
-					onClick: () => {
-						setOpen(!open);
-					},
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: capabilities_module_css_default.title,
-							children: t$1("caps.title")
-						}),
-						disabledHere ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: capabilities_module_css_default.offBadge,
-							children: t$1("caps.state.badge")
-						}) : null,
-						dirty ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: capabilities_module_css_default.pending,
-							children: t$1("caps.dirty")
-						}) : null,
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-							width: "12",
-							height: "12",
-							viewBox: "0 0 14 14",
-							fill: "none",
-							"aria-hidden": "true",
-							className: open ? `${capabilities_module_css_default.chevron} ${capabilities_module_css_default.chevronOpen}` : capabilities_module_css_default.chevron,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
-								d: "M2.5 5l4.5 4.5L11.5 5",
-								stroke: "currentColor",
-								strokeWidth: "1.5",
-								fill: "none"
-							})
-						})
-					]
-				}), open ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: capabilities_module_css_default.body,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: capabilities_module_css_default.hint,
-							children: t$1("caps.hint")
-						}),
-						phase.kind === "loading" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: capabilities_module_css_default.status,
-							role: "status",
-							children: t$1("caps.loading")
-						}) : null,
-						phase.kind === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: capabilities_module_css_default.statusRow,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: capabilities_module_css_default.failed,
-								role: "alert",
-								children: t$1("caps.loadFailed", { error: phase.message })
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-								type: "button",
-								className: capabilities_module_css_default.ghost,
-								"data-dsh-part": "reload",
-								onClick: () => {
-									load(settings);
-								},
-								children: t$1("caps.reload")
-							})]
-						}) : null,
-						phase.kind === "ready" && snapshot !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [disabledHere ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: capabilities_module_css_default.disabledBox,
-							"data-dsh-part": "disabled-state",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: capabilities_module_css_default.status,
-								role: "status",
-								children: t$1("caps.state.disabled")
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-								type: "button",
-								className: capabilities_module_css_default.ghost,
-								"data-dsh-part": "enable",
-								disabled: toggleUnavailable,
-								onClick: () => {
-									doEnable();
-								},
-								children: toggleBusy === "enabling" ? t$1("caps.busy.enabling") : t$1("caps.action.enable")
-							})]
-						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [readOnly ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: capabilities_module_css_default.readOnly,
-							role: "status",
-							children: t$1("caps.readOnly")
-						}) : null, snapshot.entries.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: capabilities_module_css_default.status,
-							role: "status",
-							children: t$1("caps.empty")
-						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-							className: capabilities_module_css_default.rows,
-							children: entries.map((entry, index) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelRow, {
-								entry,
-								expanded: expandedId === entry.id,
-								disabled: readOnly,
-								onToggle: () => {
-									setExpandedId(expandedId === entry.id ? null : entry.id);
-								},
-								onChange: (next) => {
-									updateEntry(index, next);
-								}
-							}, typeof entry.id === "string" ? entry.id : index))
-						})] }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: capabilities_module_css_default.footer,
-							children: [
-								staleDraft ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.notice,
-									role: "status",
-									children: t$1("caps.staleDraft")
-								}) : null,
-								save.kind === "saved" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.status,
-									role: "status",
-									children: t$1("caps.saved")
-								}) : null,
-								save.kind === "conflict" || toggleConflict ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: t$1("caps.conflict")
-								}) : null,
-								save.kind === "failed" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: t$1("caps.failed", { error: save.message })
-								}) : null,
-								toggleFailure !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: toggleFailure
-								}) : null,
-								firstIssue?.kind === "effortsWireMissing" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: t$1("caps.invalid.wire", { level: firstIssue.level })
-								}) : null,
-								firstIssue?.kind === "effortsOffOnly" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: capabilities_module_css_default.failed,
-									role: "alert",
-									children: t$1("caps.invalid.offOnly")
-								}) : null,
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: capabilities_module_css_default.spacer }),
-								!disabledHere && snapshot.userProfile && !snapshot.baseProfile && snapshot.capsKnown ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: capabilities_module_css_default.danger,
-									"data-dsh-part": "disable",
-									title: t$1("caps.disable.hint"),
-									disabled: toggleUnavailable || dirty,
-									onClick: () => {
-										doDisable();
-									},
-									children: toggleBusy === "disabling" ? t$1("caps.busy.disabling") : t$1("caps.action.disable")
-								}) : null,
-								!disabledHere ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: capabilities_module_css_default.ghost,
-									"data-dsh-part": "reset",
-									disabled: !dirty || save.kind === "saving",
-									onClick: discard,
-									children: t$1("caps.discard")
-								}) : null,
-								!disabledHere ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: capabilities_module_css_default.primary,
-									"data-dsh-part": "save",
-									disabled: !dirty || readOnly || save.kind === "saving" || firstIssue !== void 0,
-									onClick: () => {
-										doSave();
-									},
-									children: save.kind === "saving" ? t$1("caps.saving") : t$1("caps.save")
-								}) : null
-							]
-						})] }) : null
-					]
-				}) : null]
-			});
-		}
-		/**
-		* One model row: a collapsed summary header (reasoning levels) and the
-		* expanded tri-state editor with per-level wire spellings.
-		*/
-		function ModelRow(props) {
-			const { entry, expanded, disabled, onToggle, onChange } = props;
-			const radioName = (0, react.useId)();
-			const mode = effortsModeOf(entry);
-			const levels = declaredLevelsOf(entry);
-			/** Stored wire map (editors toggle against it). */
-			const storedLevels = () => new Map(levels.map(({ level, wire }) => [level, wire]));
-			const setEffortsMode = (next) => {
-				if (next === "levels") {
-					const stored = storedLevels();
-					if (stored.size === 0) for (const [level, wire] of COMMON_EFFORTS_PRESET) stored.set(level, wire);
-					onChange(withEffortsMode(entry, "levels", stored));
-					return;
-				}
-				onChange(withEffortsMode(entry, next));
-			};
-			const toggleLevel = (level) => {
-				const stored = storedLevels();
-				if (stored.has(level)) stored.delete(level);
-				else stored.set(level, level === "off" ? "" : level);
-				onChange(withEffortsMode(entry, "levels", stored));
-			};
-			const setWire = (level, wire) => {
-				const stored = storedLevels();
-				stored.set(level, wire);
-				onChange(withEffortsMode(entry, "levels", stored));
-			};
-			const applyCommonPreset = () => {
-				onChange(withEffortsMode(entry, "levels", new Map(COMMON_EFFORTS_PRESET.map(([level, wire]) => [level, wire]))));
-			};
-			const summaryChips = [];
-			if (mode === "none") summaryChips.push(t$1("caps.summary.noReasoning"));
-			else if (mode === "levels") {
-				const named = levels.filter(({ level }) => level !== "off").map(({ level }) => level);
-				if (named.length > 0) summaryChips.push(t$1("caps.summary.efforts", { levels: named.join("/") }));
-			}
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-				className: capabilities_module_css_default.row,
-				"data-dsh-part": "model-row",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-					type: "button",
-					className: capabilities_module_css_default.rowHeader,
-					"aria-expanded": expanded,
-					"aria-label": `${t$1(expanded ? "caps.model.collapse" : "caps.model.expand")}: ${entry.id}`,
-					"data-dsh-part": "model-toggle",
-					onClick: onToggle,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: capabilities_module_css_default.modelId,
-							children: entry.id
-						}),
-						typeof entry.name === "string" && entry.name.length > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: capabilities_module_css_default.modelName,
-							children: entry.name
-						}) : null,
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: capabilities_module_css_default.chips,
-							children: summaryChips.map((chip) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: capabilities_module_css_default.chip,
-								children: chip
-							}, chip))
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-							width: "12",
-							height: "12",
-							viewBox: "0 0 14 14",
-							fill: "none",
-							"aria-hidden": "true",
-							className: expanded ? `${capabilities_module_css_default.chevron} ${capabilities_module_css_default.chevronOpen}` : capabilities_module_css_default.chevron,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
-								d: "M2.5 5l4.5 4.5L11.5 5",
-								stroke: "currentColor",
-								strokeWidth: "1.5",
-								fill: "none"
-							})
-						})
-					]
-				}), expanded ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: capabilities_module_css_default.rowBody,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: capabilities_module_css_default.field,
-						"data-dsh-part": "efforts-mode",
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: capabilities_module_css_default.fieldLabel,
-								children: t$1("caps.model.efforts")
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								className: capabilities_module_css_default.modeGroup,
-								role: "radiogroup",
-								"aria-label": t$1("caps.model.efforts"),
-								children: [
-									[
-										"inherit",
-										t$1("caps.efforts.inherit"),
-										t$1("caps.efforts.inheritHint")
-									],
-									[
-										"none",
-										t$1("caps.efforts.none"),
-										t$1("caps.efforts.noneHint")
-									],
-									[
-										"levels",
-										t$1("caps.efforts.levels"),
-										t$1("caps.efforts.levelsHint")
-									]
-								].map(([value, label, hint]) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-									className: mode === value ? `${capabilities_module_css_default.modeOption} ${capabilities_module_css_default.modeOptionActive}` : capabilities_module_css_default.modeOption,
-									title: hint,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-										type: "radio",
-										name: `${radioName}-efforts`,
-										value,
-										checked: mode === value,
-										disabled,
-										onChange: () => {
-											setEffortsMode(value);
-										}
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label })]
-								}, value))
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: capabilities_module_css_default.hint,
-								children: mode === "inherit" ? t$1("caps.efforts.inheritHint") : mode === "none" ? t$1("caps.efforts.noneHint") : t$1("caps.efforts.levelsHint")
-							})
-						]
-					}), mode === "levels" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: capabilities_module_css_default.levels,
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-								type: "button",
-								className: capabilities_module_css_default.ghost,
-								disabled,
-								onClick: applyCommonPreset,
-								children: t$1("caps.preset.common")
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								className: capabilities_module_css_default.levelChips,
-								children: THINKING_LEVELS.map((level) => {
-									const active = levels.some(({ level: declared }) => declared === level);
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-										type: "button",
-										className: active ? `${capabilities_module_css_default.levelChip} ${capabilities_module_css_default.levelChipActive}` : capabilities_module_css_default.levelChip,
-										"aria-pressed": active,
-										disabled,
-										onClick: () => {
-											toggleLevel(level);
-										},
-										children: level
-									}, level);
-								})
-							}),
-							levels.map(({ level, wire }) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: capabilities_module_css_default.wireRow,
-								"data-dsh-part": "wire-input",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-									className: capabilities_module_css_default.wireLabel,
-									htmlFor: `${radioName}-wire-${level}`,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", { children: level }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t$1("caps.wire.label") })]
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-									id: `${radioName}-wire-${level}`,
-									className: capabilities_module_css_default.wireInput,
-									type: "text",
-									value: wire,
-									placeholder: level,
-									disabled,
-									onChange: (event) => {
-										setWire(level, event.target.value);
-									}
-								})]
-							}, level)),
-							levels.some(({ level }) => level === "off") ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: capabilities_module_css_default.hint,
-								children: t$1("caps.wire.offHint")
-							}) : null
-						]
-					}) : null]
-				}) : null]
-			});
-		}
 		//#endregion
 		//#region ../dsh-model-capabilities/src/client/DisabledProvidersFooter.tsx
 		/**
@@ -42751,7 +42018,7 @@ window.__ModuleLoader__.load({
 		];
 		/**
 		* Client plugin body: register dictionaries, wire the refresh bus, and seat
-		* both Models-page extension areas for the pi-ai family.
+		* the Models-page footer extension area for the pi-ai family.
 		* @param ctx - client root context.
 		*/
 		function apply$2(ctx) {
@@ -42787,23 +42054,6 @@ window.__ModuleLoader__.load({
 					return () => {};
 				}
 			}, "dsh-model-capabilities: document events");
-			ctx.slots.inject("settings.models.provider-card", () => {
-				try {
-					const unregister = ctx.slots.register({
-						name: "settings.models.provider-card",
-						key: "llm-pi-ai",
-						inject: () => ({
-							settings,
-							refresh
-						})
-					}, CapabilitiesPanel);
-					return () => {
-						unregister();
-					};
-				} catch {
-					return () => {};
-				}
-			});
 			ctx.slots.inject("settings.models.footer", () => {
 				try {
 					const unregister = ctx.slots.register({
