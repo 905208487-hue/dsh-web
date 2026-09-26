@@ -12865,481 +12865,16 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region ../dsh-remote-web-ui/src/client/update-api.ts
-		/**
-		* Error thrown when the update status probe fails: carries the HTTP status
-		* so the panel can tell "the update route is not mounted" (404 — the host
-		* process runs an older plugin build) apart from real network failures.
-		*/
-		var UpdateStatusError = class extends Error {
-			/** HTTP status of the failed response (0 when the fetch never returned). */
-			status;
-			constructor(status) {
-				super("update status unavailable (HTTP " + String(status) + ")");
-				this.status = status;
-			}
-		};
-		/**
-		* Probe the update status: install mode, owning profile, and the
-		* current-vs-latest comparison for every family package.
-		* @returns the status snapshot.
-		*/
-		async function fetchUpdateStatus() {
-			let response;
-			try {
-				response = await fetch("api/update/status");
-			} catch {
-				throw new UpdateStatusError(0);
-			}
-			if (!response.ok) throw new UpdateStatusError(response.status);
-			return await response.json();
-		}
-		/**
-		* Run the update (pnpm update in the owning profile). Blocks until pnpm
-		* exits — the panel shows an in-flight state meanwhile.
-		* @returns the run outcome.
-		*/
-		async function runUpdate() {
-			const response = await fetch("api/update/run", { method: "POST" });
-			if (!response.ok) throw new Error("update run unavailable");
-			return await response.json();
-		}
-		//#endregion
-		//#region ../dsh-remote-web-ui/src/client/UpdatePanel.tsx
-		/** The anchor package name (aggregate first) for copy purposes. */
-		function anchorName(status) {
-			return status?.anchor ?? status?.packages[0]?.name;
-		}
-		/** The latest npm release of the anchor, for reference copy. */
-		function anchorLatest(status) {
-			return status?.packages[0]?.latest;
-		}
-		/**
-		* Render the update panel.
-		* @param props - copy, view state, and actions.
-		* @returns the panel element tree.
-		*/
-		function UpdatePanel({ t, view, onClose, onRecheck, onStartUpdate }) {
-			const status = view.kind === "result" || view.kind === "updating" ? view.status : void 0;
-			const title = view.kind === "done" && view.result.ok ? t("update.done") : t("update.title");
-			const subtitle = subtitleOf(t, view);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: remote_module_css_default.panel,
-				role: "dialog",
-				"aria-modal": "true",
-				"aria-label": title,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: remote_module_css_default.header,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: remote_module_css_default.heading,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-								className: remote_module_css_default.title,
-								children: title
-							}), subtitle !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: remote_module_css_default.subtitle,
-								children: subtitle
-							})]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-							type: "button",
-							className: remote_module_css_default.close,
-							"aria-label": t("update.close"),
-							onClick: onClose,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
-						})]
-					}),
-					view.kind === "checking" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: remote_module_css_default.updateStatus,
-						children: t("update.checking")
-					}),
-					view.kind === "result" && status !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ResultBody, {
-						t,
-						status
-					}),
-					view.kind === "result" && status !== void 0 && status.mode === "npm" && status.outdated && status.error === void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: remote_module_css_default.updateActions,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-							type: "button",
-							className: remote_module_css_default.updateRetry,
-							onClick: () => onStartUpdate(status),
-							children: t("update.start")
-						})
-					}),
-					view.kind === "updating" && status !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: remote_module_css_default.updateStatus,
-							children: t("update.updating", {
-								name: anchorName(status) ?? "",
-								version: anchorLatest(status) ?? ""
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: remote_module_css_default.updateDetail,
-							children: t("update.cooldownNotice")
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PackageSummary, {
-							t,
-							status
-						})
-					] }),
-					view.kind === "done" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DoneBody, {
-						t,
-						result: view.result
-					}),
-					view.kind === "error" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: remote_module_css_default.updateError,
-						children: view.message
-					}), view.detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
-						className: remote_module_css_default.updateOutput,
-						children: view.detail
-					})] }),
-					(view.kind === "done" || view.kind === "error") && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: remote_module_css_default.updateActions,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-							type: "button",
-							className: remote_module_css_default.updateRetry,
-							onClick: onRecheck,
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutlineRegular, {}),
-								" ",
-								t("update.retry")
-							]
-						})
-					})
-				]
-			});
-		}
-		/** The subtitle copy per view state (absent on plain results). */
-		function subtitleOf(t, view) {
-			switch (view.kind) {
-				case "checking": return t("update.checking");
-				case "updating": return t("update.updatingTitle");
-				case "result": return;
-				case "done": return view.result.ok ? t("update.doneDetail") : t("update.error");
-				case "error": return;
-			}
-		}
-		/** The checked result body: mode banner + version list. */
-		function ResultBody({ t, status }) {
-			const anchor = anchorName(status);
-			const latest = anchorLatest(status);
-			if (status.mode === "link") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateStatus,
-				children: t("update.linkMode")
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateDetail,
-				children: t("update.linkModeDetail", { version: latest ?? "-" })
-			})] });
-			if (status.mode === "missing") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateStatus,
-				children: t("update.missing")
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateDetail,
-				children: t("update.missingDetail")
-			})] });
-			if (status.error === "registry-unreachable") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateStatus,
-				children: t("update.offline")
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateDetail,
-				children: t("update.offlineDetail")
-			})] });
-			if (status.outdated) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: remote_module_css_default.updateStatus,
-					children: t("update.found")
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: remote_module_css_default.updateDetail,
-					children: anchor !== void 0 ? t("update.foundDetail", {
-						name: anchor,
-						version: latest ?? ""
-					}) : ""
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: remote_module_css_default.updateDetail,
-					children: t("update.cooldownNotice")
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PackageSummary, {
-					t,
-					status
-				})
-			] });
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: remote_module_css_default.updateStatus,
-					children: t("update.upToDate")
-				}),
-				anchor !== void 0 && latest !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: remote_module_css_default.updateDetail,
-					children: t("update.upToDateDetail", {
-						name: anchor,
-						version: latest
-					})
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PackageSummary, {
-					t,
-					status
-				})
-			] });
-		}
-		/** Release-note summary when available; otherwise fall back to the package list. */
-		function PackageSummary({ t, status }) {
-			if (status.notes === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PackageList, { status });
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ReleaseNotes, {
-				t,
-				notes: status.notes
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
-				className: remote_module_css_default.updateVersions,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", {
-					className: remote_module_css_default.updateVersionsSummary,
-					children: t("update.componentVersions")
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PackageList, { status })]
-			})] });
-		}
-		/** Render GitHub Release sections as a compact three-group list. */
-		function ReleaseNotes({ t, notes }) {
-			const sections = [
-				{
-					key: "features",
-					title: t("update.releaseFeatures"),
-					items: notes.features
-				},
-				{
-					key: "fixes",
-					title: t("update.releaseFixes"),
-					items: notes.fixes
-				},
-				{
-					key: "other",
-					title: t("update.releaseOther"),
-					items: notes.other
-				}
-			].filter((section) => section.items.length > 0);
-			if (sections.length === 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateDetail,
-				children: t("update.releaseUnavailable")
-			});
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: remote_module_css_default.updateNotes,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-					className: remote_module_css_default.updateNotesTitle,
-					children: t("update.releaseNotes", { version: notes.version })
-				}), sections.map((section) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-					className: remote_module_css_default.updateNoteSection,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
-						className: remote_module_css_default.updateNoteHeading,
-						children: section.title
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-						className: remote_module_css_default.updateNoteList,
-						children: section.items.map((item, index) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
-							className: remote_module_css_default.updateNoteItem,
-							children: item
-						}, index))
-					})]
-				}, section.key))]
-			});
-		}
-		/** The per-package current → latest comparison list. */
-		function PackageList({ status }) {
-			if (status.packages.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-				className: remote_module_css_default.updateList,
-				children: status.packages.map((packageStatus) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-					className: remote_module_css_default.updateListItem,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: remote_module_css_default.updateListName,
-						children: packageStatus.name
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: remote_module_css_default.updateListVersions,
-						children: [packageStatus.current, packageStatus.latest !== void 0 && packageStatus.latest !== packageStatus.current && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [" → ", packageStatus.latest] })]
-					})]
-				}, packageStatus.name))
-			});
-		}
-		/** The outcome body: success + restart hint, or the translated failure. */
-		function DoneBody({ t, result }) {
-			if (result.ok) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateDetail,
-				children: t("update.doneDetail")
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateDetail,
-				children: t("update.restartHint")
-			})] });
-			const message = errorMessageOf(t, result);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: remote_module_css_default.updateError,
-				children: message
-			}), result.output.trim() !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
-				className: remote_module_css_default.updateOutput,
-				children: result.output.trim()
-			})] });
-		}
-		/** Translate a structured failure code; fall back to the raw message. */
-		function errorMessageOf(t, result) {
-			switch (result.errorCode) {
-				case "pnpm-missing": return t("update.error.pnpmMissing");
-				case "timeout": return t("update.error.timeout");
-				case "not-found": return t("update.error.notFound");
-				case "link": return t("update.error.link");
-				case "pnpm-failed": return t("update.error.pnpmFailed", { code: String(result.exitCode ?? "?") });
-				case "stale": return t("update.error.stale");
-				case "verify-failed": return t("update.error.verifyFailed");
-				default: return result.error ?? t("update.error.unknown");
-			}
-		}
-		//#endregion
-		//#region ../dsh-remote-web-ui/src/client/UpdateEntry.tsx
-		/**
-		* The sidebar update seat: the download trigger beside the remote-control
-		* trigger plus the update panel modal. Owns the flow — probe the registry
-		* on open, show the result, and let the user start the update from the
-		* result view (#507), then report the outcome (restart hint on success,
-		* translated failure on error).
-		* Component-local state per the client stack rules.
-		*/
-		/**
-		* Render the update trigger and panel.
-		* @param props - column state and locale seat.
-		* @returns the entry element tree.
-		*/
-		function UpdateEntry({ wide, t }) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const [view, setView] = (0, react.useState)({ kind: "checking" });
-			const [updateAvailable, setUpdateAvailable] = (0, react.useState)(false);
-			const runToken = (0, react.useRef)(0);
-			const availabilityToken = (0, react.useRef)(0);
-			const mounted = (0, react.useRef)(false);
-			const probeAvailability = (0, react.useCallback)(async () => {
-				const token = ++availabilityToken.current;
-				try {
-					const status = await fetchUpdateStatus();
-					if (token === availabilityToken.current) setUpdateAvailable(status.mode === "npm" && status.outdated);
-				} catch {
-					if (token === availabilityToken.current) setUpdateAvailable(false);
-				}
-			}, []);
-			const check = (0, react.useCallback)(async () => {
-				const availabilityCheck = ++availabilityToken.current;
-				setView({ kind: "checking" });
-				let status;
-				try {
-					status = await fetchUpdateStatus();
-				} catch (error) {
-					if (availabilityCheck === availabilityToken.current) setUpdateAvailable(false);
-					if (error instanceof UpdateStatusError && error.status === 404) {
-						setView({
-							kind: "error",
-							message: t("update.unmounted"),
-							detail: t("update.unmountedDetail")
-						});
-						return;
-					}
-					setView({
-						kind: "error",
-						message: t("update.offline"),
-						detail: t("update.offlineDetail")
-					});
-					return;
-				}
-				if (availabilityCheck === availabilityToken.current) setUpdateAvailable(status.mode === "npm" && status.outdated);
-				if (status.error === "registry-unreachable") {
-					setView({
-						kind: "result",
-						status
-					});
-					return;
-				}
-				setView({
-					kind: "result",
-					status
-				});
-			}, [t]);
-			const startUpdate = (0, react.useCallback)(async (status) => {
-				if (status.mode !== "npm" || !status.outdated) return;
-				setView({
-					kind: "updating",
-					status
-				});
-				const token = ++runToken.current;
-				try {
-					const result = await runUpdate();
-					if (result.ok && mounted.current) setUpdateAvailable(false);
-					if (token !== runToken.current) return;
-					setView({
-						kind: "done",
-						result
-					});
-				} catch {
-					if (token !== runToken.current) return;
-					setView({
-						kind: "error",
-						message: t("update.error"),
-						detail: t("update.offlineDetail")
-					});
-				}
-			}, [t]);
-			const openPanel = (0, react.useCallback)(() => {
-				setOpen(true);
-				check();
-			}, [check]);
-			const closePanel = (0, react.useCallback)(() => {
-				runToken.current++;
-				setOpen(false);
-			}, []);
-			(0, react.useEffect)(() => {
-				mounted.current = true;
-				probeAvailability();
-				return () => {
-					mounted.current = false;
-					runToken.current++;
-					availabilityToken.current++;
-				};
-			}, [probeAvailability]);
-			const updateLabel = updateAvailable ? t("update.availableLabel") : t("update.label");
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-				type: "button",
-				className: remote_module_css_default.trigger,
-				"data-wide": wide ? updateAvailable ? "wide" : void 0 : "rail",
-				"data-update-available": updateAvailable ? "true" : void 0,
-				"aria-label": updateLabel,
-				"aria-expanded": open,
-				title: updateLabel,
-				onClick: openPanel,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconDownloadOutlineRegular, { size: wide ? 16 : 18 }), updateAvailable && wide && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: remote_module_css_default.updateBadgeText,
-					children: t("update.badge")
-				})]
-			}), open && (0, react_dom.createPortal)(/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: remote_module_css_default.overlay,
-				role: "presentation",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-					className: remote_module_css_default.mask,
-					"aria-hidden": "true",
-					onClick: closePanel
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UpdatePanel, {
-					t,
-					view,
-					onClose: closePanel,
-					onRecheck: () => {
-						check();
-					},
-					onStartUpdate: (status) => {
-						startUpdate(status);
-					}
-				})]
-			}), document.body)] });
-		}
-		//#endregion
 		//#region ../dsh-remote-web-ui/src/client/RemoteEntry.tsx
 		/**
-		* The sidebar remote-control seat: the update trigger plus the phone-icon
-		* trigger beside the settings button, and the pairing panel modal. Owns the
-		* panel behavior — token minting on open, the status SSE subscription,
-		* stop/refresh/copy — and renders the pure {@link RemotePanel} body. The
-		* update seat (the dsh-web self-update flow) rides the same footer row,
-		* rendered by {@link UpdateEntry}. Component-local state per the client
-		* stack rules: nothing here survives remounts or crosses entries.
+		* The sidebar remote-control seat: the phone-icon trigger beside the
+		* settings button, and the pairing panel modal. Owns the panel behavior —
+		* token minting on open, the status SSE subscription, stop/refresh/copy —
+		* and renders the pure {@link RemotePanel} body. The self-update trigger
+		* that used to ride the same footer row was removed from the seat on
+		* 2026-09-26 (its flow stays in {@link UpdateEntry}). Component-local
+		* state per the client stack rules: nothing here survives remounts or
+		* crosses entries.
 		*/
 		/**
 		* Apply one status frame onto the current state: the ready state mirrors
@@ -13507,18 +13042,15 @@ window.__ModuleLoader__.load({
 					}, 1500);
 				});
 			}, []);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: remote_module_css_default.entryRow,
 				"data-rail": wide ? void 0 : "rail",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(UpdateEntry, {
-					wide,
-					t
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TooltipAnchor, {
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TooltipAnchor, {
 					wide,
 					label: t("entry.label"),
 					onClick: openPanel,
 					expanded: open
-				})]
+				})
 			}), open && (0, react_dom.createPortal)(/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: remote_module_css_default.overlay,
 				role: "presentation",
@@ -37059,6 +36591,7 @@ window.__ModuleLoader__.load({
 		/** Chinese copy. */
 		const zh$3 = {
 			"usage.title": "使用统计",
+			"usage.entry": "使用情况",
 			"usage.tab.usage": "用量",
 			"usage.tab.plans": "个人套餐",
 			"usage.tab.bank": "Token 银行",
@@ -37117,6 +36650,7 @@ window.__ModuleLoader__.load({
 		/** English mirror; every zh key present. */
 		const en$3 = {
 			"usage.title": "Usage Statistics",
+			"usage.entry": "Usage",
 			"usage.tab.usage": "Usage",
 			"usage.tab.plans": "Plans",
 			"usage.tab.bank": "Token Bank",
@@ -37188,7 +36722,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-usage/src/client/usage.module.css.mjs
-		const css$2 = ".cvtkAW_section{color:inherit;flex-direction:column;gap:14px;display:flex}.cvtkAW_header{justify-content:space-between;align-items:center;gap:12px;padding:2px 2px 0;display:flex}.cvtkAW_headerMeta{flex:none;align-items:center;gap:8px;display:inline-flex}.cvtkAW_currentProvider{text-overflow:ellipsis;white-space:nowrap;opacity:.82;min-width:0;font-size:13px;font-weight:600;overflow:hidden}.cvtkAW_refreshBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.85;background:0 0;border:1px solid;border-radius:8px;padding:4px 12px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_refreshBtn:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_refreshBtn:disabled{cursor:default;opacity:.5}.cvtkAW_refreshBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_card{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:linear-gradient(180deg, color-mix(in srgb, currentColor 4%, transparent), transparent 80%), color-mix(in srgb, currentColor 2%, transparent);box-shadow:0 1px 0 color-mix(in srgb, currentColor 5%, transparent);border-radius:16px;flex-direction:column;gap:10px;padding:14px;display:flex}.cvtkAW_todayCard{gap:12px}.cvtkAW_cardHead{justify-content:space-between;align-items:center;gap:10px;display:flex}.cvtkAW_cardTitle{letter-spacing:.08em;text-transform:uppercase;opacity:.56;font-size:11px;font-weight:700}.cvtkAW_peakStatus{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 5%, transparent);opacity:.72;white-space:nowrap;border-radius:999px;padding:3px 8px;font-size:11px;line-height:1.2}.cvtkAW_statRow{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;display:grid}.cvtkAW_stat{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 4%, transparent);border-radius:12px;flex-direction:column;gap:3px;min-width:0;padding:10px 11px;display:flex}.cvtkAW_stat:first-child{background:radial-gradient(circle at 18% 0%, color-mix(in srgb, currentColor 11%, transparent), transparent 42%), color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_statValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:0;font-size:19px;font-weight:700;line-height:1.15;overflow:hidden}.cvtkAW_statLabel{opacity:.58;font-size:11px;line-height:1.2}@media (width>=680px){.cvtkAW_stat:first-child{grid-column:span 2}}.cvtkAW_providerList{flex-direction:column;gap:6px;display:flex}.cvtkAW_providerRow{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:11px;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:8px 10px;font-size:13px;display:flex}.cvtkAW_costRow{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_providerName{text-overflow:ellipsis;white-space:nowrap;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}.cvtkAW_providerTokens{text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums;opacity:.72;white-space:nowrap;flex:none;max-width:58%;overflow:hidden}.cvtkAW_providerBalance{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}.cvtkAW_currentBadge{border:1px solid color-mix(in srgb, currentColor 20%, transparent);background:color-mix(in srgb, currentColor 8%, transparent);opacity:.82;border-radius:999px;flex:none;padding:1px 7px;font-size:10px;font-weight:700}.cvtkAW_chart{flex-direction:column;gap:8px;display:flex}.cvtkAW_chartProvider{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:13px;flex-direction:column;gap:6px;padding:10px 11px;display:flex}.cvtkAW_chartProviderCurrent{border-color:color-mix(in srgb, currentColor 18%, transparent);background:linear-gradient(90deg, color-mix(in srgb, currentColor 6%, transparent), transparent 70%), color-mix(in srgb, currentColor 3%, transparent)}.cvtkAW_chartHead{justify-content:space-between;align-items:center;gap:10px;font-size:13px;display:flex}.cvtkAW_chartTokens{font-variant-numeric:tabular-nums;opacity:.64;white-space:nowrap;flex:none;font-size:11px}.cvtkAW_chartBar{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:9px;display:block;overflow:hidden}.cvtkAW_chartFill{background:linear-gradient(90deg, color-mix(in srgb, currentColor 62%, transparent), color-mix(in srgb, currentColor 34%, transparent));border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartModel{opacity:.76;grid-template-columns:minmax(96px,34%) 1fr 52px;align-items:center;gap:8px;padding-left:10px;font-size:11px;display:grid}.cvtkAW_chartModelName{text-overflow:ellipsis;white-space:nowrap;opacity:.82;overflow:hidden}.cvtkAW_chartModelBar{background:color-mix(in srgb, currentColor 5%, transparent);border-radius:999px;height:4px;display:block;overflow:hidden}.cvtkAW_chartModelFill{background:color-mix(in srgb, currentColor 30%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartMore{background:color-mix(in srgb, currentColor 6%, transparent);opacity:.58;border-radius:999px;align-self:flex-start;margin-left:10px;padding:2px 7px;font-size:10px;line-height:1.2}.cvtkAW_trendAxis{opacity:.5;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:10px;display:flex}.cvtkAW_muted{opacity:.6;font-size:12px}.cvtkAW_errorLine{opacity:.75;font-size:12px}.cvtkAW_settingsGrid{flex-wrap:wrap;align-items:center;gap:16px;display:flex}.cvtkAW_settingItem{align-items:center;gap:8px;font-size:13px;display:flex}.cvtkAW_settingItem input[type=checkbox]{accent-color:currentColor}.cvtkAW_settingItem input[type=number]{border:1px solid color-mix(in srgb, currentColor 25%, transparent);width:90px;color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem select{border:1px solid color-mix(in srgb, currentColor 25%, transparent);color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem input:focus-visible,.cvtkAW_settingItem select:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_usageDashboard{flex-direction:column;gap:14px;display:flex;container:cvtkAW_usageDash/inline-size}.cvtkAW_kpiStrip{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;display:grid}.cvtkAW_kpiCard{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:64px;padding:10px 8px;display:flex}.cvtkAW_kpiValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;max-width:100%;font-size:18px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_kpiLabel{text-overflow:ellipsis;text-align:center;max-width:100%;color:color-mix(in srgb, currentColor 56%, transparent);font-size:11px;line-height:1.25;overflow:hidden}.cvtkAW_activityCard,.cvtkAW_detailCard,.cvtkAW_balanceOverview{background:color-mix(in srgb, canvas 94%, currentColor 2%);border-radius:14px;padding:18px 20px}.cvtkAW_dashboardCardHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.cvtkAW_dashboardTitle{letter-spacing:-.01em;align-items:center;gap:8px;min-width:0;font-size:14px;font-weight:700;line-height:1.25;display:inline-flex}.cvtkAW_dotBlue,.cvtkAW_dotGreen{width:8px;height:8px;box-shadow:0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);border-radius:999px}.cvtkAW_dotBlue{background:#3b82f6}.cvtkAW_dotGreen{background:#34d399}.cvtkAW_rangePill,.cvtkAW_autoRefreshPill{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);white-space:nowrap;border-radius:10px;flex:none;justify-content:center;align-items:center;gap:5px;padding:5px 9px;font-size:12px;line-height:1;display:inline-flex}.cvtkAW_autoRefreshPill{color:color-mix(in srgb, #059669 86%, currentColor 14%);background:#34d39914;border-color:#34d3995c}.cvtkAW_activityBody{flex-direction:column;gap:12px;padding-top:4px;display:flex}.cvtkAW_heatmapGrid{gap:4px;width:100%;height:18px;display:flex}.cvtkAW_activityCell{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:3px;flex:1 1 0;min-width:0;height:100%;transition:transform .12s,box-shadow .12s;display:block;position:relative}.cvtkAW_activityCell:hover{box-shadow:0 4px 10px color-mix(in srgb, currentColor 14%, transparent);transform:translateY(-1px)}.cvtkAW_activityCellEmpty{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_activityCellLevel1{background:color-mix(in srgb, #93c5fd 45%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel2{background:color-mix(in srgb, #60a5fa 58%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel3{background:color-mix(in srgb, #3b82f6 70%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel4{background:color-mix(in srgb, #2563eb 82%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel5{background:#1d4ed8}.cvtkAW_activityAxis{color:color-mix(in srgb, currentColor 54%, transparent);font-variant-numeric:tabular-nums;justify-content:space-between;font-size:11px;display:flex}.cvtkAW_heatTip{z-index:2;white-space:nowrap;background:color-mix(in srgb, currentColor 88%, canvas);color:canvas;text-align:center;box-shadow:0 6px 18px color-mix(in srgb, currentColor 20%, transparent);pointer-events:none;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.4;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%)}.cvtkAW_heatTip strong{font-size:12px;font-weight:700;display:block}.cvtkAW_activityCell:nth-child(-n+3) .cvtkAW_heatTip{left:0;transform:none}.cvtkAW_activityCell:nth-last-child(-n+3) .cvtkAW_heatTip{left:auto;right:0;transform:none}.cvtkAW_scopeBar{flex-wrap:wrap;align-items:center;gap:10px;display:flex}.cvtkAW_scopeSeg{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:999px;gap:2px;padding:2px;display:inline-flex}.cvtkAW_scopeSegBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.6;background:0 0;border:none;border-radius:999px;padding:5px 14px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_scopeSegBtn:hover{opacity:.9}.cvtkAW_scopeSegBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_scopeSegBtnActive{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent);font-weight:600}.cvtkAW_scopeInput{border:1px solid color-mix(in srgb, currentColor 20%, transparent);color:inherit;font:inherit;background:0 0;border-radius:8px;padding:4px 8px;font-size:12px}.cvtkAW_scopeInput:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_detailToolbar{flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;display:inline-flex}.cvtkAW_detailStats{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:12px;display:grid}.cvtkAW_detailStat{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;min-width:0;padding:14px 16px}.cvtkAW_detailStatLabel,.cvtkAW_detailStatHint{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 55%, transparent);font-size:11px;display:block;overflow:hidden}.cvtkAW_detailStatValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:7px 0 4px;font-size:17px;font-weight:700;line-height:1.1;display:block;overflow:hidden}.cvtkAW_cacheMeter{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2%, transparent);border-radius:12px;grid-template-columns:auto 1fr;align-items:center;gap:14px;padding:10px 12px;display:grid}.cvtkAW_cacheLabel{min-width:132px;color:color-mix(in srgb, currentColor 66%, transparent);font-size:13px}.cvtkAW_cacheLabel strong{color:currentColor;font-variant-numeric:tabular-nums;margin-left:6px;font-size:15px}.cvtkAW_cacheTrack{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:10px;overflow:hidden}.cvtkAW_cacheFill{border-radius:inherit;background:linear-gradient(90deg,#34d399,#10b981);height:100%;transition:width .3s;display:block}.cvtkAW_modelTable{flex-direction:column;gap:12px;display:flex}.cvtkAW_modelRow{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 1.8%, transparent);border-radius:12px;grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(0,.72fr));align-items:center;gap:14px;padding:15px 18px;display:grid}.cvtkAW_modelRowCurrent{border-color:color-mix(in srgb, #3b82f6 26%, currentColor 8%);background:linear-gradient(90deg,#3b82f612,#0000 72%)}.cvtkAW_modelIdentity{flex-direction:column;gap:3px;min-width:0;display:flex}.cvtkAW_modelIdentity strong{text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em;font-size:13px;font-weight:700;line-height:1.2;overflow:hidden}.cvtkAW_modelIdentity span{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px;overflow:hidden}.cvtkAW_modelMetric{font-variant-numeric:tabular-nums;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;display:flex}.cvtkAW_modelMetric strong{text-overflow:ellipsis;max-width:100%;font-size:14px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_modelMetric span{color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px}.cvtkAW_balanceRows{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;display:grid}@container cvtkAW_usageDash (width<=640px){.cvtkAW_modelMetric:nth-child(n+5){display:none}}@container cvtkAW_usageDash (width<=520px){.cvtkAW_modelRow{grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,.8fr))}.cvtkAW_modelMetric:nth-child(n+4){display:none}.cvtkAW_cacheMeter{grid-template-columns:1fr;align-items:stretch;gap:8px}.cvtkAW_cacheLabel{min-width:0}}.cvtkAW_footCard{box-sizing:border-box;background:color-mix(in srgb, currentColor 4%, transparent);width:100%;color:inherit;border:none;border-radius:12px;margin:2px 0 4px;transition:background-color .12s;position:relative}.cvtkAW_footCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.cvtkAW_footCardCollapsed{background:0 0}.cvtkAW_footMain{appearance:none;box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:none;border-radius:12px;flex-direction:column;gap:4px;padding:8px;display:flex}.cvtkAW_footMain:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle{appearance:none;width:20px;height:20px;color:inherit;cursor:pointer;opacity:.55;background:0 0;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex;position:absolute;top:6px;right:6px}.cvtkAW_footCard:hover .cvtkAW_footToggle{opacity:.8}.cvtkAW_footToggle:hover{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.cvtkAW_footToggle:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle svg{display:block}.cvtkAW_footHead{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.cvtkAW_footTitle{opacity:.65;white-space:nowrap;align-items:center;gap:6px;min-width:0;font-size:12px;display:inline-flex}.cvtkAW_footTitle svg{flex:none;display:block}.cvtkAW_footValue{font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:18px;font-size:15px;font-weight:600}.cvtkAW_footLine{opacity:.7;font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.cvtkAW_footMeta{opacity:.5;font-variant-numeric:tabular-nums;font-size:10px}.cvtkAW_footCardCollapsed .cvtkAW_footMain{min-height:36px;padding:7px 8px}.cvtkAW_footStrip{white-space:nowrap;align-items:center;gap:6px;padding-right:20px;font-size:12px;display:flex;overflow:hidden}.cvtkAW_footStrip svg{opacity:.65;flex:none;display:block}.cvtkAW_footStripProvider{text-overflow:ellipsis;flex:none;max-width:45%;font-weight:500;overflow:hidden}.cvtkAW_footStripLabel{opacity:.65;text-overflow:ellipsis;overflow:hidden}.cvtkAW_footStripValue{font-variant-numeric:tabular-nums;margin-left:auto;font-weight:600}[data-dsh-frame][data-sidebar-collapsed] .cvtkAW_footCard,[data-sidebar-collapsed] .cvtkAW_footCard{display:none}";
+		const css$2 = ".cvtkAW_section{color:inherit;flex-direction:column;gap:14px;display:flex}.cvtkAW_header{justify-content:space-between;align-items:center;gap:12px;padding:2px 2px 0;display:flex}.cvtkAW_headerMeta{flex:none;align-items:center;gap:8px;display:inline-flex}.cvtkAW_currentProvider{text-overflow:ellipsis;white-space:nowrap;opacity:.82;min-width:0;font-size:13px;font-weight:600;overflow:hidden}.cvtkAW_refreshBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.85;background:0 0;border:1px solid;border-radius:8px;padding:4px 12px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_refreshBtn:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_refreshBtn:disabled{cursor:default;opacity:.5}.cvtkAW_refreshBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_card{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:linear-gradient(180deg, color-mix(in srgb, currentColor 4%, transparent), transparent 80%), color-mix(in srgb, currentColor 2%, transparent);box-shadow:0 1px 0 color-mix(in srgb, currentColor 5%, transparent);border-radius:16px;flex-direction:column;gap:10px;padding:14px;display:flex}.cvtkAW_todayCard{gap:12px}.cvtkAW_cardHead{justify-content:space-between;align-items:center;gap:10px;display:flex}.cvtkAW_cardTitle{letter-spacing:.08em;text-transform:uppercase;opacity:.56;font-size:11px;font-weight:700}.cvtkAW_peakStatus{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 5%, transparent);opacity:.72;white-space:nowrap;border-radius:999px;padding:3px 8px;font-size:11px;line-height:1.2}.cvtkAW_statRow{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;display:grid}.cvtkAW_stat{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 4%, transparent);border-radius:12px;flex-direction:column;gap:3px;min-width:0;padding:10px 11px;display:flex}.cvtkAW_stat:first-child{background:radial-gradient(circle at 18% 0%, color-mix(in srgb, currentColor 11%, transparent), transparent 42%), color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_statValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:0;font-size:19px;font-weight:700;line-height:1.15;overflow:hidden}.cvtkAW_statLabel{opacity:.58;font-size:11px;line-height:1.2}@media (width>=680px){.cvtkAW_stat:first-child{grid-column:span 2}}.cvtkAW_providerList{flex-direction:column;gap:6px;display:flex}.cvtkAW_providerRow{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:11px;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:8px 10px;font-size:13px;display:flex}.cvtkAW_costRow{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_providerName{text-overflow:ellipsis;white-space:nowrap;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}.cvtkAW_providerTokens{text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums;opacity:.72;white-space:nowrap;flex:none;max-width:58%;overflow:hidden}.cvtkAW_providerBalance{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}.cvtkAW_currentBadge{border:1px solid color-mix(in srgb, currentColor 20%, transparent);background:color-mix(in srgb, currentColor 8%, transparent);opacity:.82;border-radius:999px;flex:none;padding:1px 7px;font-size:10px;font-weight:700}.cvtkAW_chart{flex-direction:column;gap:8px;display:flex}.cvtkAW_chartProvider{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:13px;flex-direction:column;gap:6px;padding:10px 11px;display:flex}.cvtkAW_chartProviderCurrent{border-color:color-mix(in srgb, currentColor 18%, transparent);background:linear-gradient(90deg, color-mix(in srgb, currentColor 6%, transparent), transparent 70%), color-mix(in srgb, currentColor 3%, transparent)}.cvtkAW_chartHead{justify-content:space-between;align-items:center;gap:10px;font-size:13px;display:flex}.cvtkAW_chartTokens{font-variant-numeric:tabular-nums;opacity:.64;white-space:nowrap;flex:none;font-size:11px}.cvtkAW_chartBar{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:9px;display:block;overflow:hidden}.cvtkAW_chartFill{background:linear-gradient(90deg, color-mix(in srgb, currentColor 62%, transparent), color-mix(in srgb, currentColor 34%, transparent));border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartModel{opacity:.76;grid-template-columns:minmax(96px,34%) 1fr 52px;align-items:center;gap:8px;padding-left:10px;font-size:11px;display:grid}.cvtkAW_chartModelName{text-overflow:ellipsis;white-space:nowrap;opacity:.82;overflow:hidden}.cvtkAW_chartModelBar{background:color-mix(in srgb, currentColor 5%, transparent);border-radius:999px;height:4px;display:block;overflow:hidden}.cvtkAW_chartModelFill{background:color-mix(in srgb, currentColor 30%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartMore{background:color-mix(in srgb, currentColor 6%, transparent);opacity:.58;border-radius:999px;align-self:flex-start;margin-left:10px;padding:2px 7px;font-size:10px;line-height:1.2}.cvtkAW_trendAxis{opacity:.5;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:10px;display:flex}.cvtkAW_muted{opacity:.6;font-size:12px}.cvtkAW_errorLine{opacity:.75;font-size:12px}.cvtkAW_settingsGrid{flex-wrap:wrap;align-items:center;gap:16px;display:flex}.cvtkAW_settingItem{align-items:center;gap:8px;font-size:13px;display:flex}.cvtkAW_settingItem input[type=checkbox]{accent-color:currentColor}.cvtkAW_settingItem input[type=number]{border:1px solid color-mix(in srgb, currentColor 25%, transparent);width:90px;color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem select{border:1px solid color-mix(in srgb, currentColor 25%, transparent);color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem input:focus-visible,.cvtkAW_settingItem select:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_usageDashboard{flex-direction:column;gap:14px;display:flex;container:cvtkAW_usageDash/inline-size}.cvtkAW_kpiStrip{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;display:grid}.cvtkAW_kpiCard{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:64px;padding:10px 8px;display:flex}.cvtkAW_kpiValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;max-width:100%;font-size:18px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_kpiLabel{text-overflow:ellipsis;text-align:center;max-width:100%;color:color-mix(in srgb, currentColor 56%, transparent);font-size:11px;line-height:1.25;overflow:hidden}.cvtkAW_activityCard,.cvtkAW_detailCard,.cvtkAW_balanceOverview{background:color-mix(in srgb, canvas 94%, currentColor 2%);border-radius:14px;padding:18px 20px}.cvtkAW_dashboardCardHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.cvtkAW_dashboardTitle{letter-spacing:-.01em;align-items:center;gap:8px;min-width:0;font-size:14px;font-weight:700;line-height:1.25;display:inline-flex}.cvtkAW_dotBlue,.cvtkAW_dotGreen{width:8px;height:8px;box-shadow:0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);border-radius:999px}.cvtkAW_dotBlue{background:#3b82f6}.cvtkAW_dotGreen{background:#34d399}.cvtkAW_rangePill,.cvtkAW_autoRefreshPill{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);white-space:nowrap;border-radius:10px;flex:none;justify-content:center;align-items:center;gap:5px;padding:5px 9px;font-size:12px;line-height:1;display:inline-flex}.cvtkAW_autoRefreshPill{color:color-mix(in srgb, #059669 86%, currentColor 14%);background:#34d39914;border-color:#34d3995c}.cvtkAW_activityBody{flex-direction:column;gap:12px;padding-top:4px;display:flex}.cvtkAW_heatmapGrid{gap:4px;width:100%;height:18px;display:flex}.cvtkAW_activityCell{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:3px;flex:1 1 0;min-width:0;height:100%;transition:transform .12s,box-shadow .12s;display:block;position:relative}.cvtkAW_activityCell:hover{box-shadow:0 4px 10px color-mix(in srgb, currentColor 14%, transparent);transform:translateY(-1px)}.cvtkAW_activityCellEmpty{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_activityCellLevel1{background:color-mix(in srgb, #93c5fd 45%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel2{background:color-mix(in srgb, #60a5fa 58%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel3{background:color-mix(in srgb, #3b82f6 70%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel4{background:color-mix(in srgb, #2563eb 82%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel5{background:#1d4ed8}.cvtkAW_activityAxis{color:color-mix(in srgb, currentColor 54%, transparent);font-variant-numeric:tabular-nums;justify-content:space-between;font-size:11px;display:flex}.cvtkAW_heatTip{z-index:2;white-space:nowrap;background:color-mix(in srgb, currentColor 88%, canvas);color:canvas;text-align:center;box-shadow:0 6px 18px color-mix(in srgb, currentColor 20%, transparent);pointer-events:none;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.4;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%)}.cvtkAW_heatTip strong{font-size:12px;font-weight:700;display:block}.cvtkAW_activityCell:nth-child(-n+3) .cvtkAW_heatTip{left:0;transform:none}.cvtkAW_activityCell:nth-last-child(-n+3) .cvtkAW_heatTip{left:auto;right:0;transform:none}.cvtkAW_scopeBar{flex-wrap:wrap;align-items:center;gap:10px;display:flex}.cvtkAW_scopeSeg{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:999px;gap:2px;padding:2px;display:inline-flex}.cvtkAW_scopeSegBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.6;background:0 0;border:none;border-radius:999px;padding:5px 14px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_scopeSegBtn:hover{opacity:.9}.cvtkAW_scopeSegBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_scopeSegBtnActive{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent);font-weight:600}.cvtkAW_scopeInput{border:1px solid color-mix(in srgb, currentColor 20%, transparent);color:inherit;font:inherit;background:0 0;border-radius:8px;padding:4px 8px;font-size:12px}.cvtkAW_scopeInput:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_detailToolbar{flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;display:inline-flex}.cvtkAW_detailStats{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:12px;display:grid}.cvtkAW_detailStat{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;min-width:0;padding:14px 16px}.cvtkAW_detailStatLabel,.cvtkAW_detailStatHint{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 55%, transparent);font-size:11px;display:block;overflow:hidden}.cvtkAW_detailStatValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:7px 0 4px;font-size:17px;font-weight:700;line-height:1.1;display:block;overflow:hidden}.cvtkAW_cacheMeter{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2%, transparent);border-radius:12px;grid-template-columns:auto 1fr;align-items:center;gap:14px;padding:10px 12px;display:grid}.cvtkAW_cacheLabel{min-width:132px;color:color-mix(in srgb, currentColor 66%, transparent);font-size:13px}.cvtkAW_cacheLabel strong{color:currentColor;font-variant-numeric:tabular-nums;margin-left:6px;font-size:15px}.cvtkAW_cacheTrack{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:10px;overflow:hidden}.cvtkAW_cacheFill{border-radius:inherit;background:linear-gradient(90deg,#34d399,#10b981);height:100%;transition:width .3s;display:block}.cvtkAW_modelTable{flex-direction:column;gap:12px;display:flex}.cvtkAW_modelRow{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 1.8%, transparent);border-radius:12px;grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(0,.72fr));align-items:center;gap:14px;padding:15px 18px;display:grid}.cvtkAW_modelRowCurrent{border-color:color-mix(in srgb, #3b82f6 26%, currentColor 8%);background:linear-gradient(90deg,#3b82f612,#0000 72%)}.cvtkAW_modelIdentity{flex-direction:column;gap:3px;min-width:0;display:flex}.cvtkAW_modelIdentity strong{text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em;font-size:13px;font-weight:700;line-height:1.2;overflow:hidden}.cvtkAW_modelIdentity span{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px;overflow:hidden}.cvtkAW_modelMetric{font-variant-numeric:tabular-nums;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;display:flex}.cvtkAW_modelMetric strong{text-overflow:ellipsis;max-width:100%;font-size:14px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_modelMetric span{color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px}.cvtkAW_balanceRows{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;display:grid}@container cvtkAW_usageDash (width<=640px){.cvtkAW_modelMetric:nth-child(n+5){display:none}}@container cvtkAW_usageDash (width<=520px){.cvtkAW_modelRow{grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,.8fr))}.cvtkAW_modelMetric:nth-child(n+4){display:none}.cvtkAW_cacheMeter{grid-template-columns:1fr;align-items:stretch;gap:8px}.cvtkAW_cacheLabel{min-width:0}}.cvtkAW_footCard{box-sizing:border-box;background:color-mix(in srgb, currentColor 4%, transparent);width:100%;color:inherit;border:none;border-radius:12px;margin:2px 0 4px;transition:background-color .12s;position:relative}.cvtkAW_footCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.cvtkAW_footCardCollapsed{background:0 0}.cvtkAW_footMain{appearance:none;box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:none;border-radius:12px;flex-direction:column;gap:4px;padding:8px;display:flex}.cvtkAW_footMain:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle{appearance:none;width:20px;height:20px;color:inherit;cursor:pointer;opacity:.55;background:0 0;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex;position:absolute;top:6px;right:6px}.cvtkAW_footCard:hover .cvtkAW_footToggle{opacity:.8}.cvtkAW_footToggle:hover{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.cvtkAW_footToggle:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle svg{display:block}.cvtkAW_footHead{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.cvtkAW_footTitle{opacity:.65;white-space:nowrap;align-items:center;gap:6px;min-width:0;font-size:12px;display:inline-flex}.cvtkAW_footTitle svg{flex:none;display:block}.cvtkAW_footValue{font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:18px;font-size:15px;font-weight:600}.cvtkAW_footLine{opacity:.7;font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.cvtkAW_footMeta{opacity:.5;font-variant-numeric:tabular-nums;font-size:10px}.cvtkAW_footCardCollapsed .cvtkAW_footMain{min-height:36px;padding:7px 8px}.cvtkAW_footStrip{white-space:nowrap;align-items:center;gap:6px;padding-right:20px;font-size:12px;display:flex;overflow:hidden}.cvtkAW_footStrip svg{opacity:.65;flex:none;display:block}.cvtkAW_footStripProvider{text-overflow:ellipsis;flex:none;max-width:45%;font-weight:500;overflow:hidden}.cvtkAW_footStripLabel{opacity:.65;text-overflow:ellipsis;overflow:hidden}.cvtkAW_footStripValue{font-variant-numeric:tabular-nums;margin-left:auto;font-weight:600}[data-dsh-frame][data-sidebar-collapsed] .cvtkAW_footCard,[data-sidebar-collapsed] .cvtkAW_footCard{display:none}.cvtkAW_footAction{appearance:none;box-sizing:border-box;width:26px;height:26px;color:inherit;cursor:pointer;font:inherit;border:1px solid color-mix(in srgb, currentColor 14%, transparent);background:0 0;border-radius:8px;justify-content:center;align-items:center;gap:4px;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex}.cvtkAW_footAction:hover{opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_footAction:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.cvtkAW_footAction svg{display:block}";
 		const tagId$2 = "@linxin666/dsh-web-all/packages/dsh-usage/src/client/usage.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -37245,6 +36779,7 @@ window.__ModuleLoader__.load({
 			"dotBlue": "cvtkAW_dotBlue",
 			"dotGreen": "cvtkAW_dotGreen",
 			"errorLine": "cvtkAW_errorLine",
+			"footAction": "cvtkAW_footAction",
 			"footCard": "cvtkAW_footCard",
 			"footCardCollapsed": "cvtkAW_footCardCollapsed",
 			"footHead": "cvtkAW_footHead",
@@ -38929,6 +38464,52 @@ window.__ModuleLoader__.load({
 				}), toggle]
 			});
 		}
+		//#endregion
+		//#region ../dsh-usage/src/client/UsageFootAction.tsx
+		/**
+		* The sidebar usage action: an icon-only trigger seated where the download
+		* (self-update) trigger used to sit, beside the remote-control phone icon.
+		* It opens the usage statistics dashboard (settings page, usage section).
+		*
+		* The glyph is a statistics bar chart adapted from the open-source Lucide
+		* "bar-chart-3" icon (https://lucide.dev/icons/bar-chart-3, ISC license),
+		* redrawn on the 16px grid with the same stroke format as the official
+		* download primitives (stroke 1.3, round caps/joins, currentColor) so it
+		* matches the removed download trigger's look.
+		* @module @linxin666/dsh-usage/client/UsageFootAction
+		*/
+		/**
+		* Render the usage trigger.
+		* @param props - label and open action.
+		* @returns the trigger element.
+		*/
+		function UsageFootAction({ label, onOpen }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+				type: "button",
+				className: usage_module_css_default.footAction,
+				"data-dsh-plugin": "usage",
+				"aria-label": label(),
+				title: label(),
+				onClick: onOpen,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+					viewBox: "0 0 16 16",
+					width: "16",
+					height: "16",
+					fill: "none",
+					stroke: "currentColor",
+					strokeWidth: "1.3",
+					strokeLinecap: "round",
+					strokeLinejoin: "round",
+					"aria-hidden": "true",
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2.25 13.25h11.5" }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M4.5 13.25V10.75" }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 13.25V7.25" }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M11.5 13.25V3.75" })
+					]
+				})
+			});
+		}
 		/** The shell sidebar's foot area (footer actions + the Settings row), when mounted. */
 		function footArea() {
 			return document.querySelector("[data-pane=\"sidebar\"], [class*=\"sidebarCol\"]")?.querySelector("[class*=\"footArea\"]") ?? void 0;
@@ -38990,6 +38571,45 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				if (foot.lastElementChild !== container) foot.append(container);
+			};
+			place();
+			const unsubscribeBody = subscribeBodyInvalidations$1(place);
+			return () => {
+				unsubscribeBody();
+				root.unmount();
+				container.remove();
+			};
+		}
+		/**
+		* Mount the sidebar usage action into the foot row where the download
+		* (self-update) trigger used to sit: directly before the remote-control
+		* entry row, so it keeps the phone icon on its right and the settings
+		* trigger on its left. Falls back to before the settings row when the
+		* remote entry is absent. Self-heals with the same body-mutation hub.
+		* @param props - the label and open-dashboard inputs.
+		* @returns disposer removing the container.
+		*/
+		function mountUsageFootAction(props) {
+			if (typeof document !== "undefined" && document.querySelector("[data-dsh-usage-foot-action]") !== null) return () => {};
+			const container = document.createElement("div");
+			container.setAttribute("data-dsh-usage-foot-action", "");
+			const root = (0, react_dom_client.createRoot)(container);
+			root.render((0, react.createElement)(UsageFootAction, props));
+			/** Keep the trigger in the download slot, left of the remote entry row. */
+			const place = () => {
+				const foot = footArea();
+				if (foot === void 0) return;
+				const remoteRow = foot.querySelector("[class*=\"entryRow\"]");
+				if (remoteRow !== null) {
+					if (container.nextElementSibling !== remoteRow) foot.insertBefore(container, remoteRow);
+					return;
+				}
+				const settings = foot.querySelector("[class*=\"settingsArea\"]");
+				if (settings !== null) {
+					if (container.nextElementSibling !== settings) foot.insertBefore(container, settings);
+					return;
+				}
+				if (container.parentElement !== foot) foot.append(container);
 			};
 			place();
 			const unsubscribeBody = subscribeBodyInvalidations$1(place);
@@ -39105,9 +38725,18 @@ window.__ModuleLoader__.load({
 				},
 				locale: ctx.locale
 			});
+			const disposeFootAction = mountUsageFootAction({
+				label: () => t$3("usage.entry"),
+				onOpen: () => {
+					openUsageSettings(() => t$3("usage.title"));
+				}
+			});
 			ctx.effect(() => () => {
 				try {
 					disposeFootCard();
+				} catch {}
+				try {
+					disposeFootAction();
 				} catch {}
 			}, "dsh-usage: sidebar foot card");
 			ctx.slots.inject("settings.section", () => {

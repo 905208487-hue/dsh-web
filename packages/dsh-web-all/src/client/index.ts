@@ -353,24 +353,29 @@ html:has([data-dsh-frame]) > body {
     var(--dsw-elevation-soft);
 }
 [data-dsh-mario-hero][data-dsh-mario-effect="brick"]::after {
-  width: 34px;
-  height: 22px;
-  border-radius: 3px;
+  width: 36px;
+  height: 24px;
+  border-radius: 2px;
   background:
-    linear-gradient(#f7b257 0 0) 0 0 / 100% 3px no-repeat,
-    linear-gradient(#8a3f19 0 0) 0 9px / 100% 2px no-repeat,
-    linear-gradient(#8a3f19 0 0) 0 18px / 100% 2px no-repeat,
-    linear-gradient(90deg, transparent 0 9px, #8a3f19 9px 11px, transparent 11px 22px, #8a3f19 22px 24px, transparent 24px) 0 0 / 100% 100% no-repeat,
-    linear-gradient(90deg, #8a3f19 0 2px, transparent 2px 15px, #8a3f19 15px 17px, transparent 17px 31px, #8a3f19 31px) 0 10px / 100% 10px no-repeat,
-    linear-gradient(#d6762b 0 0);
-  box-shadow:
-    -8px -5px 0 -5px #d6762b,
-    -4px 2px 0 -5px #f3a24d,
-    41px -4px 0 -6px #f3a24d,
-    36px 3px 0 -6px #8a3f19;
+    linear-gradient(#ffd184 0 0) 3px 2px / 30px 2px no-repeat,
+    linear-gradient(#8b3f18 0 0) 0 0 / 2px 100% no-repeat,
+    linear-gradient(#8b3f18 0 0) 34px 0 / 2px 100% no-repeat,
+    linear-gradient(#8b3f18 0 0) 0 0 / 100% 2px no-repeat,
+    linear-gradient(#8b3f18 0 0) 0 22px / 100% 2px no-repeat,
+    linear-gradient(#8b3f18 0 0) 0 8px / 100% 2px no-repeat,
+    linear-gradient(#8b3f18 0 0) 0 16px / 100% 2px no-repeat,
+    linear-gradient(#8b3f18 0 0) 11px 0 / 2px 8px no-repeat,
+    linear-gradient(#8b3f18 0 0) 24px 0 / 2px 8px no-repeat,
+    linear-gradient(#8b3f18 0 0) 5px 9px / 2px 7px no-repeat,
+    linear-gradient(#8b3f18 0 0) 18px 9px / 2px 7px no-repeat,
+    linear-gradient(#8b3f18 0 0) 31px 9px / 2px 7px no-repeat,
+    linear-gradient(#8b3f18 0 0) 11px 17px / 2px 6px no-repeat,
+    linear-gradient(#8b3f18 0 0) 24px 17px / 2px 6px no-repeat,
+    linear-gradient(#c96b27 0 0) 2px 2px / 32px 20px no-repeat;
+  box-shadow: inset 0 -2px 0 rgb(139 63 24 / 16%);
   filter: drop-shadow(0 4px 4px rgb(0 0 0 / 14%));
-  left: 10px;
-  top: -12px;
+  left: 9px;
+  top: -18px;
   bottom: auto;
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -487,9 +492,10 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   72% { transform: translateY(-2px) scaleY(1.08) scaleX(.96); }
 }
 @keyframes dsh-mario-brick-bump {
-  0%, 100% { transform: translateY(0); }
-  45% { transform: translateY(-10px) rotate(-2deg); }
-  62% { transform: translateY(-6px) rotate(2deg); }
+  0%, 30%, 100% { transform: translateY(0); }
+  46% { transform: translateY(-7px); }
+  56% { transform: translateY(-9px) rotate(-1deg); }
+  70% { transform: translateY(-4px) rotate(1deg); }
 }
 @keyframes dsh-mario-idle-bob {
   0%, 100% { transform: translateY(0) scale(1); }
@@ -763,6 +769,13 @@ function installMarioRunner(): () => void {
     runner.setAttribute('aria-hidden', 'true')
     document.body.appendChild(runner)
   }
+  let mushroom = document.querySelector<HTMLElement>('[data-dsh-mario-mushroom]')
+  if (mushroom === null) {
+    mushroom = document.createElement('div')
+    mushroom.setAttribute('data-dsh-mario-mushroom', '')
+    mushroom.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(mushroom)
+  }
 
   let updateTimer = 0
   let taskCount = 0
@@ -772,11 +785,30 @@ function installMarioRunner(): () => void {
   let lastMove = Date.now()
   let paused = false
   let interactTimer = 0
+  let mushroomX = 0
+  let mushroomVisible = false
+  let mushroomSquashing = false
+  let mushroomHideTimer = 0
+  let nextMushroomAt = Date.now() + 9000 + Math.random() * 12000
 
   const maxX = (): number => Math.max(0, window.innerWidth - 116)
   const paintPosition = (): void => {
     runner.style.setProperty('--dsh-mario-x', `${Math.round(x)}px`)
     runner.style.setProperty('--dsh-mario-dir', String(dir))
+  }
+  const paintMushroom = (): void => {
+    mushroom.style.setProperty('--dsh-mario-mushroom-x', `${Math.round(mushroomX)}px`)
+    mushroom.toggleAttribute('data-visible', mushroomVisible)
+    mushroom.toggleAttribute('data-squashed', mushroomSquashing)
+  }
+  const scheduleNextMushroom = (): void => {
+    nextMushroomAt = Date.now() + 14000 + Math.random() * 18000
+  }
+  const hideMushroom = (): void => {
+    mushroomVisible = false
+    mushroomSquashing = false
+    paintMushroom()
+    scheduleNextMushroom()
   }
   const update = (): void => {
     updateTimer = 0
@@ -784,6 +816,7 @@ function installMarioRunner(): () => void {
     const tempo = marioRunTempo(count)
     taskCount = count
     speed = tempo.speed
+    if (count > 1 && mushroomVisible) hideMushroom()
     document.body.toggleAttribute('data-dsh-mario-active', count > 0)
     document.body.dataset.dshMarioTaskCount = String(count)
     runner.style.setProperty('--dsh-mario-step-duration', tempo.step)
@@ -807,6 +840,32 @@ function installMarioRunner(): () => void {
       dir = 1
     }
     paintPosition()
+    if (taskCount <= 1 && !mushroomVisible && Date.now() >= nextMushroomAt) {
+      const right = maxX()
+      const lead = 180 + Math.random() * 120
+      mushroomX = dir > 0 ? Math.min(right, x + lead) : Math.max(0, x - lead)
+      if (Math.abs(mushroomX - x) > 95) {
+        mushroomVisible = true
+        mushroomSquashing = false
+        paintMushroom()
+      } else {
+        scheduleNextMushroom()
+      }
+    }
+    if (mushroomVisible && !mushroomSquashing) {
+      if (taskCount > 1 || Math.abs(mushroomX - x) > 420) {
+        hideMushroom()
+      } else if (Math.abs(mushroomX - x) < 24) {
+        mushroomSquashing = true
+        paintMushroom()
+        interact()
+        if (mushroomHideTimer !== 0) window.clearTimeout(mushroomHideTimer)
+        mushroomHideTimer = window.setTimeout(() => {
+          mushroomHideTimer = 0
+          hideMushroom()
+        }, 580)
+      }
+    }
   }
   const pause = (): void => {
     paused = true
@@ -841,6 +900,8 @@ function installMarioRunner(): () => void {
   const moveInterval = window.setInterval(move, 50)
   schedule()
   paintPosition()
+  paintMushroom()
+  scheduleNextMushroom()
 
   return () => {
     observer.disconnect()
@@ -848,12 +909,14 @@ function installMarioRunner(): () => void {
     window.clearInterval(moveInterval)
     if (updateTimer !== 0) window.clearTimeout(updateTimer)
     if (interactTimer !== 0) window.clearTimeout(interactTimer)
+    if (mushroomHideTimer !== 0) window.clearTimeout(mushroomHideTimer)
     runner.removeEventListener('pointerenter', pause)
     runner.removeEventListener('pointerleave', resume)
     runner.removeEventListener('click', interact)
     document.body.removeAttribute('data-dsh-mario-active')
     delete document.body.dataset.dshMarioTaskCount
     runner?.remove()
+    mushroom?.remove()
   }
 }
 

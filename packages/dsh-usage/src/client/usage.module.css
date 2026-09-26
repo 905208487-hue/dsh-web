@@ -1036,3 +1036,38 @@
 :global([data-sidebar-collapsed]) .footCard {
   display: none;
 }
+
+/* Sidebar foot action: the usage trigger seated where the download trigger
+   used to sit. Icon-only, mirroring the remote seat's trigger format. */
+.footAction {
+  appearance: none;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  display: inline-flex;
+  transition: opacity 0.12s, background-color 0.12s;
+}
+
+.footAction:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.footAction:focus-visible {
+  outline: 2px solid color-mix(in srgb, currentColor 45%, transparent);
+  outline-offset: -1px;
+}
+
+.footAction svg {
+  display: block;
+}

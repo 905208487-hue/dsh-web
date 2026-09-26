@@ -7,6 +7,7 @@
 
 export const ru: Record<string, string> = {
   'usage.balance': 'Баланс',
+  'usage.entry': 'Использование',
   'usage.balance.noCredential': 'Учётные данные не настроены',
   'usage.balance.noneConfigured': 'Нет настроенных провайдеров',
   'usage.balance.unsupported': 'Запрос баланса не поддерживается',

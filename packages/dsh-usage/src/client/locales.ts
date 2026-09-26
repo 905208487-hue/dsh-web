@@ -10,6 +10,7 @@ export const NS = 'dsh-web-ui-usage'
 /** Chinese copy. */
 export const zh = {
   'usage.title': '使用统计',
+  'usage.entry': '使用情况',
   'usage.tab.usage': '用量',
   'usage.tab.plans': '个人套餐',
   'usage.tab.bank': 'Token 银行',
@@ -69,6 +70,7 @@ export const zh = {
 /** English mirror; every zh key present. */
 export const en: Record<UsageKey, string> = {
   'usage.title': 'Usage Statistics',
+  'usage.entry': 'Usage',
   'usage.tab.usage': 'Usage',
   'usage.tab.plans': 'Plans',
   'usage.tab.bank': 'Token Bank',

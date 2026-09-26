@@ -1,8 +1,9 @@
 /**
- * Wide sidebar foot row: on the desktop column the update and remote-access
- * triggers share the Settings trigger's line instead of stacking above it, so
- * the trigger's empty right half carries them, while the usage glance card
- * keeps a full row of its own. The rules are scoped off the collapsed frame —
+ * Wide sidebar foot row: on the desktop column the remote-access trigger
+ * shares the Settings trigger's line instead of stacking above it (the
+ * self-update trigger that used to ride the same row was removed from the
+ * seat on 2026-09-26), while the usage glance card keeps a full row of its
+ * own. The rules are scoped off the collapsed frame —
  * the rail must keep the shell's stacked foot, where the circles stack by
  * design — and a regression to the unscoped form either breaks the rail or
  * leaves the actions on a line of their own.

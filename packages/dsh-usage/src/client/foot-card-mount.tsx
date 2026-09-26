@@ -18,9 +18,13 @@ import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { subscribeBodyInvalidations } from './body-mutations.ts'
 import { UsageFootCard, type UsageFootCardProps } from './UsageFootCard.tsx'
+import { UsageFootAction, type UsageFootActionProps } from './UsageFootAction.tsx'
 
 /** Stable data attribute identifying the injected card container. */
 export const FOOT_CARD_SELECTOR = '[data-dsh-usage-foot-card]'
+
+/** Stable data attribute identifying the injected usage action container. */
+export const FOOT_ACTION_SELECTOR = '[data-dsh-usage-foot-action]'
 
 /** The shell sidebar's foot area (footer actions + the Settings row), when mounted. */
 function footArea(): HTMLElement | undefined {
@@ -100,6 +104,50 @@ export function mountUsageFootCard(props: UsageFootCardProps): () => void {
     }
     // No Settings seat to anchor against (shell change): fall back to the tail.
     if (foot.lastElementChild !== container) foot.append(container)
+  }
+  place()
+  const unsubscribeBody = subscribeBodyInvalidations(place)
+
+  return () => {
+    unsubscribeBody()
+    root.unmount()
+    container.remove()
+  }
+}
+
+/**
+ * Mount the sidebar usage action into the foot row where the download
+ * (self-update) trigger used to sit: directly before the remote-control
+ * entry row, so it keeps the phone icon on its right and the settings
+ * trigger on its left. Falls back to before the settings row when the
+ * remote entry is absent. Self-heals with the same body-mutation hub.
+ * @param props - the label and open-dashboard inputs.
+ * @returns disposer removing the container.
+ */
+export function mountUsageFootAction(props: UsageFootActionProps): () => void {
+  if (typeof document !== 'undefined' && document.querySelector(FOOT_ACTION_SELECTOR) !== null) {
+    return () => {}
+  }
+  const container = document.createElement('div')
+  container.setAttribute('data-dsh-usage-foot-action', '')
+  const root: Root = createRoot(container)
+  root.render(createElement(UsageFootAction, props))
+
+  /** Keep the trigger in the download slot, left of the remote entry row. */
+  const place = (): void => {
+    const foot = footArea()
+    if (foot === undefined) return
+    const remoteRow = foot.querySelector<HTMLElement>('[class*="entryRow"]')
+    if (remoteRow !== null) {
+      if (container.nextElementSibling !== remoteRow) foot.insertBefore(container, remoteRow)
+      return
+    }
+    const settings = foot.querySelector<HTMLElement>('[class*="settingsArea"]')
+    if (settings !== null) {
+      if (container.nextElementSibling !== settings) foot.insertBefore(container, settings)
+      return
+    }
+    if (container.parentElement !== foot) foot.append(container)
   }
   place()
   const unsubscribeBody = subscribeBodyInvalidations(place)
