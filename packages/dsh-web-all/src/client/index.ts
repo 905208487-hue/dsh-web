@@ -432,6 +432,45 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 [data-dsh-mario-runner][data-dsh-mario-interact="true"]::after {
   animation: dsh-mario-runner-hop 560ms cubic-bezier(.2, .9, .25, 1) both;
 }
+[data-dsh-mario-mushroom] {
+  width: 38px;
+  height: 32px;
+  pointer-events: none;
+  position: fixed;
+  z-index: 44;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  --dsh-mario-mushroom-x: 0px;
+  opacity: 0;
+  transform: translateX(var(--dsh-mario-mushroom-x)) translateY(8px) scale(.92);
+  transform-origin: 50% 100%;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+[data-dsh-mario-mushroom][data-visible="true"] {
+  opacity: 1;
+  transform: translateX(var(--dsh-mario-mushroom-x)) translateY(0) scale(.92);
+}
+[data-dsh-mario-mushroom]::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 27px;
+  image-rendering: pixelated;
+  background:
+    radial-gradient(circle at 8px 7px, #fff7dc 0 3px, transparent 3.4px),
+    radial-gradient(circle at 16px 4px, #fff7dc 0 2.4px, transparent 2.8px),
+    radial-gradient(circle at 24px 8px, #fff7dc 0 3px, transparent 3.4px),
+    linear-gradient(#c7342b 0 0) 3px 2px / 26px 12px no-repeat,
+    linear-gradient(#ffd79b 0 0) 8px 13px / 16px 11px no-repeat,
+    linear-gradient(#24140f 0 0) 11px 17px / 2px 2px no-repeat,
+    linear-gradient(#24140f 0 0) 20px 17px / 2px 2px no-repeat,
+    linear-gradient(#774018 0 0) 10px 24px / 13px 3px no-repeat;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 16%));
+  transform-origin: 50% 100%;
+}
+[data-dsh-mario-mushroom][data-squashed="true"]::before {
+  animation: dsh-mario-runner-mushroom-squash 520ms cubic-bezier(.2, .9, .25, 1) both;
+}
 @keyframes dsh-mario-hero-jump {
   0%, 100% { transform: translateX(-50%) translateY(0) scale(.94); }
   16% { transform: translateX(-50%) translateY(2px) scale(1, .88); }
@@ -465,6 +504,12 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   35% { transform: translateY(-18px) scale(1.04) rotate(-5deg); }
   62% { transform: translateY(-10px) scale(1.02) rotate(5deg); }
 }
+@keyframes dsh-mario-runner-mushroom-squash {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  36% { transform: translateY(5px) scale(1.18, .46); opacity: .95; }
+  72% { transform: translateY(2px) scale(.92, .82); opacity: .82; }
+  100% { transform: translateY(8px) scale(.7, .42); opacity: 0; }
+}
 @keyframes dsh-mario-track-run {
   0% { transform: translateX(0) scaleX(1); }
   48% { transform: translateX(calc(100vw - 116px)) scaleX(1); }
@@ -479,7 +524,9 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   [data-dsh-mario-hero]::after,
   [data-dsh-mario-brand]::before,
   [data-dsh-mario-runner],
-  [data-dsh-mario-runner]::after { transition: none; animation: none !important; }
+  [data-dsh-mario-runner]::after,
+  [data-dsh-mario-mushroom],
+  [data-dsh-mario-mushroom]::before { transition: none; animation: none !important; }
 }
 [data-dsh-boot-splash] {
   position: fixed;

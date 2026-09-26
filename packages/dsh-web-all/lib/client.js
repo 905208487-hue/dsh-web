@@ -42789,7 +42789,9 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   [data-dsh-mario-hero]::after,
   [data-dsh-mario-brand]::before,
   [data-dsh-mario-runner],
-  [data-dsh-mario-runner]::after { transition: none; animation: none !important; }
+  [data-dsh-mario-runner]::after,
+  [data-dsh-mario-mushroom],
+  [data-dsh-mario-mushroom]::before { transition: none; animation: none !important; }
 }
 [data-dsh-boot-splash] {
   position: fixed;
