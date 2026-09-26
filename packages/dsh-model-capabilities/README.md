@@ -3,24 +3,28 @@
 English | [中文](README.zh.md)
 
 Two Models-page extension areas for the `llm-pi-ai` adapter family: an inline
-model display-name editor on each provider card, and a disabled-provider
+provider display-name editor on each provider card, and a disabled-provider
 archive listing in the page footer where archived configurations can be
 restored with one click.
 
-The former per-model reasoning-effort editor (declaring which thinking levels a
-model offers and the wire value each one sends) was removed: model abilities
-need no per-user editing, so the card extension asks nothing about reasoning
-levels.
+The official card only offers a display-name field for hand-declared
+(user-layer) providers; providers configured in a base/profile layer get no
+name input there. This plugin's card extension restores that edit for every
+pi-ai route.
+
+The former per-model editors (reasoning-effort declarations, then model
+display names) are intentionally not offered: this extension edits the
+provider's own identity only.
 
 ## What it does
 
-- **Inline model-name editing**: registers the `settings.models.provider-card`
-  slot for the `llm-pi-ai` adapter family. Every model row of a custom-provider
-  card shows its model ID (read-only) next to an editable display-name input.
-  Saving writes the provider's whole `models` array through the official
-  settings wire — the same whole-array override the official card performs —
-  preserving every other model field (input modalities, context windows,
-  reasoning-effort declarations, ...). An empty name falls back to the model ID.
+- **Inline provider-name editing**: registers the `settings.models.provider-card`
+  slot for the `llm-pi-ai` adapter family. Each provider card shows the route id
+  (read-only) next to an editable display-name input, saved as
+  `providers.<route>.displayName` through the official settings wire with
+  revision fencing. An empty name removes the field so the route falls back to
+  its id; the editor reloads and asks for a retry when the configuration
+  changed elsewhere.
 - **Provider restore**: registers the `settings.models.footer` slot, listing
   providers whose archived profile is still off the model catalog that both the
   composer model picker and the subagent selection read. One click restores the
@@ -70,11 +74,11 @@ state live in the official `llm-pi-ai` entry plus this archive.
   can leave a harmless duplicate archive but never a lost profile. While a
   provider is down, delegation to it fails closed at the host (`NO_ADAPTER`),
   not just in the UI.
-- **Name edits are whole-array writes**: renaming one model rewrites the
-  provider's entire `models` array (the settings path walker cannot index into
-  arrays), with every field the panel does not edit preserved as-is. Edits carry
-  the revision the panel read at; a concurrent change reloads and asks for a
-  retry instead of overwriting.
+- **Provider-name edits are direct field ops**: renaming a provider writes
+  `providers.<route>.displayName` as a single path op (set, or unset when the
+  name is cleared) — no model data is touched. Edits carry the revision the
+  panel read at; a concurrent change reloads and asks for a retry instead of
+  overwriting.
 - **Reasoning levels are declared in configuration only**: profiles may carry
   `reasoningEfforts` field values (as the official pi-ai schema allows), but no
   UI in this plugin asks about them.

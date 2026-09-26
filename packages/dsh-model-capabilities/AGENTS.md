@@ -7,14 +7,14 @@ packages/AGENTS.md 的全局/包级规则。
 
 - 本包占位官方 Models 设置页的两个插槽:
   - `settings.models.provider-card`(key `llm-pi-ai`):每张提供方卡片的
-    **模型名称直改区**(`ModelNamePanel`)。每个模型行显示只读模型 ID + 可编辑
-    「显示名称」;保存 = 一次 set 操作整体替换 `providers.<route>.models`
-    数组(settings mutate 的 path op 不支持下标进数组),非本面板编辑的字段
-    (id/input/contextWindow/maxTokens/compat/reasoningEfforts 等)原样保留。
+    **供应商名称直改区**(`ProviderNamePanel`)。显示只读路线 ID + 可编辑
+    「供应商名称」;保存 = 一次 set/unset 操作写 `providers.<route>.displayName`
+    (清空则 unset,路线回退为 ID)。官方编辑器只对手填(user 层)提供方显示
+    名称输入框,base/profile 层的提供方没有——本面板为所有 pi-ai 路线补上。
   - `settings.models.footer`:列出路由已下线但 profile 仍在本包存档里的提供方,
     唯一恢复入口。
-  - 原逐模型推理档位声明(三态编辑器)已移除:模型能力无需逐用户编辑,
-    Models 页不显示能力选择器。
+  - 原逐模型编辑器(推理档位声明、模型显示名称)已移除:本扩展只改提供方
+    自身的身份,不触碰模型数据。
 - host 半区不再注册任何服务:0.1.7 起插件自身的 Cordis `Config` 就是它的设置项,
   Host 由该 schema 生成设置页并伺服可写表单(只有 volatile 字段可写,故 `disabled`
   标注 volatile);host 半区只剩 schema 与一个空 apply(仍经 `src/mount-once.ts`

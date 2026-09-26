@@ -1,32 +1,25 @@
 /**
- * Models-page provider-card extension area: per-model display-name editing.
+ * Models-page provider-card extension area: inline provider display-name
+ * editing.
  *
- * Renders, for one pi-ai provider route, the model rows of its catalog with
- * an inline display-name editor. Model ids stay read-only (they are the wire
- * identity); the display name is what the pickers show, and the edit writes
- * back through the official settings wire as one whole-array path op with
- * revision fencing — the same write granularity and conflict posture the
- * official card uses. Every other model field (input modalities, context
- * window, reasoning-effort declarations, ...) rides along untouched.
+ * The official card only offers a display-name field for hand-declared
+ * (user-layer) providers; providers configured in a base/profile layer get no
+ * name input there, because the official editor gates that field on
+ * `declared === true`. This panel puts the edit directly on the card for
+ * every `llm-pi-ai` route: one "provider display name" input, saved as
+ * `providers.<route>.displayName` through the official settings wire with
+ * revision fencing — the same conflict posture the official card uses.
  *
- * This is the successor of the former reasoning-effort editor: model
- * abilities need no per-user editing, but a display-name edit belongs on the
- * card. Save is a single path op replacing the provider's whole `models`
- * array.
- * @module @linxin666/dsh-client-ui-model-capabilities/client/ModelNamePanel
+ * The former per-model editors (reasoning efforts, then model display names)
+ * are intentionally not offered: this extension edits the provider's own
+ * identity only.
+ * @module @linxin666/dsh-client-ui-model-capabilities/client/ProviderNamePanel
  */
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ProviderCardExtrasOwnerProps } from '@deepseek-ai/dsh-client-ui-settings-models/client'
 import type { RemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
-import type { SettingsNamespaceView } from '@deepseek-ai/dsh-settings/types'
-import {
-  buildModelsOp,
-  modelsArrayOf,
-  readAt,
-  sanitizeEntry,
-  type ModelEntryDraft,
-} from '../core/capabilities.ts'
+import { readAt } from '../core/capabilities.ts'
 import type { SettingsNamespaceFace } from './settings-face.ts'
 import { t } from './locales.ts'
 import css from './capabilities.module.css'
@@ -35,7 +28,7 @@ export type { SettingsNamespaceFace } from './settings-face.ts'
 import type { RefreshBus } from './settings-face.ts'
 
 /** Component props: the slot's owner share plus the injected faces. */
-export interface ModelNamePanelProps extends ProviderCardExtrasOwnerProps {
+export interface ProviderNamePanelProps extends ProviderCardExtrasOwnerProps {
   /** The generated remote settings namespace (extracted by the apply body, which declares the dotted inject). */
   settings: SettingsNamespaceFace
   /** Cross-surface refresh bus; absent keeps the editor functional (no auto-refresh). */
@@ -44,8 +37,8 @@ export interface ModelNamePanelProps extends ProviderCardExtrasOwnerProps {
 
 /** One parsed snapshot the panel renders from. */
 interface Snapshot {
-  /** Effective entries: the user layer's array when it owns one, else the resolved one. */
-  entries: ModelEntryDraft[]
+  /** Currently effective display name (value or resolved layer). */
+  displayName: string | undefined
   /** Namespace revision the snapshot was read at (the write's fence). */
   revision: number
   /** Whether the settings provider accepts writes. */
@@ -67,21 +60,22 @@ function failureText(error: RemoteFailure): string {
 }
 
 /**
- * Render the inline model-name editor for one provider card.
+ * Render the inline provider display-name editor for one provider card.
  * @param props - the card's directory row and the injected faces.
  * @returns the extension area.
  */
-export function ModelNamePanel(props: ModelNamePanelProps) {
+export function ProviderNamePanel(props: ProviderNamePanelProps) {
   const { provider, settings, refresh } = props
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [snapshot, setSnapshot] = useState<Snapshot | undefined>(undefined)
-  const [draft, setDraft] = useState<ModelEntryDraft[] | null>(null)
+  const [draft, setDraft] = useState<string | undefined>(undefined)
   const [save, setSave] = useState<SaveState>({ kind: 'idle' })
   /** Revision the open draft was read from (the write's fence while it is open). */
   const draftBasis = useRef<number | undefined>(undefined)
 
-  const modelsPath = useMemo(() => [...provider.settingsPath, 'models'], [provider.settingsPath])
-  const entries = draft ?? snapshot?.entries ?? []
+  const profilePath = useMemo(() => [...provider.settingsPath], [provider.settingsPath])
+  /** The value edited when the profile lives directly at the route node. */
+  const displayNamePath = useMemo(() => [...profilePath, 'displayName'], [profilePath])
 
   const load = useCallback(async (face: SettingsNamespaceFace) => {
     setPhase({ kind: 'loading' })
@@ -93,22 +87,19 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
       if (view === undefined) {
         throw new Error(`settings entry "${provider.settingsNs}" is not served on this host`)
       }
-      const userModels = modelsArrayOf(readAt(view.user, modelsPath))
-      const effective = userModels ?? modelsArrayOf(readAt(view.value, modelsPath)) ?? []
-      // An open draft keeps its own basis revision: a background refresh must
-      // neither drop unsaved edits nor let them ride a newer revision.
+      const effective = readAt(view.value, displayNamePath)
       const basis = draftBasis.current
       setSnapshot({
-        entries: effective,
+        displayName: typeof effective === 'string' ? effective : undefined,
         revision: basis ?? view.revision,
         writable: described.value.writable,
       })
-      if (basis === undefined) setDraft(null)
+      if (basis === undefined) setDraft(undefined)
       setPhase({ kind: 'ready' })
     } catch (error) {
       setPhase({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
     }
-  }, [modelsPath, provider.settingsNs])
+  }, [displayNamePath, provider.settingsNs])
 
   useEffect(() => {
     void load(settings)
@@ -120,41 +111,40 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
 
   const editing = phase.kind === 'ready' && snapshot !== undefined
   const readOnly = editing && !snapshot.writable
-  const dirty = draft !== null
+  const value = draft ?? snapshot?.displayName ?? ''
+  const dirty = draft !== undefined
 
-  const setName = (index: number, name: string) => {
+  const setName = (next: string) => {
     if (!editing || readOnly) return
-    if (draft === null) draftBasis.current = snapshot.revision
-    setDraft(current => {
-      const base = current ?? snapshot.entries.map(entry => JSON.parse(JSON.stringify(sanitizeEntry(entry))) as ModelEntryDraft)
-      const clone = base.map(entry => ({ ...entry }))
-      clone[index] = { ...clone[index], name: name.length > 0 ? name : undefined }
-      return clone
-    })
+    if (draft === undefined) draftBasis.current = snapshot.revision
+    setDraft(next)
     setSave({ kind: 'idle' })
   }
 
   const discard = () => {
     draftBasis.current = undefined
-    setDraft(null)
+    setDraft(undefined)
     setSave({ kind: 'idle' })
   }
 
   const doSave = async () => {
-    if (!editing || readOnly || draft === null || snapshot === undefined) return
-    const op = buildModelsOp(provider.settingsPath, draft)
+    if (!editing || readOnly || draft === undefined || snapshot === undefined) return
     setSave({ kind: 'saving' })
     try {
-      const written = await settings.mutate(provider.settingsNs, [op], snapshot.revision)
+      // Empty name removes the field so the route falls back to its id.
+      const ops = draft.length === 0
+        ? [{ op: 'unset', path: displayNamePath }]
+        : [{ op: 'set', path: displayNamePath, value: draft }]
+      const written = await settings.mutate(provider.settingsNs, ops as never, snapshot.revision)
       if (written.ok) {
-        const userModels = modelsArrayOf(readAt(written.value.user, modelsPath)) ?? []
+        const effective = readAt(written.value.value, displayNamePath)
         setSnapshot(current => current === undefined ? current : {
           ...current,
-          entries: userModels,
+          displayName: typeof effective === 'string' ? effective : undefined,
           revision: written.value.revision,
         })
         draftBasis.current = undefined
-        setDraft(null)
+        setDraft(undefined)
         setSave({ kind: 'saved' })
         return
       }
@@ -162,7 +152,7 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
         // The document moved under the draft: reload to the stored state and
         // let the user re-apply, exactly the posture the official card takes.
         draftBasis.current = undefined
-        setDraft(null)
+        setDraft(undefined)
         setSave({ kind: 'conflict' })
         await load(settings)
         return
@@ -174,15 +164,15 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
   }
 
   return (
-    <section className={css.namePanel} data-dsh-plugin="model-capabilities" data-dsh-part="name-panel">
-      <p className={css.nameHint}>{t('name.hint')}</p>
-      {phase.kind === 'loading' ? <p className={css.status} role="status">{t('name.loading')}</p> : null}
+    <section className={css.namePanel} data-dsh-plugin="model-capabilities" data-dsh-part="provider-name">
+      <p className={css.nameHint}>{t('providerName.hint')}</p>
+      {phase.kind === 'loading' ? <p className={css.status} role="status">{t('providerName.loading')}</p> : null}
       {phase.kind === 'error'
         ? (
             <div className={css.statusRow}>
-              <p className={css.failed} role="alert">{t('name.loadFailed', { error: phase.message })}</p>
+              <p className={css.failed} role="alert">{t('providerName.loadFailed', { error: phase.message })}</p>
               <button type="button" className={css.ghost} data-dsh-part="reload" onClick={() => { void load(settings) }}>
-                {t('name.reload')}
+                {t('providerName.reload')}
               </button>
             </div>
           )
@@ -190,31 +180,23 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
       {phase.kind === 'ready' && snapshot !== undefined
         ? (
             <>
-              {readOnly ? <p className={css.readOnly} role="status">{t('name.readOnly')}</p> : null}
-              {snapshot.entries.length === 0
-                ? <p className={css.status} role="status">{t('name.empty')}</p>
-                : (
-                    <ul className={css.nameRows}>
-                      {entries.map((entry, index) => (
-                        <li key={typeof entry.id === 'string' ? entry.id : index} className={css.nameRow} data-dsh-part="name-row">
-                          <code className={css.nameId}>{entry.id}</code>
-                          <input
-                            className={css.nameInput}
-                            type="text"
-                            value={typeof entry.name === 'string' ? entry.name : ''}
-                            placeholder={t('name.placeholder')}
-                            aria-label={`${t('name.label')}: ${entry.id}`}
-                            disabled={readOnly}
-                            onChange={event => { setName(index, event.target.value) }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+              {readOnly ? <p className={css.readOnly} role="status">{t('providerName.readOnly')}</p> : null}
+              <div className={css.nameRow} data-dsh-part="name-row">
+                <code className={css.nameId}>{provider.provider}</code>
+                <input
+                  className={css.nameInput}
+                  type="text"
+                  value={value}
+                  placeholder={t('providerName.placeholder')}
+                  aria-label={t('providerName.label')}
+                  disabled={readOnly}
+                  onChange={event => { setName(event.target.value) }}
+                />
+              </div>
               <div className={css.footer}>
-                {save.kind === 'saved' ? <p className={css.status} role="status">{t('name.saved')}</p> : null}
-                {save.kind === 'conflict' ? <p className={css.failed} role="alert">{t('name.conflict')}</p> : null}
-                {save.kind === 'failed' ? <p className={css.failed} role="alert">{t('name.failed', { error: save.message })}</p> : null}
+                {save.kind === 'saved' ? <p className={css.status} role="status">{t('providerName.saved')}</p> : null}
+                {save.kind === 'conflict' ? <p className={css.failed} role="alert">{t('providerName.conflict')}</p> : null}
+                {save.kind === 'failed' ? <p className={css.failed} role="alert">{t('providerName.failed', { error: save.message })}</p> : null}
                 <span className={css.spacer} />
                 <button
                   type="button"
@@ -223,7 +205,7 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
                   disabled={!dirty || save.kind === 'saving'}
                   onClick={discard}
                 >
-                  {t('name.discard')}
+                  {t('providerName.discard')}
                 </button>
                 <button
                   type="button"
@@ -232,7 +214,7 @@ export function ModelNamePanel(props: ModelNamePanelProps) {
                   disabled={!dirty || readOnly || save.kind === 'saving'}
                   onClick={() => { void doSave() }}
                 >
-                  {save.kind === 'saving' ? t('name.saving') : t('name.save')}
+                  {save.kind === 'saving' ? t('providerName.saving') : t('providerName.save')}
                 </button>
               </div>
             </>

@@ -1,16 +1,15 @@
 /** @vitest-environment jsdom */
 
 /**
- * The provider-card inline model-name editor: mounts into the keyed slot
- * contract, reads the pi-ai namespace view through the settings namespace
- * face, and saves one whole-array mutate with revision fencing, preserving
- * every field the name panel does not edit.
+ * The provider-card inline provider display-name editor: mounts into the
+ * keyed slot contract, reads the pi-ai namespace view through the settings
+ * namespace face, and saves the `displayName` field with revision fencing.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ClientRemote, RemoteResult, SettingsDescribeValue, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
-import { ModelNamePanel } from '../src/client/ModelNamePanel.tsx'
+import { ProviderNamePanel } from '../src/client/ProviderNamePanel.tsx'
 
 afterEach(() => {
   cleanup()
@@ -25,21 +24,13 @@ const PROVIDER = {
   active: true,
 }
 
-/** A stored models row the official card wrote (id/name/contexts + nothing else). */
-const STORED_ROW = {
-  id: 'gpt-x',
-  name: 'GPT X',
-  contextWindow: 256000,
-  maxTokens: 32000,
-}
-
 function namespaceView(overrides?: Partial<SettingsNamespaceView>): SettingsNamespaceView {
   return {
     ns: 'llm-pi-ai',
     autoGenerate: true,
     schema: {},
-    value: { providers: { 'acme-gateway': { models: [STORED_ROW] } } },
-    user: { providers: { 'acme-gateway': { models: [{ ...STORED_ROW }] } } },
+    value: { providers: { 'acme-gateway': { baseURL: 'https://x', models: [] } } },
+    user: { providers: { 'acme-gateway': { baseURL: 'https://x', models: [] } } },
     applies: 'live',
     secrets: [],
     revision: 7,
@@ -81,39 +72,31 @@ function callsOf(face: ClientRemote['settings']): MutateCall[] {
   return (face as unknown as { calls: MutateCall[] }).calls
 }
 
-describe('ModelNamePanel', () => {
-  it('renders the model rows with editable name inputs after describe resolves', async () => {
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={makeSettingsFace(namespaceView())} />)
+describe('ProviderNamePanel', () => {
+  it('renders the provider id and the current display name after describe resolves', async () => {
+    const view = namespaceView({
+      value: { providers: { 'acme-gateway': { displayName: 'ACME Gateway', baseURL: 'https://x', models: [] } } },
+    })
+    render(<ProviderNamePanel provider={PROVIDER} configured keyConfigured settings={makeSettingsFace(view)} />)
     const panel = document.querySelector('[data-dsh-plugin="model-capabilities"]')
     expect(panel).not.toBeNull()
     await waitFor(() => {
-      expect(screen.getByText('gpt-x')).toBeTruthy()
+      expect(screen.getByText('acme-gateway')).toBeTruthy()
     })
-    const input = screen.getByRole('textbox', { name: /显示名称: gpt-x/ }) as HTMLInputElement
-    expect(input.value).toBe('GPT X')
+    const input = screen.getByRole('textbox', { name: /供应商名称/ }) as HTMLInputElement
+    expect(input.value).toBe('ACME Gateway')
   })
 
-  it('shows the empty copy for a provider without a declared catalog', async () => {
-    const view = namespaceView({
-      value: {},
-      user: undefined,
-    })
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={makeSettingsFace(view)} />)
-    await waitFor(() => {
-      expect(screen.getByText('此提供方还没有可编辑的模型目录。先在上方模型目录中添加模型行，再回到这里修改名称。')).toBeTruthy()
-    })
-  })
-
-  it('saves a renamed model as one whole-array op, preserving every other field', async () => {
+  it('saves a renamed provider as one displayName set op', async () => {
     const view = namespaceView()
     const face = makeSettingsFace(view)
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={face} />)
+    render(<ProviderNamePanel provider={PROVIDER} configured keyConfigured settings={face} />)
     await waitFor(() => {
-      expect(screen.getByText('gpt-x')).toBeTruthy()
+      expect(screen.getByText('acme-gateway')).toBeTruthy()
     })
 
-    const input = screen.getByRole('textbox', { name: /显示名称: gpt-x/ })
-    fireEvent.change(input, { target: { value: 'GPT-X Renamed' } })
+    const input = screen.getByRole('textbox', { name: /供应商名称/ })
+    fireEvent.change(input, { target: { value: 'ACME Renamed' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
     await waitFor(() => {
       expect(callsOf(face)).toHaveLength(1)
@@ -123,32 +106,31 @@ describe('ModelNamePanel', () => {
     expect(call.expectedRevision).toBe(7)
     expect(call.ops).toHaveLength(1)
     expect(call.ops[0].op).toBe('set')
-    expect(call.ops[0].path).toEqual(['providers', 'acme-gateway', 'models'])
-    const written = (call.ops[0].value as Array<Record<string, unknown>>)[0]
-    expect(written['id']).toBe('gpt-x')
-    expect(written['name']).toBe('GPT-X Renamed')
-    // Fields the name panel does not edit survive the whole-array save.
-    expect(written['contextWindow']).toBe(256000)
-    expect(written['maxTokens']).toBe(32000)
+    expect(call.ops[0].path).toEqual(['providers', 'acme-gateway', 'displayName'])
+    expect(call.ops[0].value).toBe('ACME Renamed')
   })
 
-  it('clears a name by writing an entry without the name key', async () => {
-    const view = namespaceView()
+  it('clears a provider name by unsetting the displayName field', async () => {
+    const view = namespaceView({
+      value: { providers: { 'acme-gateway': { displayName: 'ACME Gateway', baseURL: 'https://x', models: [] } } },
+      user: { providers: { 'acme-gateway': { displayName: 'ACME Gateway', baseURL: 'https://x', models: [] } } },
+    })
     const face = makeSettingsFace(view)
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={face} />)
+    render(<ProviderNamePanel provider={PROVIDER} configured keyConfigured settings={face} />)
     await waitFor(() => {
-      expect(screen.getByText('gpt-x')).toBeTruthy()
+      expect(screen.getByText('acme-gateway')).toBeTruthy()
     })
 
-    const input = screen.getByRole('textbox', { name: /显示名称: gpt-x/ })
+    const input = screen.getByRole('textbox', { name: /供应商名称/ }) as HTMLInputElement
+    expect(input.value).toBe('ACME Gateway')
     fireEvent.change(input, { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
     await waitFor(() => {
       expect(callsOf(face)).toHaveLength(1)
     })
-    const written = (callsOf(face)[0].ops[0].value as Array<Record<string, unknown>>)[0]
-    expect(written['id']).toBe('gpt-x')
-    expect('name' in written).toBe(false)
+    const call = callsOf(face)[0]
+    expect(call.ops[0].op).toBe('unset')
+    expect(call.ops[0].path).toEqual(['providers', 'acme-gateway', 'displayName'])
   })
 
   it('surfaces a revision conflict and reloads instead of writing over', async () => {
@@ -158,17 +140,16 @@ describe('ModelNamePanel', () => {
       error: Object.assign(new Error('settings namespace "llm-pi-ai" changed since it was read'), { code: 'settings/conflict' }),
     } as RemoteResult<SettingsNamespaceView>
     const face = makeSettingsFace(view, () => conflict)
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={face} />)
+    render(<ProviderNamePanel provider={PROVIDER} configured keyConfigured settings={face} />)
     await waitFor(() => {
-      expect(screen.getByText('gpt-x')).toBeTruthy()
+      expect(screen.getByText('acme-gateway')).toBeTruthy()
     })
-    const input = screen.getByRole('textbox', { name: /显示名称: gpt-x/ })
+    const input = screen.getByRole('textbox', { name: /供应商名称/ })
     fireEvent.change(input, { target: { value: 'Renamed' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
     await waitFor(() => {
       expect(screen.getByText('配置已被其他界面修改，已重新读取，请重试。')).toBeTruthy()
     })
-    // No second write happened after the conflict; the panel reloaded instead.
     expect(callsOf(face)).toHaveLength(1)
   })
 
@@ -178,11 +159,11 @@ describe('ModelNamePanel', () => {
       describe: () => Promise.resolve({ ok: true, value: describeValue(view, false) }),
       mutate: () => Promise.resolve({ ok: true, value: namespaceView() }),
     }
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={face as unknown as ClientRemote['settings']} />)
+    render(<ProviderNamePanel provider={PROVIDER} configured keyConfigured settings={face as unknown as ClientRemote['settings']} />)
     await waitFor(() => {
       expect(screen.getByText('当前设置文档只读，无法修改。')).toBeTruthy()
     })
-    const input = screen.getByRole('textbox', { name: /显示名称: gpt-x/ }) as HTMLInputElement
+    const input = screen.getByRole('textbox', { name: /供应商名称/ }) as HTMLInputElement
     expect(input.disabled).toBe(true)
   })
 
@@ -191,7 +172,7 @@ describe('ModelNamePanel', () => {
       describe: () => Promise.resolve({ ok: false, error: Object.assign(new Error('host refused'), { code: 'settings/denied' }) }),
       mutate: () => Promise.resolve({ ok: true, value: namespaceView() }),
     }
-    render(<ModelNamePanel provider={PROVIDER} configured keyConfigured settings={face as unknown as ClientRemote['settings']} />)
+    render(<ProviderNamePanel provider={PROVIDER} configured keyConfigured settings={face as unknown as ClientRemote['settings']} />)
     await waitFor(() => {
       expect(screen.getByText('读取失败：host refused')).toBeTruthy()
     })
