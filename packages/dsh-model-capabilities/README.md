@@ -2,40 +2,29 @@
 
 English | [中文](README.zh.md)
 
-Two Models-page extension areas for the `llm-pi-ai` adapter family: an inline
-provider display-name editor on each provider card, and a disabled-provider
-archive listing in the page footer where archived configurations can be
-restored with one click.
+Disabled-provider archive listing for the Models settings page: providers whose
+profile was taken down through the official Remove-provider seam are listed in a
+footer area, where their archived configuration can be restored with one click.
 
-The official card only offers a display-name field for hand-declared
-(user-layer) providers; providers configured in a base/profile layer get no
-name input there. This plugin's card extension restores that edit for every
-pi-ai route.
-
-The former per-model editors (reasoning-effort declarations, then model
-display names) are intentionally not offered: this extension edits the
-provider's own identity only.
+The `settings.models.provider-card` seat is intentionally not registered: the
+former capability editors (reasoning efforts, model display names) and the
+provider display-name line were all removed. Provider names and model details
+are edited through configuration, not in the GUI.
 
 ## What it does
 
-- **Inline provider-name editing**: registers the `settings.models.provider-card`
-  slot for the `llm-pi-ai` adapter family. Each provider card shows the route id
-  (read-only) next to an editable display-name input, saved as
-  `providers.<route>.displayName` through the official settings wire with
-  revision fencing. An empty name removes the field so the route falls back to
-  its id; the editor reloads and asks for a retry when the configuration
-  changed elsewhere.
-- **Provider restore**: registers the `settings.models.footer` slot, listing
-  providers whose archived profile is still off the model catalog that both the
-  composer model picker and the subagent selection read. One click restores the
-  archived profile verbatim and clears the archive entry (API keys live in the
-  credentials service and are never touched). Restoring refuses when the route
-  has grown a new profile in the meantime, so it can never clobber newer
-  configuration.
-- **No capability editor**: the former tri-state reasoning-effort editor with
-  per-level wire spellings is not registered. The Models page's own editor keeps
-  writing model rows, input modality claims, and whatever the official card
-  manages; nothing on the card asks the user about reasoning levels.
+- **Seats the Models-page footer**: registers the `settings.models.footer` slot
+  for the `llm-pi-ai` adapter family, listing providers whose archived profile
+  is still off the model catalog that both the composer model picker and the
+  subagent selection read.
+- **Provider restore**: one click restores the archived profile verbatim and
+  clears the archive entry (API keys live in the credentials service and are
+  never touched). Restoring refuses when the route has grown a new profile in
+  the meantime, so it can never clobber newer configuration.
+- **No card editor**: the `settings.models.provider-card` seat is not
+  registered — no capability selector, no model-name editor, no provider-name
+  line on the cards. The Models page's own editor keeps writing model rows,
+  input modality claims, and whatever the official card manages.
 
 ## Install
 
@@ -53,8 +42,8 @@ pnpm -r build
 dsh plugin --profile web add link:$(pwd)/packages/dsh-model-capabilities
 ```
 
-Restart `dsh web`. Open Web settings, Models; each provider card shows the
-model-name editor, and disabled providers are listed in the page footer.
+Restart `dsh web`. Open Web settings, Models; disabled providers are listed in
+the footer of the Models page.
 
 ## Configuration
 
@@ -74,11 +63,6 @@ state live in the official `llm-pi-ai` entry plus this archive.
   can leave a harmless duplicate archive but never a lost profile. While a
   provider is down, delegation to it fails closed at the host (`NO_ADAPTER`),
   not just in the UI.
-- **Provider-name edits are direct field ops**: renaming a provider writes
-  `providers.<route>.displayName` as a single path op (set, or unset when the
-  name is cleared) — no model data is touched. Edits carry the revision the
-  panel read at; a concurrent change reloads and asks for a retry instead of
-  overwriting.
 - **Reasoning levels are declared in configuration only**: profiles may carry
   `reasoningEfforts` field values (as the official pi-ai schema allows), but no
   UI in this plugin asks about them.

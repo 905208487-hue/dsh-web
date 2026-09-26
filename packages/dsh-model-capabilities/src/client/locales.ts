@@ -10,20 +10,6 @@ export const NS = 'model-caps'
 
 /** Chinese copy (key source). */
 export const zh = {
-  'providerName.hint': '直接修改供应商名称，保存写入设置文档并立即生效；留空则回退为供应商 ID。',
-  'providerName.loading': '正在读取供应商…',
-  'providerName.loadFailed': '读取失败：{error}',
-  'providerName.reload': '重新读取',
-  'providerName.readOnly': '当前设置文档只读，无法修改。',
-  'providerName.label': '供应商名称',
-  'providerName.placeholder': '留空时使用供应商 ID',
-  'providerName.save': '保存',
-  'providerName.saving': '保存中…',
-  'providerName.discard': '重置',
-  'providerName.saved': '已保存',
-  'providerName.errorShort': '未保存(悬停查看原因)',
-  'providerName.conflict': '配置已被其他界面修改，已重新读取，请重试。',
-  'providerName.failed': '保存失败：{error}',
   'caps.conflict': '配置已被其他界面修改，已重新读取，请重试。',
   'caps.failed': '操作失败：{error}',
   'caps.action.enable': '启用',
@@ -39,20 +25,6 @@ export type CapsKey = keyof typeof zh
 
 /** English copy (full key parity with zh). */
 export const en: Record<CapsKey, string> = {
-  'providerName.hint': 'Edit the provider display name here; saving writes the settings document and applies immediately. Empty names fall back to the provider ID.',
-  'providerName.loading': 'Loading provider…',
-  'providerName.loadFailed': 'Failed to load: {error}',
-  'providerName.reload': 'Reload',
-  'providerName.readOnly': 'The settings document is read-only; changes are disabled.',
-  'providerName.label': 'Provider display name',
-  'providerName.placeholder': 'Uses the provider ID when empty',
-  'providerName.save': 'Save',
-  'providerName.saving': 'Saving…',
-  'providerName.discard': 'Reset',
-  'providerName.saved': 'Saved',
-  'providerName.errorShort': 'Not saved (hover for reason)',
-  'providerName.conflict': 'The configuration changed in another surface; reloaded — please retry.',
-  'providerName.failed': 'Save failed: {error}',
   'caps.conflict': 'The configuration changed in another surface; reloaded — please retry.',
   'caps.failed': 'Operation failed: {error}',
   'caps.action.enable': 'Enable',
