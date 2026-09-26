@@ -1,13 +1,19 @@
 /**
- * Host entry of the dsh-recall plugin: currently a stub — the host-side
- * rollback route (zstd read, core cut, atomic write) and the browser recall
- * trigger land in the next steps.
+ * Host entry of the dsh-recall plugin: registers the recall rollback route
+ * (POST /api/dsh-recall/rollback, loopback-fenced) on the harness web server.
  * @module @linxin666/dsh-recall
  */
 
+import type { Context } from '@deepseek-ai/cordis'
+import { makeRecallRoutes } from './host/routes.ts'
+
 export const name = 'dsh-recall'
 
-/** Stub apply; the real route is wired in a later step. */
-export function apply(): void {
-  // noop until the rollback route lands
+export const inject = ['webServer'] as const
+
+/** Register the recall rollback route. */
+export function apply(ctx: Context): void {
+  for (const route of makeRecallRoutes()) {
+    ctx.webServer.register(route)
+  }
 }
