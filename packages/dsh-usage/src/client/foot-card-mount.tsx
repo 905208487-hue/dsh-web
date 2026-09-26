@@ -130,16 +130,24 @@ export function mountUsageFootAction(props: UsageFootActionProps): () => void {
   }
   const container = document.createElement('div')
   container.setAttribute('data-dsh-usage-foot-action', '')
+  // Flow the trigger as an inline seat item (the wrapper carries the seat's
+  // row layout through like the shell's display:contents slot wrapper).
+  container.style.display = 'contents'
   const root: Root = createRoot(container)
   root.render(createElement(UsageFootAction, props))
 
-  /** Keep the trigger in the download slot, left of the remote entry row. */
+  /**
+   * Keep the trigger in the download slot: the first item of the footer
+   * action seat, left of the remote-control phone trigger. The seat wrapper
+   * carries a stable data-slot attribute; the settings row is the fallback
+   * anchor when no seat is mounted.
+   */
   const place = (): void => {
     const foot = footArea()
     if (foot === undefined) return
-    const remoteRow = foot.querySelector<HTMLElement>('[class*="entryRow"]')
-    if (remoteRow !== null) {
-      if (container.nextElementSibling !== remoteRow) foot.insertBefore(container, remoteRow)
+    const seat = foot.querySelector<HTMLElement>('[data-slot="sidebar.footer.action"]')
+    if (seat !== null) {
+      if (seat.firstChild !== container) seat.insertBefore(container, seat.firstChild)
       return
     }
     const settings = foot.querySelector<HTMLElement>('[class*="settingsArea"]')

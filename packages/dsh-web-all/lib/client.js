@@ -36,11 +36,10 @@ window.__ModuleLoader__.load({
 			enumerable: true
 		}) : target, mod));
 		//#endregion
-		let react = require("react");
-		let react$1 = __toESM(react, 1);
-		react = __toESM(react);
 		let _deepseek_ai_cordis = require("@deepseek-ai/cordis");
 		let react_jsx_runtime = require("react/jsx-runtime");
+		let react = require("react");
+		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_dom_client = require("react-dom/client");
 		let react_dom = require("react-dom");
@@ -1037,24 +1036,24 @@ window.__ModuleLoader__.load({
 		/** The plugin-manager settings tab. */
 		function PluginManagerTab(props) {
 			const { t, isLoopback, list, update, checkUpdates, status, failures, setSafeMode, repairPlugin, controlsList, controlsSetEnabled, lastInstallConflicts } = props;
-			const [view, setView] = (0, react$1.useState)({ status: "loading" });
-			const [busy, setBusy] = (0, react$1.useState)(void 0);
-			const [toggleBusy, setToggleBusy] = (0, react$1.useState)(void 0);
-			const [error, setError] = (0, react$1.useState)(void 0);
-			const [dirty, setDirty] = (0, react$1.useState)(false);
-			const [repairing, setRepairing] = (0, react$1.useState)(void 0);
-			const [copied, setCopied] = (0, react$1.useState)(void 0);
-			const [updates, setUpdates] = (0, react$1.useState)(/* @__PURE__ */ new Map());
-			const [conflicts, setConflicts] = (0, react$1.useState)([]);
-			const [progress, setProgress] = (0, react$1.useState)({
+			const [view, setView] = (0, react.useState)({ status: "loading" });
+			const [busy, setBusy] = (0, react.useState)(void 0);
+			const [toggleBusy, setToggleBusy] = (0, react.useState)(void 0);
+			const [error, setError] = (0, react.useState)(void 0);
+			const [dirty, setDirty] = (0, react.useState)(false);
+			const [repairing, setRepairing] = (0, react.useState)(void 0);
+			const [copied, setCopied] = (0, react.useState)(void 0);
+			const [updates, setUpdates] = (0, react.useState)(/* @__PURE__ */ new Map());
+			const [conflicts, setConflicts] = (0, react.useState)([]);
+			const [progress, setProgress] = (0, react.useState)({
 				kind: "idle",
 				stage: "fetch"
 			});
 			/** Parent rows whose aggregate child list is expanded; collapsed by default. */
-			const [expandedChildren, setExpandedChildren] = (0, react$1.useState)(() => /* @__PURE__ */ new Set());
+			const [expandedChildren, setExpandedChildren] = (0, react.useState)(() => /* @__PURE__ */ new Set());
 			/** Synchronous in-flight mirror of `busy`: the render-time guard alone lets a
 			* click and an Enter land in the same frame and double-fire. */
-			const busyRef = (0, react$1.useRef)(false);
+			const busyRef = (0, react.useRef)(false);
 			/**
 			* Reload every snapshot into the ready view. The conflict ledger is the
 			* host's record of the last install or update that ran through this
@@ -1076,7 +1075,7 @@ window.__ModuleLoader__.load({
 					failures: failureSnapshot
 				});
 			};
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				let cancelled = false;
 				reload().catch(() => {
 					if (!cancelled) setView({ status: "error" });
@@ -1102,7 +1101,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 			/** Poll update progress while such an operation is in flight. */
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (busy === void 0 || busy.kind !== "update") {
 					setProgress({
 						kind: "idle",
@@ -5003,38 +5002,38 @@ window.__ModuleLoader__.load({
 		/** New-task form overlay. */
 		function NewTaskModal({ controller, onClose, initialTask, defaultWorkspaceId, onDuplicateSuccess, parentTask }) {
 			const isDuplicate = initialTask !== void 0;
-			const [title, setTitle] = (0, react$1.useState)(initialTask?.title ?? "");
-			const [description, setDescription] = (0, react$1.useState)(initialTask?.description ?? "");
-			const [prompt, setPrompt] = (0, react$1.useState)(initialTask?.prompt ?? "");
-			const [workspaceId, setWorkspaceId] = (0, react$1.useState)(initialTask?.workspaceId ?? parentTask?.workspaceId ?? defaultWorkspaceId ?? "");
-			const [mode, setMode] = (0, react$1.useState)(initialTask?.mode ?? parentTask?.mode ?? "");
-			const [permission, setPermission] = (0, react$1.useState)(initialTask?.permission ?? "");
-			const [model, setModel] = (0, react$1.useState)(initialTask?.model ?? parentTask?.model ?? "");
+			const [title, setTitle] = (0, react.useState)(initialTask?.title ?? "");
+			const [description, setDescription] = (0, react.useState)(initialTask?.description ?? "");
+			const [prompt, setPrompt] = (0, react.useState)(initialTask?.prompt ?? "");
+			const [workspaceId, setWorkspaceId] = (0, react.useState)(initialTask?.workspaceId ?? parentTask?.workspaceId ?? defaultWorkspaceId ?? "");
+			const [mode, setMode] = (0, react.useState)(initialTask?.mode ?? parentTask?.mode ?? "");
+			const [permission, setPermission] = (0, react.useState)(initialTask?.permission ?? "");
+			const [model, setModel] = (0, react.useState)(initialTask?.model ?? parentTask?.model ?? "");
 			const inheritedPermission = parentTask === void 0 ? void 0 : effectiveTaskPermission(parentTask);
-			const [reuseSession, setReuseSession] = (0, react$1.useState)(initialTask?.reuseSession ?? false);
-			const [scheduleEnabled, setScheduleEnabled] = (0, react$1.useState)(initialTask?.schedule?.enabled ?? false);
-			const [scheduleCron, setScheduleCron] = (0, react$1.useState)(initialTask?.schedule?.cron ?? "");
-			const [scheduleError, setScheduleError] = (0, react$1.useState)(void 0);
-			const [freezeText, setFreezeText] = (0, react$1.useState)("");
-			const [freezeError, setFreezeError] = (0, react$1.useState)(void 0);
-			const [handoverText, setHandoverText] = (0, react$1.useState)(initialTask?.handover?.references !== void 0 ? initialTask.handover.references.join("\n") : "");
-			const [tags, setTags] = (0, react$1.useState)(initialTask?.tags ?? []);
-			const [archiveOriginal, setArchiveOriginal] = (0, react$1.useState)(true);
-			const [error, setError] = (0, react$1.useState)(void 0);
-			const [pending, setPending] = (0, react$1.useState)(false);
-			const [options, setOptions] = (0, react$1.useState)(controller.getSnapshot().executionOptions);
-			const [canParse] = (0, react$1.useState)(controller.getSnapshot().canParseTask === true);
-			const [parseText, setParseText] = (0, react$1.useState)("");
-			const [parseModel, setParseModel] = (0, react$1.useState)(() => readParseModelPreference());
-			const [parsePending, setParsePending] = (0, react$1.useState)(false);
-			const [parseError, setParseError] = (0, react$1.useState)(void 0);
-			const parseAbort = (0, react$1.useRef)(void 0);
+			const [reuseSession, setReuseSession] = (0, react.useState)(initialTask?.reuseSession ?? false);
+			const [scheduleEnabled, setScheduleEnabled] = (0, react.useState)(initialTask?.schedule?.enabled ?? false);
+			const [scheduleCron, setScheduleCron] = (0, react.useState)(initialTask?.schedule?.cron ?? "");
+			const [scheduleError, setScheduleError] = (0, react.useState)(void 0);
+			const [freezeText, setFreezeText] = (0, react.useState)("");
+			const [freezeError, setFreezeError] = (0, react.useState)(void 0);
+			const [handoverText, setHandoverText] = (0, react.useState)(initialTask?.handover?.references !== void 0 ? initialTask.handover.references.join("\n") : "");
+			const [tags, setTags] = (0, react.useState)(initialTask?.tags ?? []);
+			const [archiveOriginal, setArchiveOriginal] = (0, react.useState)(true);
+			const [error, setError] = (0, react.useState)(void 0);
+			const [pending, setPending] = (0, react.useState)(false);
+			const [options, setOptions] = (0, react.useState)(controller.getSnapshot().executionOptions);
+			const [canParse] = (0, react.useState)(controller.getSnapshot().canParseTask === true);
+			const [parseText, setParseText] = (0, react.useState)("");
+			const [parseModel, setParseModel] = (0, react.useState)(() => readParseModelPreference());
+			const [parsePending, setParsePending] = (0, react.useState)(false);
+			const [parseError, setParseError] = (0, react.useState)(void 0);
+			const parseAbort = (0, react.useRef)(void 0);
 			const parseModels = options.models ?? [];
 			const workspaceKnown = workspaceId === "" || options.workspaces.some((item) => item.workspaceId === workspaceId);
 			const modeKnown = mode === "" || options.presets.some((item) => item.id === mode);
 			const modelKnown = model === "" || parseModels.some((item) => item.id === model);
-			(0, react$1.useEffect)(() => controller.subscribe(() => setOptions(controller.getSnapshot().executionOptions)), [controller]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => controller.subscribe(() => setOptions(controller.getSnapshot().executionOptions)), [controller]);
+			(0, react.useEffect)(() => {
 				if (parseModel === "" || parseModels.length === 0) return;
 				if (parseModels.some((option) => option.id === parseModel)) return;
 				setParseModel("");
@@ -5626,7 +5625,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** Memoized card: re-renders only when the card's own task record changes. */
-		const TaskCard = (0, react$1.memo)(TaskCardInner);
+		const TaskCard = (0, react.memo)(TaskCardInner);
 		//#endregion
 		//#region ../dsh-task-board/src/client/board/ConfirmDialog.tsx
 		/**
@@ -5681,12 +5680,12 @@ window.__ModuleLoader__.load({
 		*/
 		/** Edit-task form overlay. */
 		function EditTaskModal({ controller, task, onClose }) {
-			const [title, setTitle] = (0, react$1.useState)(task.title);
-			const [description, setDescription] = (0, react$1.useState)(task.description);
-			const [prompt, setPrompt] = (0, react$1.useState)(task.prompt);
-			const [tags, setTags] = (0, react$1.useState)(task.tags ?? []);
-			const [error, setError] = (0, react$1.useState)(void 0);
-			const [pending, setPending] = (0, react$1.useState)(false);
+			const [title, setTitle] = (0, react.useState)(task.title);
+			const [description, setDescription] = (0, react.useState)(task.description);
+			const [prompt, setPrompt] = (0, react.useState)(task.prompt);
+			const [tags, setTags] = (0, react.useState)(task.tags ?? []);
+			const [error, setError] = (0, react.useState)(void 0);
+			const [pending, setPending] = (0, react.useState)(false);
 			const submit = async () => {
 				if (title.trim() === "") {
 					setError(t$5("new.required"));
@@ -5736,9 +5735,9 @@ window.__ModuleLoader__.load({
 		}
 		/** Edit-tags modal: edit labels only, shown for tasks after first execution. */
 		function EditTagsModal({ controller, task, onClose }) {
-			const [tags, setTags] = (0, react$1.useState)(task.tags ?? []);
-			const [error, setError] = (0, react$1.useState)(void 0);
-			const [pending, setPending] = (0, react$1.useState)(false);
+			const [tags, setTags] = (0, react.useState)(task.tags ?? []);
+			const [error, setError] = (0, react.useState)(void 0);
+			const [pending, setPending] = (0, react.useState)(false);
 			const submit = async () => {
 				setPending(true);
 				const tagList = cleanTags(tags);
@@ -5777,8 +5776,8 @@ window.__ModuleLoader__.load({
 		*/
 		/** Link-subtask overlay. */
 		function LinkSubtaskModal({ controller, parent, onClose }) {
-			const [pending, setPending] = (0, react$1.useState)(false);
-			const [error, setError] = (0, react$1.useState)(void 0);
+			const [pending, setPending] = (0, react.useState)(false);
+			const [error, setError] = (0, react.useState)(void 0);
 			const snapshot = controller.getSnapshot();
 			const limit = snapshot.host?.maxSubtaskDepth ?? 1;
 			const candidates = snapshot.tasks.filter((task) => task.archivedAt === void 0 && task.status !== "running" && task.parentId === void 0 && task.id !== parent.id && checkParentLink(snapshot.tasks, task.id, parent.id, limit).ok);
@@ -5914,10 +5913,10 @@ window.__ModuleLoader__.load({
 		}
 		/** The execution-target editor: workspace / mode / permission pickers. */
 		function ExecutionSettingsSection({ controller, task, pending }) {
-			const [options, setOptions] = (0, react$1.useState)(controller.getSnapshot().executionOptions);
+			const [options, setOptions] = (0, react.useState)(controller.getSnapshot().executionOptions);
 			const teamRunOffered = () => controller.getSnapshot().host?.teamRunAvailable === true;
-			const [teamRunAvailable, setTeamRunAvailable] = (0, react$1.useState)(teamRunOffered());
-			(0, react$1.useEffect)(() => controller.subscribe(() => {
+			const [teamRunAvailable, setTeamRunAvailable] = (0, react.useState)(teamRunOffered());
+			(0, react.useEffect)(() => controller.subscribe(() => {
 				const snapshot = controller.getSnapshot();
 				setOptions(snapshot.executionOptions);
 				setTeamRunAvailable(snapshot.host?.teamRunAvailable === true);
@@ -6083,13 +6082,13 @@ window.__ModuleLoader__.load({
 		/** The scheduled-runs editor: enable toggle, cron input + presets, next-run info. */
 		function ScheduleSection({ controller, task, pending }) {
 			const schedule = task.schedule;
-			const [cron, setCron] = (0, react$1.useState)(schedule?.cron ?? "0 9 * * *");
-			const [enabled, setEnabled] = (0, react$1.useState)(schedule?.enabled ?? false);
-			const [nextRunAt, setNextRunAt] = (0, react$1.useState)(schedule?.nextRunAt);
-			const [lastTriggeredAt, setLastTriggeredAt] = (0, react$1.useState)(schedule?.lastTriggeredAt);
-			const [error, setError] = (0, react$1.useState)(void 0);
+			const [cron, setCron] = (0, react.useState)(schedule?.cron ?? "0 9 * * *");
+			const [enabled, setEnabled] = (0, react.useState)(schedule?.enabled ?? false);
+			const [nextRunAt, setNextRunAt] = (0, react.useState)(schedule?.nextRunAt);
+			const [lastTriggeredAt, setLastTriggeredAt] = (0, react.useState)(schedule?.lastTriggeredAt);
+			const [error, setError] = (0, react.useState)(void 0);
 			const timeZone = controller.getSnapshot().host?.scheduler.timeZone;
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				setCron(schedule?.cron ?? "0 9 * * *");
 				setEnabled(schedule?.enabled ?? false);
 				setNextRunAt(schedule?.nextRunAt);
@@ -6210,10 +6209,10 @@ window.__ModuleLoader__.load({
 		* Host lineage gate for affordance only; the Host re-checks the action.
 		*/
 		function SubtaskSection({ controller, task, pending, archived }) {
-			const [snapshot, setSnapshot] = (0, react$1.useState)(controller.getSnapshot());
-			(0, react$1.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
-			const [showAdd, setShowAdd] = (0, react$1.useState)(false);
-			const [showLink, setShowLink] = (0, react$1.useState)(false);
+			const [snapshot, setSnapshot] = (0, react.useState)(controller.getSnapshot());
+			(0, react.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
+			const [showAdd, setShowAdd] = (0, react.useState)(false);
+			const [showLink, setShowLink] = (0, react.useState)(false);
 			const tasks = snapshot.tasks;
 			const parent = task.parentId === void 0 ? void 0 : tasks.find((candidate) => candidate.id === task.parentId);
 			const children = directSubtasks(tasks, task.id);
@@ -6325,15 +6324,15 @@ window.__ModuleLoader__.load({
 		}
 		/** Task detail overlay. */
 		function TaskDetail({ controller, task }) {
-			const [confirmDelete, setConfirmDelete] = (0, react$1.useState)(false);
-			const [showEdit, setShowEdit] = (0, react$1.useState)(false);
-			const [showEditTags, setShowEditTags] = (0, react$1.useState)(false);
-			const [showDuplicate, setShowDuplicate] = (0, react$1.useState)(false);
-			const [latest, setLatest] = (0, react$1.useState)(task);
-			(0, react$1.useEffect)(() => {
+			const [confirmDelete, setConfirmDelete] = (0, react.useState)(false);
+			const [showEdit, setShowEdit] = (0, react.useState)(false);
+			const [showEditTags, setShowEditTags] = (0, react.useState)(false);
+			const [showDuplicate, setShowDuplicate] = (0, react.useState)(false);
+			const [latest, setLatest] = (0, react.useState)(task);
+			(0, react.useEffect)(() => {
 				setLatest(task);
 			}, [task]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				setShowEdit(false);
 				setShowEditTags(false);
 				setShowDuplicate(false);
@@ -6733,12 +6732,12 @@ window.__ModuleLoader__.load({
 		* re-renders only when its own task changes — not when a sibling card status,
 		* the filter, or the selection moves.
 		*/
-		const MemoTaskCard = (0, react$1.memo)(function MemoTaskCard({ task, pending, timeZone, onOpen, subtaskCount, isSubtask, subtasksDone, subtasksRunning, subtasksFailed }) {
+		const MemoTaskCard = (0, react.memo)(function MemoTaskCard({ task, pending, timeZone, onOpen, subtaskCount, isSubtask, subtasksDone, subtasksRunning, subtasksFailed }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskCard, {
 				task,
 				pending,
 				timeZone,
-				onClick: (0, react$1.useCallback)(() => {
+				onClick: (0, react.useCallback)(() => {
 					onOpen(task.id);
 				}, [task.id, onOpen]),
 				subtaskCount,
@@ -6750,17 +6749,17 @@ window.__ModuleLoader__.load({
 		});
 		/** Board component; subscribes to the controller snapshot. */
 		function TaskBoard({ controller }) {
-			const [snapshot, setSnapshot] = (0, react$1.useState)(controller.getSnapshot());
-			(0, react$1.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
-			const [filter, setFilter] = (0, react$1.useState)("");
-			const [tagFilter, setTagFilter] = (0, react$1.useState)([]);
-			const [hideSubtasks, setHideSubtasks] = (0, react$1.useState)(true);
-			const [showNew, setShowNew] = (0, react$1.useState)(false);
-			const [projectId, setProjectId] = (0, react$1.useState)("");
-			const [showNewProject, setShowNewProject] = (0, react$1.useState)(false);
-			const [newProjectPath, setNewProjectPath] = (0, react$1.useState)("");
-			const [newProjectError, setNewProjectError] = (0, react$1.useState)(void 0);
-			const [newProjectPending, setNewProjectPending] = (0, react$1.useState)(false);
+			const [snapshot, setSnapshot] = (0, react.useState)(controller.getSnapshot());
+			(0, react.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
+			const [filter, setFilter] = (0, react.useState)("");
+			const [tagFilter, setTagFilter] = (0, react.useState)([]);
+			const [hideSubtasks, setHideSubtasks] = (0, react.useState)(true);
+			const [showNew, setShowNew] = (0, react.useState)(false);
+			const [projectId, setProjectId] = (0, react.useState)("");
+			const [showNewProject, setShowNewProject] = (0, react.useState)(false);
+			const [newProjectPath, setNewProjectPath] = (0, react.useState)("");
+			const [newProjectError, setNewProjectError] = (0, react.useState)(void 0);
+			const [newProjectPending, setNewProjectPending] = (0, react.useState)(false);
 			const selected = selectedTaskOf(snapshot);
 			const archiveView = snapshot.archiveView;
 			const knownTags = collectKnownTags(snapshot.tasks);
@@ -6802,10 +6801,10 @@ window.__ModuleLoader__.load({
 					setNewProjectPending(false);
 				}
 			};
-			const toggleTag = (0, react$1.useCallback)((name) => {
+			const toggleTag = (0, react.useCallback)((name) => {
 				setTagFilter((current) => current.includes(name) ? current.filter((entry) => entry !== name) : [...current, name]);
 			}, []);
-			const openTask = (0, react$1.useCallback)((id) => {
+			const openTask = (0, react.useCallback)((id) => {
 				controller.openTask(id);
 			}, [controller]);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -7562,7 +7561,7 @@ window.__ModuleLoader__.load({
 		* @returns the card, or nothing while the namespace is still loading.
 		*/
 		function PluginSettingsCard$2(props) {
-			const [open, setOpen] = (0, react$1.useState)(props.defaultOpen ?? true);
+			const [open, setOpen] = (0, react.useState)(props.defaultOpen ?? true);
 			const { state, alwaysOpen } = props;
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
@@ -7697,18 +7696,18 @@ window.__ModuleLoader__.load({
 		*/
 		function SelectField$2(props) {
 			const { id, options, value } = props;
-			const [open, setOpen] = (0, react$1.useState)(false);
-			const [closing, setClosing] = (0, react$1.useState)(false);
-			const [phase, setPhase] = (0, react$1.useState)("initial");
-			const [activeIndex, setActiveIndex] = (0, react$1.useState)(0);
-			const closeTimer = (0, react$1.useRef)(void 0);
-			const wrapRef = (0, react$1.useRef)(null);
-			const popupRef = (0, react$1.useRef)(null);
+			const [open, setOpen] = (0, react.useState)(false);
+			const [closing, setClosing] = (0, react.useState)(false);
+			const [phase, setPhase] = (0, react.useState)("initial");
+			const [activeIndex, setActiveIndex] = (0, react.useState)(0);
+			const closeTimer = (0, react.useRef)(void 0);
+			const wrapRef = (0, react.useRef)(null);
+			const popupRef = (0, react.useRef)(null);
 			const currentIndex = () => {
 				const index = options.findIndex((option) => option.value === value);
 				return index >= 0 ? index : 0;
 			};
-			const close = (0, react$1.useCallback)(() => {
+			const close = (0, react.useCallback)(() => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 				setClosing(true);
 				closeTimer.current = setTimeout(() => {
@@ -7759,10 +7758,10 @@ window.__ModuleLoader__.load({
 						break;
 				}
 			};
-			(0, react$1.useEffect)(() => () => {
+			(0, react.useEffect)(() => () => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 			}, []);
-			(0, react$1.useLayoutEffect)(() => {
+			(0, react.useLayoutEffect)(() => {
 				if (open && !closing && phase === "initial") {
 					popupRef.current?.offsetHeight;
 					setPhase("open");
@@ -7772,7 +7771,7 @@ window.__ModuleLoader__.load({
 				closing,
 				phase
 			]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					const target = event.target;
@@ -7781,7 +7780,7 @@ window.__ModuleLoader__.load({
 				document.addEventListener("pointerdown", onPointerDown);
 				return () => document.removeEventListener("pointerdown", onPointerDown);
 			}, [open, close]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (props.disabled && open) close();
 			}, [
 				props.disabled,
@@ -8290,8 +8289,8 @@ window.__ModuleLoader__.load({
 			const { t } = props;
 			const state = props.useTaskBoardSettingsCard((snapshot) => snapshot);
 			const disabled = !state.writable;
-			const [power, setPower] = (0, react$1.useState)();
-			(0, react$1.useEffect)(() => {
+			const [power, setPower] = (0, react.useState)();
+			(0, react.useEffect)(() => {
 				let live = true;
 				const events = new EventSource("api/task-board/events");
 				events.onmessage = (message) => {
@@ -9402,20 +9401,20 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link BranchPopoverProps}.
 		*/
 		function BranchPopover({ view, onSwitch, onSwitched, onCreate, onGraph, onCreateWorktree, onManageWorktrees, onClose, t, hero = false }) {
-			const [query, setQuery] = (0, react$1.useState)("");
-			const [pending, setPending] = (0, react$1.useState)(null);
-			const [error, setError] = (0, react$1.useState)(null);
-			const [success, setSuccess] = (0, react$1.useState)(null);
-			const dismissTimer = (0, react$1.useRef)(void 0);
-			const [tipReadyName, setTipReadyName] = (0, react$1.useState)(null);
-			const [tipActive, setTipActive] = (0, react$1.useState)(false);
-			const [tipDir, setTipDir] = (0, react$1.useState)("up");
-			const tipTimer = (0, react$1.useRef)(void 0);
-			(0, react$1.useEffect)(() => () => {
+			const [query, setQuery] = (0, react.useState)("");
+			const [pending, setPending] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const [success, setSuccess] = (0, react.useState)(null);
+			const dismissTimer = (0, react.useRef)(void 0);
+			const [tipReadyName, setTipReadyName] = (0, react.useState)(null);
+			const [tipActive, setTipActive] = (0, react.useState)(false);
+			const [tipDir, setTipDir] = (0, react.useState)("up");
+			const tipTimer = (0, react.useRef)(void 0);
+			(0, react.useEffect)(() => () => {
 				if (dismissTimer.current !== void 0) clearTimeout(dismissTimer.current);
 				if (tipTimer.current !== void 0) clearTimeout(tipTimer.current);
 			}, []);
-			const filtered = (0, react$1.useMemo)(() => {
+			const filtered = (0, react.useMemo)(() => {
 				const needle = query.trim().toLowerCase();
 				if (needle === "") return view.branches;
 				return view.branches.filter((branch) => branch.name.toLowerCase().includes(needle));
@@ -9617,9 +9616,9 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link CreateBranchDialogProps}.
 		*/
 		function CreateBranchDialog({ onCreate, onClose, t }) {
-			const [name, setName] = (0, react$1.useState)("");
-			const [pending, setPending] = (0, react$1.useState)(false);
-			const [error, setError] = (0, react$1.useState)(null);
+			const [name, setName] = (0, react.useState)("");
+			const [pending, setPending] = (0, react.useState)(false);
+			const [error, setError] = (0, react.useState)(null);
 			const submit = () => {
 				if (pending) return;
 				const trimmed = name.trim();
@@ -9709,10 +9708,10 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link CreateWorktreeDialogProps}.
 		*/
 		function CreateWorktreeDialog({ branches, currentBranch, onCreate, onClose, t }) {
-			const [name, setName] = (0, react$1.useState)("");
-			const [baseRef, setBaseRef] = (0, react$1.useState)(currentBranch);
-			const [pending, setPending] = (0, react$1.useState)(false);
-			const [error, setError] = (0, react$1.useState)(null);
+			const [name, setName] = (0, react.useState)("");
+			const [baseRef, setBaseRef] = (0, react.useState)(currentBranch);
+			const [pending, setPending] = (0, react.useState)(false);
+			const [error, setError] = (0, react.useState)(null);
 			const sanitized = sanitizeWorktreeName(name);
 			const submit = () => {
 				if (pending) return;
@@ -9823,15 +9822,15 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link WorktreeManagerProps}.
 		*/
 		function WorktreeManager({ fetchWorktrees, onRemove, onClose, t }) {
-			const [view, setView] = (0, react$1.useState)(null);
-			const [loading, setLoading] = (0, react$1.useState)(true);
-			const [error, setError] = (0, react$1.useState)(null);
+			const [view, setView] = (0, react.useState)(null);
+			const [loading, setLoading] = (0, react.useState)(true);
+			const [error, setError] = (0, react.useState)(null);
 			/** Row awaiting an inline force-confirm after a worktree-dirty rejection. */
-			const [forcePath, setForcePath] = (0, react$1.useState)(null);
+			const [forcePath, setForcePath] = (0, react.useState)(null);
 			/** Rows whose wt/ branch should be deleted together with the worktree. */
-			const [branchDelete, setBranchDelete] = (0, react$1.useState)(/* @__PURE__ */ new Set());
-			const [pending, setPending] = (0, react$1.useState)(null);
-			const reload = (0, react$1.useCallback)(() => {
+			const [branchDelete, setBranchDelete] = (0, react.useState)(/* @__PURE__ */ new Set());
+			const [pending, setPending] = (0, react.useState)(null);
+			const reload = (0, react.useCallback)(() => {
 				let live = true;
 				setLoading(true);
 				fetchWorktrees().then((fresh) => {
@@ -9843,7 +9842,7 @@ window.__ModuleLoader__.load({
 					live = false;
 				};
 			}, [fetchWorktrees]);
-			(0, react$1.useEffect)(() => reload(), [reload]);
+			(0, react.useEffect)(() => reload(), [reload]);
 			const remove = (item, force) => {
 				if (pending !== null) return;
 				setPending(item.path);
@@ -10068,11 +10067,11 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link GraphDialogProps}.
 		*/
 		function GraphDialog({ graph, onClose, t }) {
-			const [view, setView] = (0, react$1.useState)(null);
-			const [error, setError] = (0, react$1.useState)(null);
-			const [loading, setLoading] = (0, react$1.useState)(true);
-			const requestSeq = (0, react$1.useRef)(0);
-			const load = (0, react$1.useCallback)((limit) => {
+			const [view, setView] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const [loading, setLoading] = (0, react.useState)(true);
+			const requestSeq = (0, react.useRef)(0);
+			const load = (0, react.useCallback)((limit) => {
 				const seq = requestSeq.current + 1;
 				requestSeq.current = seq;
 				setLoading(true);
@@ -10087,16 +10086,16 @@ window.__ModuleLoader__.load({
 					if (seq === requestSeq.current) setLoading(false);
 				});
 			}, [graph, t]);
-			const loadRef = (0, react$1.useRef)(load);
+			const loadRef = (0, react.useRef)(load);
 			loadRef.current = load;
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				loadRef.current(INITIAL_LIMIT);
 			}, []);
-			const lanes = (0, react$1.useMemo)(() => {
+			const lanes = (0, react.useMemo)(() => {
 				if (view === null) return [];
 				return computeLanes(view.commits);
 			}, [view]);
-			const laneCount = (0, react$1.useMemo)(() => {
+			const laneCount = (0, react.useMemo)(() => {
 				let count = 0;
 				for (const row of lanes) count = Math.max(count, row.columns.length);
 				return count;
@@ -10219,8 +10218,8 @@ window.__ModuleLoader__.load({
 		}
 		/** Track stock-light theme changes from body attributes. */
 		function useStockLightTheme() {
-			const [stockLightTheme, setStockLightTheme] = (0, react$1.useState)(readStockLightTheme);
-			(0, react$1.useEffect)(() => {
+			const [stockLightTheme, setStockLightTheme] = (0, react.useState)(readStockLightTheme);
+			(0, react.useEffect)(() => {
 				const update = () => {
 					setStockLightTheme(readStockLightTheme());
 				};
@@ -10271,17 +10270,17 @@ window.__ModuleLoader__.load({
 			const showBranchSelector = dockSeat ? heroSeat : blankSession;
 			const stockLightTheme = useStockLightTheme();
 			/** Repository state: undefined = loading, null = not a repository, else the snapshot. */
-			const [repo, setRepo] = (0, react$1.useState)(void 0);
+			const [repo, setRepo] = (0, react.useState)(void 0);
 			/** Fresh branch list, fetched when the branch popover opens. */
-			const [branchesView, setBranchesView] = (0, react$1.useState)(null);
-			const [branchOpen, setBranchOpen] = (0, react$1.useState)(false);
-			const [createOpen, setCreateOpen] = (0, react$1.useState)(false);
-			const [graphOpen, setGraphOpen] = (0, react$1.useState)(false);
-			const [worktreeCreateOpen, setWorktreeCreateOpen] = (0, react$1.useState)(false);
-			const [worktreeManageOpen, setWorktreeManageOpen] = (0, react$1.useState)(false);
-			const [heroRow, setHeroRow] = (0, react$1.useState)(null);
-			const anchorRef = (0, react$1.useRef)(null);
-			(0, react$1.useLayoutEffect)(() => {
+			const [branchesView, setBranchesView] = (0, react.useState)(null);
+			const [branchOpen, setBranchOpen] = (0, react.useState)(false);
+			const [createOpen, setCreateOpen] = (0, react.useState)(false);
+			const [graphOpen, setGraphOpen] = (0, react.useState)(false);
+			const [worktreeCreateOpen, setWorktreeCreateOpen] = (0, react.useState)(false);
+			const [worktreeManageOpen, setWorktreeManageOpen] = (0, react.useState)(false);
+			const [heroRow, setHeroRow] = (0, react.useState)(null);
+			const anchorRef = (0, react.useRef)(null);
+			(0, react.useLayoutEffect)(() => {
 				if (!heroSeat || repo === void 0 || repo === null) {
 					setHeroRow(null);
 					return;
@@ -10302,7 +10301,7 @@ window.__ModuleLoader__.load({
 					observer.disconnect();
 				};
 			}, [heroSeat, repo !== void 0 && repo !== null]);
-			const refetch = (0, react$1.useCallback)(() => {
+			const refetch = (0, react.useCallback)(() => {
 				let live = true;
 				props.repoStatus(sessionId).then((status) => {
 					if (live) setRepo(status);
@@ -10313,12 +10312,12 @@ window.__ModuleLoader__.load({
 					live = false;
 				};
 			}, [props.repoStatus, sessionId]);
-			const lastFocusRefetch = (0, react$1.useRef)(0);
-			(0, react$1.useEffect)(() => {
+			const lastFocusRefetch = (0, react.useRef)(0);
+			(0, react.useEffect)(() => {
 				if (!showBranchSelector) return void 0;
 				return refetch();
 			}, [showBranchSelector, refetch]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!showBranchSelector) return void 0;
 				const unsubscribe = props.subscribeChanges(sessionId, () => {
 					refetch();
@@ -10344,7 +10343,7 @@ window.__ModuleLoader__.load({
 				setCreateOpen(false);
 				refetch();
 			};
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!showBranchSelector || !branchOpen) return void 0;
 				let live = true;
 				setBranchesView(null);
@@ -12527,7 +12526,7 @@ window.__ModuleLoader__.load({
 		* frame (a paired phone heartbeats every 10s), and qrcode.react rebuilds the
 		* SVG path and element tree on each render.
 		*/
-		const PairQrCode = (0, react$1.memo)(function PairQrCode({ url, className }) {
+		const PairQrCode = (0, react.memo)(function PairQrCode({ url, className }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(QRCodeSVG, {
 				value: url,
 				size: 184,
@@ -12905,21 +12904,21 @@ window.__ModuleLoader__.load({
 		* @returns the entry element tree.
 		*/
 		function RemoteEntry({ wide, t }) {
-			const [open, setOpen] = (0, react$1.useState)(false);
-			const [state, setState] = (0, react$1.useState)({ kind: "lan-required" });
-			const stateRef = (0, react$1.useRef)(state);
-			(0, react$1.useEffect)(() => {
+			const [open, setOpen] = (0, react.useState)(false);
+			const [state, setState] = (0, react.useState)({ kind: "lan-required" });
+			const stateRef = (0, react.useRef)(state);
+			(0, react.useEffect)(() => {
 				stateRef.current = state;
 			}, [state]);
-			const [copied, setCopied] = (0, react$1.useState)(false);
-			const [copiedToken, setCopiedToken] = (0, react$1.useState)(false);
-			const eventSource = (0, react$1.useRef)(void 0);
-			const openSeq = (0, react$1.useRef)(0);
-			const closeEventSource = (0, react$1.useCallback)(() => {
+			const [copied, setCopied] = (0, react.useState)(false);
+			const [copiedToken, setCopiedToken] = (0, react.useState)(false);
+			const eventSource = (0, react.useRef)(void 0);
+			const openSeq = (0, react.useRef)(0);
+			const closeEventSource = (0, react.useCallback)(() => {
 				eventSource.current?.close();
 				eventSource.current = void 0;
 			}, []);
-			const mint = (0, react$1.useCallback)(async (address) => {
+			const mint = (0, react.useCallback)(async (address) => {
 				let result;
 				try {
 					result = await issuePair(address);
@@ -12948,7 +12947,7 @@ window.__ModuleLoader__.load({
 					lanAddresses: result.lanAddresses
 				};
 			}, []);
-			const openPanel = (0, react$1.useCallback)(async () => {
+			const openPanel = (0, react.useCallback)(async () => {
 				const seq = ++openSeq.current;
 				setOpen(true);
 				const next = await mint();
@@ -12970,12 +12969,12 @@ window.__ModuleLoader__.load({
 					} catch {}
 				};
 			}, [mint]);
-			const closePanel = (0, react$1.useCallback)(() => {
+			const closePanel = (0, react.useCallback)(() => {
 				openSeq.current += 1;
 				closeEventSource();
 				setOpen(false);
 			}, [closeEventSource]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (state.kind !== "ready") return;
 				if (state.expired) return;
 				const delay = state.expiresAt - Date.now();
@@ -12996,8 +12995,8 @@ window.__ModuleLoader__.load({
 					window.clearTimeout(timer);
 				};
 			}, [state]);
-			(0, react$1.useEffect)(() => closeEventSource, [closeEventSource]);
-			const handleStop = (0, react$1.useCallback)(() => {
+			(0, react.useEffect)(() => closeEventSource, [closeEventSource]);
+			const handleStop = (0, react.useCallback)(() => {
 				stopPair().then(() => {
 					setState((previous) => previous.kind === "ready" ? {
 						...previous,
@@ -13006,7 +13005,7 @@ window.__ModuleLoader__.load({
 					} : previous);
 				}).catch(() => {});
 			}, []);
-			const handleRevoke = (0, react$1.useCallback)((deviceId) => {
+			const handleRevoke = (0, react.useCallback)((deviceId) => {
 				revokePair(deviceId).then(() => {
 					setState((previous) => previous.kind === "ready" ? {
 						...previous,
@@ -13014,18 +13013,18 @@ window.__ModuleLoader__.load({
 					} : previous);
 				}).catch(() => {});
 			}, []);
-			const handleRefresh = (0, react$1.useCallback)(() => {
+			const handleRefresh = (0, react.useCallback)(() => {
 				mint().then(setState);
 			}, [mint]);
 			/** Re-mint against another LAN literal (multi-homed machines). */
-			const handlePickAddress = (0, react$1.useCallback)((address) => {
+			const handlePickAddress = (0, react.useCallback)((address) => {
 				mint(address).then(setState);
 			}, [mint]);
 			/** Re-mint against the configured public (tunneled) base. */
-			const handlePickPublic = (0, react$1.useCallback)(() => {
+			const handlePickPublic = (0, react.useCallback)(() => {
 				mint().then(setState);
 			}, [mint]);
-			const handleCopy = (0, react$1.useCallback)((url) => {
+			const handleCopy = (0, react.useCallback)((url) => {
 				copyText(url).then((ok) => {
 					if (!ok) return;
 					setCopied(true);
@@ -13034,7 +13033,7 @@ window.__ModuleLoader__.load({
 					}, 1500);
 				});
 			}, []);
-			const handleCopyToken = (0, react$1.useCallback)((token) => {
+			const handleCopyToken = (0, react.useCallback)((token) => {
 				copyText(token).then((ok) => {
 					if (!ok) return;
 					setCopiedToken(true);
@@ -13115,8 +13114,8 @@ window.__ModuleLoader__.load({
 		* @returns the toast element.
 		*/
 		function PairFailedNotice({ t }) {
-			const [visible, setVisible] = (0, react$1.useState)(true);
-			(0, react$1.useEffect)(() => {
+			const [visible, setVisible] = (0, react.useState)(true);
+			(0, react.useEffect)(() => {
 				const timer = window.setTimeout(() => {
 					setVisible(false);
 				}, 8e3);
@@ -13205,7 +13204,7 @@ window.__ModuleLoader__.load({
 		* @returns the card, or nothing while the namespace is still loading.
 		*/
 		function PluginSettingsCard$1(props) {
-			const [open, setOpen] = (0, react$1.useState)(props.defaultOpen ?? true);
+			const [open, setOpen] = (0, react.useState)(props.defaultOpen ?? true);
 			const { state, alwaysOpen } = props;
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
@@ -13385,18 +13384,18 @@ window.__ModuleLoader__.load({
 		*/
 		function SelectField$1(props) {
 			const { id, options, value } = props;
-			const [open, setOpen] = (0, react$1.useState)(false);
-			const [closing, setClosing] = (0, react$1.useState)(false);
-			const [phase, setPhase] = (0, react$1.useState)("initial");
-			const [activeIndex, setActiveIndex] = (0, react$1.useState)(0);
-			const closeTimer = (0, react$1.useRef)(void 0);
-			const wrapRef = (0, react$1.useRef)(null);
-			const popupRef = (0, react$1.useRef)(null);
+			const [open, setOpen] = (0, react.useState)(false);
+			const [closing, setClosing] = (0, react.useState)(false);
+			const [phase, setPhase] = (0, react.useState)("initial");
+			const [activeIndex, setActiveIndex] = (0, react.useState)(0);
+			const closeTimer = (0, react.useRef)(void 0);
+			const wrapRef = (0, react.useRef)(null);
+			const popupRef = (0, react.useRef)(null);
 			const currentIndex = () => {
 				const index = options.findIndex((option) => option.value === value);
 				return index >= 0 ? index : 0;
 			};
-			const close = (0, react$1.useCallback)(() => {
+			const close = (0, react.useCallback)(() => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 				setClosing(true);
 				closeTimer.current = setTimeout(() => {
@@ -13447,10 +13446,10 @@ window.__ModuleLoader__.load({
 						break;
 				}
 			};
-			(0, react$1.useEffect)(() => () => {
+			(0, react.useEffect)(() => () => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 			}, []);
-			(0, react$1.useLayoutEffect)(() => {
+			(0, react.useLayoutEffect)(() => {
 				if (open && !closing && phase === "initial") {
 					popupRef.current?.offsetHeight;
 					setPhase("open");
@@ -13460,7 +13459,7 @@ window.__ModuleLoader__.load({
 				closing,
 				phase
 			]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					const target = event.target;
@@ -13469,7 +13468,7 @@ window.__ModuleLoader__.load({
 				document.addEventListener("pointerdown", onPointerDown);
 				return () => document.removeEventListener("pointerdown", onPointerDown);
 			}, [open, close]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (props.disabled && open) close();
 			}, [
 				props.disabled,
@@ -14185,8 +14184,8 @@ window.__ModuleLoader__.load({
 		* nothing — the pairing panel carries the loopback banner instead.
 		*/
 		function LanBindStatus({ t }) {
-			const [frame, setFrame] = (0, react$1.useState)(void 0);
-			(0, react$1.useEffect)(() => {
+			const [frame, setFrame] = (0, react.useState)(void 0);
+			(0, react.useEffect)(() => {
 				let alive = true;
 				const read = () => {
 					readLanBindStatus().then((value) => {
@@ -15039,9 +15038,9 @@ window.__ModuleLoader__.load({
 		* @returns the notice element.
 		*/
 		function FenceNotice({ t, onRetry, onAccept = acceptPair }) {
-			const [tokenInput, setTokenInput] = (0, react$1.useState)("");
-			const [submitting, setSubmitting] = (0, react$1.useState)(false);
-			const [errorMsg, setErrorMsg] = (0, react$1.useState)(void 0);
+			const [tokenInput, setTokenInput] = (0, react.useState)("");
+			const [submitting, setSubmitting] = (0, react.useState)(false);
+			const [errorMsg, setErrorMsg] = (0, react.useState)(void 0);
 			const handleSubmit = async (event) => {
 				event.preventDefault();
 				const token = extractPairToken(tokenInput);
@@ -17315,13 +17314,13 @@ window.__ModuleLoader__.load({
 		}
 		/** The cluster execution tab. */
 		function ClusterTab({ api }) {
-			const [command, setCommand] = (0, react$1.useState)("");
-			const [aliases, setAliases] = (0, react$1.useState)("");
-			const [environment, setEnvironment] = (0, react$1.useState)("");
-			const [tags, setTags] = (0, react$1.useState)("");
-			const [running, setRunning] = (0, react$1.useState)(false);
-			const [results, setResults] = (0, react$1.useState)(null);
-			const [error, setError] = (0, react$1.useState)(null);
+			const [command, setCommand] = (0, react.useState)("");
+			const [aliases, setAliases] = (0, react.useState)("");
+			const [environment, setEnvironment] = (0, react.useState)("");
+			const [tags, setTags] = (0, react.useState)("");
+			const [running, setRunning] = (0, react.useState)(false);
+			const [results, setResults] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
 			const run = async () => {
 				if (command.trim() === "" || running) return;
 				if (!window.confirm(tt$1("cluster.confirm"))) return;
@@ -17507,10 +17506,10 @@ window.__ModuleLoader__.load({
 		}
 		/** The create/edit host modal. */
 		function HostFormDialog({ api, editing, onClose, onSaved }) {
-			const [form, setForm] = (0, react$1.useState)(() => blankOf(editing));
-			const [saving, setSaving] = (0, react$1.useState)(false);
-			const [error, setError] = (0, react$1.useState)(null);
-			(0, react$1.useEffect)(() => {
+			const [form, setForm] = (0, react.useState)(() => blankOf(editing));
+			const [saving, setSaving] = (0, react.useState)(false);
+			const [error, setError] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
 				const onKey = (event) => {
 					if (event.key === "Escape") onClose();
 				};
@@ -17963,25 +17962,25 @@ window.__ModuleLoader__.load({
 		}
 		/** The hosts table plus its toolbar and dialogs. */
 		function HostsTab({ api, onConnect }) {
-			const [hosts, setHosts] = (0, react$1.useState)(null);
-			const [error, setError] = (0, react$1.useState)(null);
-			const [search, setSearch] = (0, react$1.useState)("");
-			const [testingAlias, setTestingAlias] = (0, react$1.useState)(null);
-			const [testResults, setTestResults] = (0, react$1.useState)({});
-			const [importing, setImporting] = (0, react$1.useState)(false);
-			const [notice, setNotice] = (0, react$1.useState)(null);
+			const [hosts, setHosts] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const [search, setSearch] = (0, react.useState)("");
+			const [testingAlias, setTestingAlias] = (0, react.useState)(null);
+			const [testResults, setTestResults] = (0, react.useState)({});
+			const [importing, setImporting] = (0, react.useState)(false);
+			const [notice, setNotice] = (0, react.useState)(null);
 			/** Blocks the last import skipped, with the reason each one was left out. */
-			const [importSkips, setImportSkips] = (0, react$1.useState)([]);
-			const [dialog, setDialog] = (0, react$1.useState)(null);
-			const [groupBy, setGroupBy] = (0, react$1.useState)("none");
-			const [collapsed, setCollapsed] = (0, react$1.useState)({});
-			const [testingGroup, setTestingGroup] = (0, react$1.useState)(null);
-			const seqRef = (0, react$1.useRef)(0);
-			const mountedRef = (0, react$1.useRef)(true);
-			(0, react$1.useEffect)(() => () => {
+			const [importSkips, setImportSkips] = (0, react.useState)([]);
+			const [dialog, setDialog] = (0, react.useState)(null);
+			const [groupBy, setGroupBy] = (0, react.useState)("none");
+			const [collapsed, setCollapsed] = (0, react.useState)({});
+			const [testingGroup, setTestingGroup] = (0, react.useState)(null);
+			const seqRef = (0, react.useRef)(0);
+			const mountedRef = (0, react.useRef)(true);
+			(0, react.useEffect)(() => () => {
 				mountedRef.current = false;
 			}, []);
-			const load = (0, react$1.useCallback)(async (query) => {
+			const load = (0, react.useCallback)(async (query) => {
 				const seq = ++seqRef.current;
 				try {
 					const list = await api.listHosts(query);
@@ -17993,10 +17992,10 @@ window.__ModuleLoader__.load({
 					setError(errorMessage(cause));
 				}
 			}, [api]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				load();
 			}, [load]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				const timer = setTimeout(() => {
 					const query = search.trim();
 					load(query === "" ? void 0 : query);
@@ -31400,22 +31399,22 @@ window.__ModuleLoader__.load({
 		};
 		/** The xterm terminal view. */
 		function TerminalTab({ api, presetAlias, requestId, terminalFont }) {
-			const [hosts, setHosts] = (0, react$1.useState)([]);
-			const [alias, setAlias] = (0, react$1.useState)(presetAlias ?? "");
-			const [status, setStatus] = (0, react$1.useState)({ kind: "idle" });
-			const [authPrompt, setAuthPrompt] = (0, react$1.useState)(void 0);
-			const [authInputs, setAuthInputs] = (0, react$1.useState)([]);
-			const containerRef = (0, react$1.useRef)(null);
-			const termRef = (0, react$1.useRef)(null);
-			const fitRef = (0, react$1.useRef)(null);
-			const connRef = (0, react$1.useRef)(null);
-			const dataSubRef = (0, react$1.useRef)(null);
+			const [hosts, setHosts] = (0, react.useState)([]);
+			const [alias, setAlias] = (0, react.useState)(presetAlias ?? "");
+			const [status, setStatus] = (0, react.useState)({ kind: "idle" });
+			const [authPrompt, setAuthPrompt] = (0, react.useState)(void 0);
+			const [authInputs, setAuthInputs] = (0, react.useState)([]);
+			const containerRef = (0, react.useRef)(null);
+			const termRef = (0, react.useRef)(null);
+			const fitRef = (0, react.useRef)(null);
+			const connRef = (0, react.useRef)(null);
+			const dataSubRef = (0, react.useRef)(null);
 			const fontSource = terminalFont ?? NO_FONT_SOURCE;
-			const fontOverride = (0, react$1.useSyncExternalStore)(fontSource.subscribe, fontSource.get);
-			(0, react$1.useEffect)(() => {
+			const fontOverride = (0, react.useSyncExternalStore)(fontSource.subscribe, fontSource.get);
+			(0, react.useEffect)(() => {
 				ensureXtermCss();
 			}, []);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				const term = termRef.current;
 				if (term === null) return;
 				const next = resolveTerminalFontFamily(fontOverride);
@@ -31424,7 +31423,7 @@ window.__ModuleLoader__.load({
 				fitRef.current?.fit();
 				connRef.current?.resize(term.cols, term.rows);
 			}, [fontOverride]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				let disposed = false;
 				(async () => {
 					try {
@@ -31441,7 +31440,7 @@ window.__ModuleLoader__.load({
 					disposed = true;
 				};
 			}, [api]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (presetAlias !== void 0) setAlias(presetAlias);
 			}, [presetAlias, requestId]);
 			const teardown = () => {
@@ -31462,10 +31461,10 @@ window.__ModuleLoader__.load({
 				termRef.current = null;
 				fitRef.current = null;
 			};
-			(0, react$1.useEffect)(() => () => {
+			(0, react.useEffect)(() => () => {
 				teardown();
 			}, []);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				let lastCols = -1;
 				let lastRows = -1;
 				const sync = () => {
@@ -31731,19 +31730,19 @@ window.__ModuleLoader__.load({
 		}
 		/** The upload/download tab. */
 		function TransferTab({ api }) {
-			const [hosts, setHosts] = (0, react$1.useState)([]);
-			const [listError, setListError] = (0, react$1.useState)(null);
-			const [alias, setAlias] = (0, react$1.useState)("");
-			const [remotePath, setRemotePath] = (0, react$1.useState)("");
-			const [browseOpen, setBrowseOpen] = (0, react$1.useState)(false);
-			const [browseDir, setBrowseDir] = (0, react$1.useState)("/");
-			const [entries, setEntries] = (0, react$1.useState)([]);
-			const [browsing, setBrowsing] = (0, react$1.useState)(false);
-			const [transfer, setTransfer] = (0, react$1.useState)(null);
-			const [status, setStatus] = (0, react$1.useState)(null);
-			const fileRef = (0, react$1.useRef)(null);
-			const seqRef = (0, react$1.useRef)(0);
-			(0, react$1.useEffect)(() => {
+			const [hosts, setHosts] = (0, react.useState)([]);
+			const [listError, setListError] = (0, react.useState)(null);
+			const [alias, setAlias] = (0, react.useState)("");
+			const [remotePath, setRemotePath] = (0, react.useState)("");
+			const [browseOpen, setBrowseOpen] = (0, react.useState)(false);
+			const [browseDir, setBrowseDir] = (0, react.useState)("/");
+			const [entries, setEntries] = (0, react.useState)([]);
+			const [browsing, setBrowsing] = (0, react.useState)(false);
+			const [transfer, setTransfer] = (0, react.useState)(null);
+			const [status, setStatus] = (0, react.useState)(null);
+			const fileRef = (0, react.useRef)(null);
+			const seqRef = (0, react.useRef)(0);
+			(0, react.useEffect)(() => {
 				let disposed = false;
 				(async () => {
 					try {
@@ -32046,16 +32045,16 @@ window.__ModuleLoader__.load({
 		}
 		/** The tunnels tab. */
 		function TunnelsTab({ api, active = true }) {
-			const [hosts, setHosts] = (0, react$1.useState)([]);
-			const [tunnels, setTunnels] = (0, react$1.useState)(null);
-			const [error, setError] = (0, react$1.useState)(null);
-			const [notice, setNotice] = (0, react$1.useState)(null);
-			const [alias, setAlias] = (0, react$1.useState)("");
-			const [remotePort, setRemotePort] = (0, react$1.useState)("");
-			const [remoteHost, setRemoteHost] = (0, react$1.useState)("");
-			const [localPort, setLocalPort] = (0, react$1.useState)("");
-			const [busy, setBusy] = (0, react$1.useState)(false);
-			(0, react$1.useEffect)(() => {
+			const [hosts, setHosts] = (0, react.useState)([]);
+			const [tunnels, setTunnels] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const [notice, setNotice] = (0, react.useState)(null);
+			const [alias, setAlias] = (0, react.useState)("");
+			const [remotePort, setRemotePort] = (0, react.useState)("");
+			const [remoteHost, setRemoteHost] = (0, react.useState)("");
+			const [localPort, setLocalPort] = (0, react.useState)("");
+			const [busy, setBusy] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
 				let disposed = false;
 				(async () => {
 					try {
@@ -32067,9 +32066,9 @@ window.__ModuleLoader__.load({
 					disposed = true;
 				};
 			}, [api]);
-			const seqRef = (0, react$1.useRef)(0);
-			const automaticRead = (0, react$1.useRef)({ running: false });
-			(0, react$1.useEffect)(() => {
+			const seqRef = (0, react.useRef)(0);
+			const automaticRead = (0, react.useRef)({ running: false });
+			(0, react.useEffect)(() => {
 				if (!active) return;
 				let disposed = false;
 				const read = automaticRead.current;
@@ -32366,9 +32365,9 @@ window.__ModuleLoader__.load({
 		];
 		/** The tabbed SSH panel. */
 		function SshPanel({ controller, api, terminalFont }) {
-			const panelOpen = (0, react$1.useSyncExternalStore)((0, react$1.useCallback)((listener) => controller.subscribe(listener), [controller]), (0, react$1.useCallback)(() => controller.getSnapshot().panelOpen, [controller]));
-			const [activeTab, setActiveTab] = (0, react$1.useState)("hosts");
-			const [connectRequest, setConnectRequest] = (0, react$1.useState)(null);
+			const panelOpen = (0, react.useSyncExternalStore)((0, react.useCallback)((listener) => controller.subscribe(listener), [controller]), (0, react.useCallback)(() => controller.getSnapshot().panelOpen, [controller]));
+			const [activeTab, setActiveTab] = (0, react.useState)("hosts");
+			const [connectRequest, setConnectRequest] = (0, react.useState)(null);
 			const handleConnect = (alias) => {
 				setActiveTab("terminal");
 				setConnectRequest((prev) => ({
@@ -33171,18 +33170,18 @@ window.__ModuleLoader__.load({
 		}
 		/** Slot entry for `conversation.input.right` (left of the model selector). */
 		function LiangShenLever(face) {
-			const { state, restoreLabel, busy, error, burst } = (0, react$1.useSyncExternalStore)(face.store.subscribe, face.store.getSnapshot);
-			const [burstKey, setBurstKey] = (0, react$1.useState)(0);
-			const seen = (0, react$1.useRef)(burst);
-			const drag = (0, react$1.useRef)(void 0);
+			const { state, restoreLabel, busy, error, burst } = (0, react.useSyncExternalStore)(face.store.subscribe, face.store.getSnapshot);
+			const [burstKey, setBurstKey] = (0, react.useState)(0);
+			const seen = (0, react.useRef)(burst);
+			const drag = (0, react.useRef)(void 0);
 			const actionable = !busy && (state === "on" || state === "off");
 			const on = state === "on";
 			const errorText = error === void 0 ? void 0 : error.kind === "locked" ? face.t("lever.failed.locked") : error.kind === "missing" ? face.t("lever.failed.missing") : error.kind === "timeout" ? face.t("lever.failed.timeout") : face.t("lever.failed.failed", { reason: error.reason });
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (burst > seen.current) setBurstKey(burst);
 				seen.current = burst;
 			}, [burst]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (burstKey === 0) return;
 				const timer = setTimeout(() => {
 					setBurstKey(0);
@@ -33191,8 +33190,8 @@ window.__ModuleLoader__.load({
 					clearTimeout(timer);
 				};
 			}, [burstKey]);
-			const prevState = (0, react$1.useRef)(state);
-			(0, react$1.useEffect)(() => {
+			const prevState = (0, react.useRef)(state);
+			(0, react.useEffect)(() => {
 				if (state === "on") syncHeroChip(face.t("lever.name"));
 				else if (prevState.current === "on" && state === "off" && restoreLabel !== "") syncHeroChip(restoreLabel);
 				prevState.current = state;
@@ -33761,7 +33760,7 @@ window.__ModuleLoader__.load({
 		* @returns the card, or nothing while the namespace is still loading.
 		*/
 		function PluginSettingsCard(props) {
-			const [open, setOpen] = (0, react$1.useState)(props.defaultOpen ?? true);
+			const [open, setOpen] = (0, react.useState)(props.defaultOpen ?? true);
 			const { state, alwaysOpen } = props;
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
@@ -33941,18 +33940,18 @@ window.__ModuleLoader__.load({
 		*/
 		function SelectField(props) {
 			const { id, options, value } = props;
-			const [open, setOpen] = (0, react$1.useState)(false);
-			const [closing, setClosing] = (0, react$1.useState)(false);
-			const [phase, setPhase] = (0, react$1.useState)("initial");
-			const [activeIndex, setActiveIndex] = (0, react$1.useState)(0);
-			const closeTimer = (0, react$1.useRef)(void 0);
-			const wrapRef = (0, react$1.useRef)(null);
-			const popupRef = (0, react$1.useRef)(null);
+			const [open, setOpen] = (0, react.useState)(false);
+			const [closing, setClosing] = (0, react.useState)(false);
+			const [phase, setPhase] = (0, react.useState)("initial");
+			const [activeIndex, setActiveIndex] = (0, react.useState)(0);
+			const closeTimer = (0, react.useRef)(void 0);
+			const wrapRef = (0, react.useRef)(null);
+			const popupRef = (0, react.useRef)(null);
 			const currentIndex = () => {
 				const index = options.findIndex((option) => option.value === value);
 				return index >= 0 ? index : 0;
 			};
-			const close = (0, react$1.useCallback)(() => {
+			const close = (0, react.useCallback)(() => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 				setClosing(true);
 				closeTimer.current = setTimeout(() => {
@@ -34003,10 +34002,10 @@ window.__ModuleLoader__.load({
 						break;
 				}
 			};
-			(0, react$1.useEffect)(() => () => {
+			(0, react.useEffect)(() => () => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 			}, []);
-			(0, react$1.useLayoutEffect)(() => {
+			(0, react.useLayoutEffect)(() => {
 				if (open && !closing && phase === "initial") {
 					popupRef.current?.offsetHeight;
 					setPhase("open");
@@ -34016,7 +34015,7 @@ window.__ModuleLoader__.load({
 				closing,
 				phase
 			]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					const target = event.target;
@@ -34025,7 +34024,7 @@ window.__ModuleLoader__.load({
 				document.addEventListener("pointerdown", onPointerDown);
 				return () => document.removeEventListener("pointerdown", onPointerDown);
 			}, [open, close]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (props.disabled && open) close();
 			}, [
 				props.disabled,
@@ -35464,9 +35463,9 @@ window.__ModuleLoader__.load({
 		}
 		/** One skill card: name, badges, toggle switch, edit and delete buttons. */
 		function SkillCard({ skill, api, onChanged, onEdit }) {
-			const [busy, setBusy] = (0, react$1.useState)(false);
-			const [error, setError] = (0, react$1.useState)(void 0);
-			const busyRef = (0, react$1.useRef)(false);
+			const [busy, setBusy] = (0, react.useState)(false);
+			const [error, setError] = (0, react.useState)(void 0);
+			const busyRef = (0, react.useRef)(false);
 			const toggle = async () => {
 				if (busyRef.current) return;
 				const path = skill.path;
@@ -35593,11 +35592,11 @@ window.__ModuleLoader__.load({
 		}
 		/** The grouped skill list tab. */
 		function ListTab({ api, refreshTick, onCwd, onEdit }) {
-			const [payload, setPayload] = (0, react$1.useState)(void 0);
-			const [selectedWorkspace, setSelectedWorkspace] = (0, react$1.useState)("all");
-			const [query, setQuery] = (0, react$1.useState)("");
-			const [error, setError] = (0, react$1.useState)(void 0);
-			const loadSeq = (0, react$1.useRef)(0);
+			const [payload, setPayload] = (0, react.useState)(void 0);
+			const [selectedWorkspace, setSelectedWorkspace] = (0, react.useState)("all");
+			const [query, setQuery] = (0, react.useState)("");
+			const [error, setError] = (0, react.useState)(void 0);
+			const loadSeq = (0, react.useRef)(0);
 			const load = async () => {
 				const seq = ++loadSeq.current;
 				try {
@@ -35612,7 +35611,7 @@ window.__ModuleLoader__.load({
 					setError(tt("list.loadFailed", { error: err instanceof Error ? err.message : String(err) }));
 				}
 			};
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				load();
 			}, [api, refreshTick]);
 			if (error !== void 0 && payload === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -35731,13 +35730,13 @@ window.__ModuleLoader__.load({
 		}
 		/** The create form tab. */
 		function CreateTab({ api, cwd }) {
-			const [root, setRoot] = (0, react$1.useState)("user");
-			const [name, setName] = (0, react$1.useState)("");
-			const [description, setDescription] = (0, react$1.useState)("");
-			const [whenToUse, setWhenToUse] = (0, react$1.useState)("");
-			const [content, setContent] = (0, react$1.useState)("");
-			const [busy, setBusy] = (0, react$1.useState)(false);
-			const [feedback, setFeedback] = (0, react$1.useState)(void 0);
+			const [root, setRoot] = (0, react.useState)("user");
+			const [name, setName] = (0, react.useState)("");
+			const [description, setDescription] = (0, react.useState)("");
+			const [whenToUse, setWhenToUse] = (0, react.useState)("");
+			const [content, setContent] = (0, react.useState)("");
+			const [busy, setBusy] = (0, react.useState)(false);
+			const [feedback, setFeedback] = (0, react.useState)(void 0);
 			const submit = async (event) => {
 				event.preventDefault();
 				if (name.trim() === "" || description.trim() === "" || content.trim() === "") {
@@ -35858,13 +35857,13 @@ window.__ModuleLoader__.load({
 		/** The edit form tab: loads the skill's editable fields and rewrites it in place. */
 		function EditTab({ api, skill, onDone, onCancel }) {
 			const skillPath = skill.path ?? "";
-			const [description, setDescription] = (0, react$1.useState)("");
-			const [whenToUse, setWhenToUse] = (0, react$1.useState)("");
-			const [content, setContent] = (0, react$1.useState)("");
-			const [loading, setLoading] = (0, react$1.useState)(true);
-			const [busy, setBusy] = (0, react$1.useState)(false);
-			const [error, setError] = (0, react$1.useState)(void 0);
-			(0, react$1.useEffect)(() => {
+			const [description, setDescription] = (0, react.useState)("");
+			const [whenToUse, setWhenToUse] = (0, react.useState)("");
+			const [content, setContent] = (0, react.useState)("");
+			const [loading, setLoading] = (0, react.useState)(true);
+			const [busy, setBusy] = (0, react.useState)(false);
+			const [error, setError] = (0, react.useState)(void 0);
+			(0, react.useEffect)(() => {
 				let cancelled = false;
 				const load = async () => {
 					try {
@@ -35989,10 +35988,10 @@ window.__ModuleLoader__.load({
 		}
 		/** The skill center overlay modal. */
 		function SkillPanel({ api, onClose }) {
-			const [tab, setTab] = (0, react$1.useState)("list");
-			const [cwd, setCwd] = (0, react$1.useState)(void 0);
-			const [refreshTick, setRefreshTick] = (0, react$1.useState)(0);
-			const [editing, setEditing] = (0, react$1.useState)(void 0);
+			const [tab, setTab] = (0, react.useState)("list");
+			const [cwd, setCwd] = (0, react.useState)(void 0);
+			const [refreshTick, setRefreshTick] = (0, react.useState)(0);
+			const [editing, setEditing] = (0, react.useState)(void 0);
 			/** Open the edit form for one card (issue #1622). */
 			const openEdit = (skill) => {
 				setEditing(skill);
@@ -36004,7 +36003,7 @@ window.__ModuleLoader__.load({
 				setTab("list");
 				setRefreshTick((tick) => tick + 1);
 			};
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				const onKey = (event) => {
 					if (event.key !== "Escape") return;
 					const target = event.target;
@@ -37431,18 +37430,18 @@ window.__ModuleLoader__.load({
 		/** The section component; the slot merges the face into these props. */
 		function UsageSectionCard(props) {
 			const { store, poll, refresh, setScope, settings } = props;
-			const ui = (0, react$1.useSyncExternalStore)(store.subscribe, store.getSnapshot);
+			const ui = (0, react.useSyncExternalStore)(store.subscribe, store.getSnapshot);
 			const settingsSnapshot = settings.getSnapshot();
 			const settingsValue = settingsSnapshot.value ?? {};
-			const [refreshing, setRefreshing] = (0, react$1.useState)(false);
-			const [scope, setScopeState] = (0, react$1.useState)(() => ({
+			const [refreshing, setRefreshing] = (0, react.useState)(false);
+			const [scope, setScopeState] = (0, react.useState)(() => ({
 				kind: "day",
 				key: todayKey()
 			}));
-			const [, bumpSettings] = (0, react$1.useState)(0);
-			(0, react$1.useEffect)(() => settings.subscribe(() => bumpSettings((count) => count + 1)), [settings]);
+			const [, bumpSettings] = (0, react.useState)(0);
+			(0, react.useEffect)(() => settings.subscribe(() => bumpSettings((count) => count + 1)), [settings]);
 			const enabled = settingsValue.enabled ?? true;
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!enabled) return void 0;
 				poll();
 				let timer;
@@ -37789,7 +37788,7 @@ window.__ModuleLoader__.load({
 		*/
 		function ActivityHeatmap(props) {
 			const { scope } = props;
-			const [hovered, setHovered] = (0, react$1.useState)(null);
+			const [hovered, setHovered] = (0, react.useState)(null);
 			const cells = scope.kind === "day" ? (scope.hours ?? Array.from({ length: 24 }, () => zeroTotals())).map((totals, hour) => ({
 				key: String(hour),
 				label: `${String(hour).padStart(2, "0")}时`,
@@ -37975,7 +37974,7 @@ window.__ModuleLoader__.load({
 		function SettingsRow(props) {
 			const { settings, snapshot, value } = props;
 			const disabled = snapshot === void 0 || !snapshot.writable;
-			const [failure, setFailure] = (0, react$1.useState)(void 0);
+			const [failure, setFailure] = (0, react.useState)(void 0);
 			const write = (field, next) => {
 				setFailure(void 0);
 				let answer;
@@ -38310,19 +38309,19 @@ window.__ModuleLoader__.load({
 		*/
 		function UsageFootCard(props) {
 			const { store, poll, onOpen, settings, locale } = props;
-			const ui = (0, react$1.useSyncExternalStore)(store.subscribe, store.getSnapshot);
-			const [, bump] = (0, react$1.useState)(0);
-			(0, react$1.useEffect)(() => settings.subscribe(() => bump((count) => count + 1)), [settings]);
-			(0, react$1.useEffect)(() => locale?.subscribe(() => bump((count) => count + 1)), [locale]);
+			const ui = (0, react.useSyncExternalStore)(store.subscribe, store.getSnapshot);
+			const [, bump] = (0, react.useState)(0);
+			(0, react.useEffect)(() => settings.subscribe(() => bump((count) => count + 1)), [settings]);
+			(0, react.useEffect)(() => locale?.subscribe(() => bump((count) => count + 1)), [locale]);
 			const enabled = settings.getSnapshot().value?.enabled ?? true;
-			const [collapsed, setCollapsed] = (0, react$1.useState)(readFootCardCollapsed);
+			const [collapsed, setCollapsed] = (0, react.useState)(readFootCardCollapsed);
 			const toggleCollapsed = () => {
 				setCollapsed((current) => {
 					writeFootCardCollapsed(!current);
 					return !current;
 				});
 			};
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!enabled) return void 0;
 				poll();
 				let timer;
@@ -38560,7 +38559,7 @@ window.__ModuleLoader__.load({
 			const container = document.createElement("div");
 			container.setAttribute("data-dsh-usage-foot-card", "");
 			const root = (0, react_dom_client.createRoot)(container);
-			root.render((0, react$1.createElement)(UsageFootCard, props));
+			root.render((0, react.createElement)(UsageFootCard, props));
 			/** Keep the container directly above the Settings seat inside the foot area. */
 			const place = () => {
 				const foot = footArea();
@@ -38593,15 +38592,21 @@ window.__ModuleLoader__.load({
 			if (typeof document !== "undefined" && document.querySelector("[data-dsh-usage-foot-action]") !== null) return () => {};
 			const container = document.createElement("div");
 			container.setAttribute("data-dsh-usage-foot-action", "");
+			container.style.display = "contents";
 			const root = (0, react_dom_client.createRoot)(container);
-			root.render((0, react$1.createElement)(UsageFootAction, props));
-			/** Keep the trigger in the download slot, left of the remote entry row. */
+			root.render((0, react.createElement)(UsageFootAction, props));
+			/**
+			* Keep the trigger in the download slot: the first item of the footer
+			* action seat, left of the remote-control phone trigger. The seat wrapper
+			* carries a stable data-slot attribute; the settings row is the fallback
+			* anchor when no seat is mounted.
+			*/
 			const place = () => {
 				const foot = footArea();
 				if (foot === void 0) return;
-				const remoteRow = foot.querySelector("[class*=\"entryRow\"]");
-				if (remoteRow !== null) {
-					if (container.nextElementSibling !== remoteRow) foot.insertBefore(container, remoteRow);
+				const seat = foot.querySelector("[data-slot=\"sidebar.footer.action\"]");
+				if (seat !== null) {
+					if (seat.firstChild !== container) seat.insertBefore(container, seat.firstChild);
 					return;
 				}
 				const settings = foot.querySelector("[class*=\"settingsArea\"]");
@@ -39768,8 +39773,8 @@ window.__ModuleLoader__.load({
 		}
 		/** Shared modal shell: focus on open, Esc to close, restore focus after. */
 		function Modal({ title, onClose, children, danger, wide }) {
-			const ref = (0, react$1.useRef)(null);
-			(0, react$1.useEffect)(() => {
+			const ref = (0, react.useRef)(null);
+			(0, react.useEffect)(() => {
 				const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 				ref.current?.focus();
 				const onKey = (event) => {
@@ -39808,7 +39813,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Delete confirmation with full cascade accounting. */
 		function DeleteConfirmDialog(props) {
-			const [acknowledged, setAcknowledged] = (0, react$1.useState)(false);
+			const [acknowledged, setAcknowledged] = (0, react.useState)(false);
 			const needCheck = props.state.strong;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Modal, {
 				title: t$2("arch.confirm.deleteTitle"),
@@ -40040,7 +40045,7 @@ window.__ModuleLoader__.load({
 		*/
 		/** One validated day-threshold input; invalid values are never saved. */
 		function DaysInput(props) {
-			const [text, setText] = (0, react$1.useState)(null);
+			const [text, setText] = (0, react.useState)(null);
 			const effective = text ?? (props.value === void 0 ? "" : String(props.value));
 			const parsed = Number(effective);
 			const valid = Number.isFinite(parsed) && Number.isInteger(parsed) && parsed >= props.min && parsed <= props.max;
@@ -40084,12 +40089,12 @@ window.__ModuleLoader__.load({
 		}
 		function AutoSettingsPanel(props) {
 			const settings = props.settings;
-			const value = (0, react$1.useSyncExternalStore)((0, react$1.useMemo)(() => settings.subscribe.bind(settings), [settings]), (0, react$1.useMemo)(() => settings.getSnapshot.bind(settings), [settings])).value ?? {};
-			const ui = (0, react$1.useSyncExternalStore)(props.controller.store.subscribe, props.controller.store.getSnapshot);
+			const value = (0, react.useSyncExternalStore)((0, react.useMemo)(() => settings.subscribe.bind(settings), [settings]), (0, react.useMemo)(() => settings.getSnapshot.bind(settings), [settings])).value ?? {};
+			const ui = (0, react.useSyncExternalStore)(props.controller.store.subscribe, props.controller.store.getSnapshot);
 			const autoPreview = ui.autoPreview;
 			const autoPreviewLoading = ui.autoPreviewLoading;
 			const cycleRunning = props.auto?.cycleRunning === true;
-			const [saveFailed, setSaveFailed] = (0, react$1.useState)(false);
+			const [saveFailed, setSaveFailed] = (0, react.useState)(false);
 			const write = (field, value) => {
 				props.settings.set(field, value).then((accepted) => {
 					setSaveFailed(!accepted);
@@ -40268,16 +40273,16 @@ window.__ModuleLoader__.load({
 			return groups;
 		}
 		function Select(props) {
-			const [open, setOpen] = (0, react$1.useState)(false);
-			const [active, setActive] = (0, react$1.useState)(0);
-			const rootRef = (0, react$1.useRef)(null);
-			const listRef = (0, react$1.useRef)(null);
+			const [open, setOpen] = (0, react.useState)(false);
+			const [active, setActive] = (0, react.useState)(0);
+			const rootRef = (0, react.useRef)(null);
+			const listRef = (0, react.useRef)(null);
 			const activeIndex = (open) => {
 				if (!open) return 0;
 				const index = props.options.findIndex((option) => option.value === props.value);
 				return index === -1 ? 0 : index;
 			};
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					if (rootRef.current !== null && event.target instanceof Node && !rootRef.current.contains(event.target)) setOpen(false);
@@ -40287,7 +40292,7 @@ window.__ModuleLoader__.load({
 					document.removeEventListener("pointerdown", onPointerDown);
 				};
 			}, [open]);
-			(0, react$1.useLayoutEffect)(() => {
+			(0, react.useLayoutEffect)(() => {
 				if (!open) return;
 				listRef.current?.querySelector("[data-active=\"true\"]")?.scrollIntoView({ block: "nearest" });
 			}, [open, active]);
@@ -40455,21 +40460,21 @@ window.__ModuleLoader__.load({
 		}
 		function SessionArchiveCard(props) {
 			const { controller } = props;
-			const ui = (0, react$1.useSyncExternalStore)(controller.store.subscribe, controller.store.getSnapshot);
-			const [currentId, setCurrentId] = (0, react$1.useState)(void 0);
-			(0, react$1.useEffect)(() => {
+			const ui = (0, react.useSyncExternalStore)(controller.store.subscribe, controller.store.getSnapshot);
+			const [currentId, setCurrentId] = (0, react.useState)(void 0);
+			(0, react.useEffect)(() => {
 				controller.load();
 				setCurrentId(controller.getCurrentSessionId());
 			}, [controller]);
 			const rows = ui.inventory?.rows ?? [];
 			const workspaces = ui.inventory?.workspaces ?? [];
-			const filtered = (0, react$1.useMemo)(() => sortRows(filterRows(rows, ui.filter), ui.sortKey, ui.sortDir), [
+			const filtered = (0, react.useMemo)(() => sortRows(filterRows(rows, ui.filter), ui.sortKey, ui.sortDir), [
 				rows,
 				ui.filter,
 				ui.sortKey,
 				ui.sortDir
 			]);
-			const selection = (0, react$1.useMemo)(() => new Set(ui.selection), [ui.selection]);
+			const selection = (0, react.useMemo)(() => new Set(ui.selection), [ui.selection]);
 			const summary = selectionSummary(selection, filtered);
 			const totalPages = Math.max(1, Math.ceil(filtered.length / 20));
 			const page = Math.min(ui.page, totalPages - 1);
@@ -41112,51 +41117,6 @@ window.__ModuleLoader__.load({
 			}
 			return current;
 		}
-		/**
-		* Coerce a stored `models` value into drafts. Returns undefined when the value
-		* is not an array; entries without a non-empty string id are skipped (the
-		* adapter refuses them anyway, and dropping them here keeps the editor
-		* renderable). Unknown fields are preserved by reference.
-		*/
-		function modelsArrayOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const entries = [];
-			for (const item of value) {
-				if (typeof item !== "object" || item === null || Array.isArray(item)) continue;
-				const record = item;
-				if (typeof record["id"] !== "string" || record["id"].length === 0) continue;
-				entries.push(record);
-			}
-			return entries;
-		}
-		/**
-		* Sanitize a draft for storage: drop keys whose value is undefined (JSON has
-		* no undefined) and clone plain objects/arrays one level deep so later draft
-		* edits cannot alias stored state. Unknown fields ride along untouched.
-		*/
-		function sanitizeEntry(entry) {
-			const out = {};
-			for (const [key, value] of Object.entries(entry)) {
-				if (value === void 0) continue;
-				if (typeof value === "object" && value !== null && !Array.isArray(value)) out[key] = { ...value };
-				else if (Array.isArray(value)) out[key] = [...value];
-				else out[key] = value;
-			}
-			return out;
-		}
-		/**
-		* Build the single op a save performs: replace the provider's whole `models`
-		* array. The empty path suffix works on a stored section that does not carry
-		* the array yet — the walker creates the intermediate objects, and every
-		* other profile field keeps inheriting from its layer.
-		*/
-		function buildModelsOp(settingsPath, entries) {
-			return {
-				op: "set",
-				path: [...settingsPath, "models"],
-				value: entries.map(sanitizeEntry)
-			};
-		}
 		//#endregion
 		//#region ../dsh-model-capabilities/src/client/provider-toggle.ts
 		function refused(error) {
@@ -41212,20 +41172,19 @@ window.__ModuleLoader__.load({
 		const NS$1 = "model-caps";
 		/** Chinese copy (key source). */
 		const zh$1 = {
-			"name.hint": "直接修改模型显示名称，保存写入设置文档并立即生效；留空则使用模型 ID。",
-			"name.loading": "正在读取模型列表…",
-			"name.loadFailed": "读取失败：{error}",
-			"name.reload": "重新读取",
-			"name.empty": "此提供方还没有可编辑的模型目录。先在上方模型目录中添加模型行，再回到这里修改名称。",
-			"name.readOnly": "当前设置文档只读，无法修改。",
-			"name.label": "显示名称",
-			"name.placeholder": "留空时使用模型 ID",
-			"name.save": "保存",
-			"name.saving": "保存中…",
-			"name.discard": "重置",
-			"name.saved": "已保存",
-			"name.conflict": "配置已被其他界面修改，已重新读取，请重试。",
-			"name.failed": "保存失败：{error}",
+			"providerName.hint": "直接修改供应商名称，保存写入设置文档并立即生效；留空则回退为供应商 ID。",
+			"providerName.loading": "正在读取供应商…",
+			"providerName.loadFailed": "读取失败：{error}",
+			"providerName.reload": "重新读取",
+			"providerName.readOnly": "当前设置文档只读，无法修改。",
+			"providerName.label": "供应商名称",
+			"providerName.placeholder": "留空时使用供应商 ID",
+			"providerName.save": "保存",
+			"providerName.saving": "保存中…",
+			"providerName.discard": "重置",
+			"providerName.saved": "已保存",
+			"providerName.conflict": "配置已被其他界面修改，已重新读取，请重试。",
+			"providerName.failed": "保存失败：{error}",
 			"caps.conflict": "配置已被其他界面修改，已重新读取，请重试。",
 			"caps.failed": "操作失败：{error}",
 			"caps.action.enable": "启用",
@@ -41238,20 +41197,19 @@ window.__ModuleLoader__.load({
 		};
 		/** English copy (full key parity with zh). */
 		const en$1 = {
-			"name.hint": "Edit model display names here; saving writes the settings document and applies immediately. Empty names fall back to the model ID.",
-			"name.loading": "Loading model list…",
-			"name.loadFailed": "Failed to load: {error}",
-			"name.reload": "Reload",
-			"name.empty": "No editable model catalog for this provider yet. Add model rows in the catalog above, then come back here to edit names.",
-			"name.readOnly": "The settings document is read-only; changes are disabled.",
-			"name.label": "Display name",
-			"name.placeholder": "Uses the model ID when empty",
-			"name.save": "Save",
-			"name.saving": "Saving…",
-			"name.discard": "Reset",
-			"name.saved": "Saved",
-			"name.conflict": "The configuration changed in another surface; reloaded — please retry.",
-			"name.failed": "Save failed: {error}",
+			"providerName.hint": "Edit the provider display name here; saving writes the settings document and applies immediately. Empty names fall back to the provider ID.",
+			"providerName.loading": "Loading provider…",
+			"providerName.loadFailed": "Failed to load: {error}",
+			"providerName.reload": "Reload",
+			"providerName.readOnly": "The settings document is read-only; changes are disabled.",
+			"providerName.label": "Provider display name",
+			"providerName.placeholder": "Uses the provider ID when empty",
+			"providerName.save": "Save",
+			"providerName.saving": "Saving…",
+			"providerName.discard": "Reset",
+			"providerName.saved": "Saved",
+			"providerName.conflict": "The configuration changed in another surface; reloaded — please retry.",
+			"providerName.failed": "Save failed: {error}",
 			"caps.conflict": "The configuration changed in another surface; reloaded — please retry.",
 			"caps.failed": "Operation failed: {error}",
 			"caps.action.enable": "Enable",
@@ -41338,12 +41296,12 @@ window.__ModuleLoader__.load({
 		*/
 		function DisabledProvidersFooter(props) {
 			const { settings, refresh } = props;
-			const [stash, setStash] = (0, react$1.useState)({});
-			const [llmView, setLlmView] = (0, react$1.useState)(void 0);
-			const [known, setKnown] = (0, react$1.useState)(false);
-			const [busyRoute, setBusyRoute] = (0, react$1.useState)(void 0);
-			const [failure, setFailure] = (0, react$1.useState)(void 0);
-			const load = (0, react$1.useCallback)(async (face) => {
+			const [stash, setStash] = (0, react.useState)({});
+			const [llmView, setLlmView] = (0, react.useState)(void 0);
+			const [known, setKnown] = (0, react.useState)(false);
+			const [busyRoute, setBusyRoute] = (0, react.useState)(void 0);
+			const [failure, setFailure] = (0, react.useState)(void 0);
+			const load = (0, react.useCallback)(async (face) => {
 				try {
 					const described = await face.describe();
 					if (!described.ok) return;
@@ -41354,10 +41312,10 @@ window.__ModuleLoader__.load({
 					setKnown(true);
 				} catch {}
 			}, []);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				load(settings);
 			}, [load, settings]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				return refresh.subscribe(() => {
 					load(settings);
 				});
@@ -41446,58 +41404,59 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region ../dsh-model-capabilities/src/client/ModelNamePanel.tsx
+		//#region ../dsh-model-capabilities/src/client/ProviderNamePanel.tsx
 		/**
-		* Models-page provider-card extension area: per-model display-name editing.
+		* Models-page provider-card extension area: inline provider display-name
+		* editing.
 		*
-		* Renders, for one pi-ai provider route, the model rows of its catalog with
-		* an inline display-name editor. Model ids stay read-only (they are the wire
-		* identity); the display name is what the pickers show, and the edit writes
-		* back through the official settings wire as one whole-array path op with
-		* revision fencing — the same write granularity and conflict posture the
-		* official card uses. Every other model field (input modalities, context
-		* window, reasoning-effort declarations, ...) rides along untouched.
+		* The official card only offers a display-name field for hand-declared
+		* (user-layer) providers; providers configured in a base/profile layer get no
+		* name input there, because the official editor gates that field on
+		* `declared === true`. This panel puts the edit directly on the card for
+		* every `llm-pi-ai` route: one "provider display name" input, saved as
+		* `providers.<route>.displayName` through the official settings wire with
+		* revision fencing — the same conflict posture the official card uses.
 		*
-		* This is the successor of the former reasoning-effort editor: model
-		* abilities need no per-user editing, but a display-name edit belongs on the
-		* card. Save is a single path op replacing the provider's whole `models`
-		* array.
-		* @module @linxin666/dsh-client-ui-model-capabilities/client/ModelNamePanel
+		* The former per-model editors (reasoning efforts, then model display names)
+		* are intentionally not offered: this extension edits the provider's own
+		* identity only.
+		* @module @linxin666/dsh-client-ui-model-capabilities/client/ProviderNamePanel
 		*/
 		/** Extract a display text from a remote failure (the host diagnostic, or its code). */
 		function failureText(error) {
 			return typeof error.message === "string" && error.message.length > 0 ? error.message : error.code;
 		}
 		/**
-		* Render the inline model-name editor for one provider card.
+		* Render the inline provider display-name editor for one provider card.
 		* @param props - the card's directory row and the injected faces.
 		* @returns the extension area.
 		*/
-		function ModelNamePanel(props) {
+		function ProviderNamePanel(props) {
 			const { provider, settings, refresh } = props;
-			const [phase, setPhase] = (0, react$1.useState)({ kind: "loading" });
-			const [snapshot, setSnapshot] = (0, react$1.useState)(void 0);
-			const [draft, setDraft] = (0, react$1.useState)(null);
-			const [save, setSave] = (0, react$1.useState)({ kind: "idle" });
+			const [phase, setPhase] = (0, react.useState)({ kind: "loading" });
+			const [snapshot, setSnapshot] = (0, react.useState)(void 0);
+			const [draft, setDraft] = (0, react.useState)(void 0);
+			const [save, setSave] = (0, react.useState)({ kind: "idle" });
 			/** Revision the open draft was read from (the write's fence while it is open). */
-			const draftBasis = (0, react$1.useRef)(void 0);
-			const modelsPath = (0, react$1.useMemo)(() => [...provider.settingsPath, "models"], [provider.settingsPath]);
-			const entries = draft ?? snapshot?.entries ?? [];
-			const load = (0, react$1.useCallback)(async (face) => {
+			const draftBasis = (0, react.useRef)(void 0);
+			const profilePath = (0, react.useMemo)(() => [...provider.settingsPath], [provider.settingsPath]);
+			/** The value edited when the profile lives directly at the route node. */
+			const displayNamePath = (0, react.useMemo)(() => [...profilePath, "displayName"], [profilePath]);
+			const load = (0, react.useCallback)(async (face) => {
 				setPhase({ kind: "loading" });
 				try {
 					const described = await face.describe();
 					if (!described.ok) throw new Error(failureText(described.error));
 					const view = described.value.namespaces.find((candidate) => candidate.ns === provider.settingsNs);
 					if (view === void 0) throw new Error(`settings entry "${provider.settingsNs}" is not served on this host`);
-					const effective = modelsArrayOf(readAt(view.user, modelsPath)) ?? modelsArrayOf(readAt(view.value, modelsPath)) ?? [];
+					const effective = readAt(view.value, displayNamePath);
 					const basis = draftBasis.current;
 					setSnapshot({
-						entries: effective,
+						displayName: typeof effective === "string" ? effective : void 0,
 						revision: basis ?? view.revision,
 						writable: described.value.writable
 					});
-					if (basis === void 0) setDraft(null);
+					if (basis === void 0) setDraft(void 0);
 					setPhase({ kind: "ready" });
 				} catch (error) {
 					setPhase({
@@ -41505,11 +41464,11 @@ window.__ModuleLoader__.load({
 						message: error instanceof Error ? error.message : String(error)
 					});
 				}
-			}, [modelsPath, provider.settingsNs]);
-			(0, react$1.useEffect)(() => {
+			}, [displayNamePath, provider.settingsNs]);
+			(0, react.useEffect)(() => {
 				load(settings);
 			}, [load, settings]);
-			(0, react$1.useEffect)(() => {
+			(0, react.useEffect)(() => {
 				return refresh?.subscribe(() => {
 					load(settings);
 				});
@@ -41520,46 +41479,47 @@ window.__ModuleLoader__.load({
 			]);
 			const editing = phase.kind === "ready" && snapshot !== void 0;
 			const readOnly = editing && !snapshot.writable;
-			const dirty = draft !== null;
-			const setName = (index, name) => {
+			const value = draft ?? snapshot?.displayName ?? "";
+			const dirty = draft !== void 0;
+			const setName = (next) => {
 				if (!editing || readOnly) return;
-				if (draft === null) draftBasis.current = snapshot.revision;
-				setDraft((current) => {
-					const clone = (current ?? snapshot.entries.map((entry) => JSON.parse(JSON.stringify(sanitizeEntry(entry))))).map((entry) => ({ ...entry }));
-					clone[index] = {
-						...clone[index],
-						name: name.length > 0 ? name : void 0
-					};
-					return clone;
-				});
+				if (draft === void 0) draftBasis.current = snapshot.revision;
+				setDraft(next);
 				setSave({ kind: "idle" });
 			};
 			const discard = () => {
 				draftBasis.current = void 0;
-				setDraft(null);
+				setDraft(void 0);
 				setSave({ kind: "idle" });
 			};
 			const doSave = async () => {
-				if (!editing || readOnly || draft === null || snapshot === void 0) return;
-				const op = buildModelsOp(provider.settingsPath, draft);
+				if (!editing || readOnly || draft === void 0 || snapshot === void 0) return;
 				setSave({ kind: "saving" });
 				try {
-					const written = await settings.mutate(provider.settingsNs, [op], snapshot.revision);
+					const ops = draft.length === 0 ? [{
+						op: "unset",
+						path: displayNamePath
+					}] : [{
+						op: "set",
+						path: displayNamePath,
+						value: draft
+					}];
+					const written = await settings.mutate(provider.settingsNs, ops, snapshot.revision);
 					if (written.ok) {
-						const userModels = modelsArrayOf(readAt(written.value.user, modelsPath)) ?? [];
+						const effective = readAt(written.value.value, displayNamePath);
 						setSnapshot((current) => current === void 0 ? current : {
 							...current,
-							entries: userModels,
+							displayName: typeof effective === "string" ? effective : void 0,
 							revision: written.value.revision
 						});
 						draftBasis.current = void 0;
-						setDraft(null);
+						setDraft(void 0);
 						setSave({ kind: "saved" });
 						return;
 					}
 					if (written.error.code === "settings/conflict") {
 						draftBasis.current = void 0;
-						setDraft(null);
+						setDraft(void 0);
 						setSave({ kind: "conflict" });
 						await load(settings);
 						return;
@@ -41578,23 +41538,23 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 				className: capabilities_module_css_default.namePanel,
 				"data-dsh-plugin": "model-capabilities",
-				"data-dsh-part": "name-panel",
+				"data-dsh-part": "provider-name",
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: capabilities_module_css_default.nameHint,
-						children: t$1("name.hint")
+						children: t$1("providerName.hint")
 					}),
 					phase.kind === "loading" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: capabilities_module_css_default.status,
 						role: "status",
-						children: t$1("name.loading")
+						children: t$1("providerName.loading")
 					}) : null,
 					phase.kind === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: capabilities_module_css_default.statusRow,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							className: capabilities_module_css_default.failed,
 							role: "alert",
-							children: t$1("name.loadFailed", { error: phase.message })
+							children: t$1("providerName.loadFailed", { error: phase.message })
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 							type: "button",
 							className: capabilities_module_css_default.ghost,
@@ -41602,39 +41562,32 @@ window.__ModuleLoader__.load({
 							onClick: () => {
 								load(settings);
 							},
-							children: t$1("name.reload")
+							children: t$1("providerName.reload")
 						})]
 					}) : null,
 					phase.kind === "ready" && snapshot !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 						readOnly ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							className: capabilities_module_css_default.readOnly,
 							role: "status",
-							children: t$1("name.readOnly")
+							children: t$1("providerName.readOnly")
 						}) : null,
-						snapshot.entries.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: capabilities_module_css_default.status,
-							role: "status",
-							children: t$1("name.empty")
-						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-							className: capabilities_module_css_default.nameRows,
-							children: entries.map((entry, index) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-								className: capabilities_module_css_default.nameRow,
-								"data-dsh-part": "name-row",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", {
-									className: capabilities_module_css_default.nameId,
-									children: entry.id
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-									className: capabilities_module_css_default.nameInput,
-									type: "text",
-									value: typeof entry.name === "string" ? entry.name : "",
-									placeholder: t$1("name.placeholder"),
-									"aria-label": `${t$1("name.label")}: ${entry.id}`,
-									disabled: readOnly,
-									onChange: (event) => {
-										setName(index, event.target.value);
-									}
-								})]
-							}, typeof entry.id === "string" ? entry.id : index))
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: capabilities_module_css_default.nameRow,
+							"data-dsh-part": "name-row",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", {
+								className: capabilities_module_css_default.nameId,
+								children: provider.provider
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								className: capabilities_module_css_default.nameInput,
+								type: "text",
+								value,
+								placeholder: t$1("providerName.placeholder"),
+								"aria-label": t$1("providerName.label"),
+								disabled: readOnly,
+								onChange: (event) => {
+									setName(event.target.value);
+								}
+							})]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: capabilities_module_css_default.footer,
@@ -41642,17 +41595,17 @@ window.__ModuleLoader__.load({
 								save.kind === "saved" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 									className: capabilities_module_css_default.status,
 									role: "status",
-									children: t$1("name.saved")
+									children: t$1("providerName.saved")
 								}) : null,
 								save.kind === "conflict" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 									className: capabilities_module_css_default.failed,
 									role: "alert",
-									children: t$1("name.conflict")
+									children: t$1("providerName.conflict")
 								}) : null,
 								save.kind === "failed" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 									className: capabilities_module_css_default.failed,
 									role: "alert",
-									children: t$1("name.failed", { error: save.message })
+									children: t$1("providerName.failed", { error: save.message })
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: capabilities_module_css_default.spacer }),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
@@ -41661,7 +41614,7 @@ window.__ModuleLoader__.load({
 									"data-dsh-part": "discard",
 									disabled: !dirty || save.kind === "saving",
 									onClick: discard,
-									children: t$1("name.discard")
+									children: t$1("providerName.discard")
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 									type: "button",
@@ -41671,7 +41624,7 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										doSave();
 									},
-									children: save.kind === "saving" ? t$1("name.saving") : t$1("name.save")
+									children: save.kind === "saving" ? t$1("providerName.saving") : t$1("providerName.save")
 								})
 							]
 						})
@@ -41772,7 +41725,7 @@ window.__ModuleLoader__.load({
 							settings,
 							refresh
 						})
-					}, ModelNamePanel);
+					}, ProviderNamePanel);
 					return () => {
 						unregister();
 					};
@@ -41848,8 +41801,8 @@ window.__ModuleLoader__.load({
 		* the failure message when one occurs.
 		*/
 		function QuickRestartAction(props) {
-			const [busy, setBusy] = (0, react$1.useState)(false);
-			const [failed, setFailed] = (0, react$1.useState)("");
+			const [busy, setBusy] = (0, react.useState)(false);
+			const [failed, setFailed] = (0, react.useState)("");
 			const onRestart = async () => {
 				if (busy) return;
 				if (!window.confirm(t("quick.restart.confirm"))) return;
@@ -42226,6 +42179,81 @@ window.__ModuleLoader__.load({
 			["[class*=\"centerCol\"]", "data-pane=\"conversation\""],
 			["[class*=\"detailsCol\"]", "data-pane=\"details\""]
 		];
+		const DISPLAY_MODE_STORAGE_KEY = "dsh-web-all-display-mode";
+		const DISPLAY_MODE_CHANGE_EVENT = "dsh-web-all-display-mode-change";
+		function readDisplayMode() {
+			try {
+				return window.localStorage.getItem(DISPLAY_MODE_STORAGE_KEY) === "default" ? "default" : "mario";
+			} catch {
+				return "mario";
+			}
+		}
+		function writeDisplayMode(mode) {
+			try {
+				window.localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, mode);
+			} catch {}
+			window.dispatchEvent(new CustomEvent(DISPLAY_MODE_CHANGE_EVENT, { detail: { mode } }));
+		}
+		function displayModeText(key) {
+			if (document.documentElement.lang.toLowerCase().startsWith("en")) {
+				if (key === "title") return "Display mode";
+				if (key === "mario") return "Mario mode";
+				if (key === "default") return "Default mode";
+				return "Mario mode shows the themed hero and bottom interactions. Default mode restores the stock system appearance.";
+			}
+			if (key === "title") return "显示模式";
+			if (key === "mario") return "马里奥模式";
+			if (key === "default") return "默认模式";
+			return "马里奥模式会显示首页与底部互动；默认模式恢复系统出厂外观。";
+		}
+		function DisplayModeRow() {
+			const [mode, setMode] = React.useState(() => readDisplayMode());
+			React.useEffect(() => {
+				const onChange = () => {
+					setMode(readDisplayMode());
+				};
+				window.addEventListener(DISPLAY_MODE_CHANGE_EVENT, onChange);
+				window.addEventListener("storage", onChange);
+				return () => {
+					window.removeEventListener(DISPLAY_MODE_CHANGE_EVENT, onChange);
+					window.removeEventListener("storage", onChange);
+				};
+			}, []);
+			const choose = (next) => {
+				setMode(next);
+				writeDisplayMode(next);
+			};
+			const option = (value, label) => React.createElement("button", {
+				type: "button",
+				"aria-pressed": mode === value,
+				onClick: () => {
+					choose(value);
+				},
+				style: {
+					border: mode === value ? "1px solid var(--dsw-alias-brand-primary, #3867d6)" : "1px solid var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%))",
+					borderRadius: 10,
+					background: mode === value ? "color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 12%, transparent)" : "var(--dsw-alias-bg-base, transparent)",
+					color: "var(--dsw-alias-label-primary, inherit)",
+					cursor: "pointer",
+					font: "inherit",
+					minHeight: 34,
+					padding: "6px 12px"
+				}
+			}, label);
+			return React.createElement("div", { style: {
+				display: "grid",
+				gap: 8,
+				padding: "12px 0"
+			} }, React.createElement("div", { style: { fontWeight: 600 } }, displayModeText("title")), React.createElement("div", { style: {
+				display: "flex",
+				flexWrap: "wrap",
+				gap: 8
+			} }, option("mario", displayModeText("mario")), option("default", displayModeText("default"))), React.createElement("div", { style: {
+				color: "var(--dsw-alias-label-secondary, rgb(0 0 0 / 58%))",
+				fontSize: 12,
+				lineHeight: "18px"
+			} }, displayModeText("hint")));
+		}
 		/** Stable hooks consumed by the responsive compat layer (never text/hash selectors). */
 		const RESPONSIVE_CSS = `
 [data-dsh-frame] { min-height: 0; }
@@ -42755,6 +42783,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   [data-dsh-mario-hero]::after,
   [data-dsh-mario-brand]::before,
   [data-dsh-mario-runner],
+  [data-dsh-mario-runner]::before,
   [data-dsh-mario-runner]::after,
   [data-dsh-mario-mushroom],
   [data-dsh-mario-mushroom]::before { transition: none; animation: none !important; }
@@ -42781,6 +42810,49 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 			document.head.appendChild(style);
 			return style;
 		}
+		function applyDisplayModeAttribute() {
+			document.body.dataset.dshDisplayMode = readDisplayMode();
+		}
+		function clearMarioSurface() {
+			let changed = false;
+			document.querySelectorAll("[data-dsh-mario-hero], [data-dsh-mario-brand]").forEach((element) => {
+				if (element.hasAttribute("data-dsh-mario-hero")) {
+					element.removeAttribute("data-dsh-mario-hero");
+					element.removeAttribute("data-dsh-mario-effect");
+					changed = true;
+				}
+				if (element.hasAttribute("data-dsh-mario-brand")) {
+					element.removeAttribute("data-dsh-mario-brand");
+					changed = true;
+				}
+			});
+			document.body.removeAttribute("data-dsh-mario-active");
+			delete document.body.dataset.dshMarioTaskCount;
+			return changed;
+		}
+		function installDisplayModeSync(onChange) {
+			const sync = () => {
+				applyDisplayModeAttribute();
+				if (readDisplayMode() === "default") clearMarioSurface();
+				onChange();
+			};
+			sync();
+			window.addEventListener(DISPLAY_MODE_CHANGE_EVENT, sync);
+			window.addEventListener("storage", sync);
+			return () => {
+				window.removeEventListener(DISPLAY_MODE_CHANGE_EVENT, sync);
+				window.removeEventListener("storage", sync);
+			};
+		}
+		function installDisplayModeSetting(ctx) {
+			ctx.inject(["slots"], (scope) => {
+				scope.slots.inject("settings.general.item", () => scope.slots.register({
+					name: "settings.general.item",
+					id: "dsh-web-display-mode",
+					order: 12
+				}, DisplayModeRow));
+			});
+		}
 		function stampSemanticParts(frame) {
 			let changed = false;
 			const mark = (element, part) => {
@@ -42792,16 +42864,18 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 			frame.querySelectorAll("pre").forEach((element) => mark(element, "code"));
 			frame.querySelectorAll("[role=\"menu\"], [data-subagent-menu]").forEach((element) => mark(element, "menu"));
 			frame.querySelectorAll("[role=\"treeitem\"]:not([data-dsh-part])").forEach((element) => mark(element, "sidebar-entry"));
-			frame.querySelectorAll("[class*=\"_fishHitbox\"]").forEach((element) => {
-				if (element.hasAttribute("data-dsh-mario-hero")) return;
-				element.setAttribute("data-dsh-mario-hero", "");
-				changed = true;
-			});
-			frame.querySelectorAll("[class*=\"_brandMark\"]").forEach((element) => {
-				if (element.hasAttribute("data-dsh-mario-brand")) return;
-				element.setAttribute("data-dsh-mario-brand", "");
-				changed = true;
-			});
+			if (readDisplayMode() === "mario") {
+				frame.querySelectorAll("[class*=\"_fishHitbox\"]").forEach((element) => {
+					if (element.hasAttribute("data-dsh-mario-hero")) return;
+					element.setAttribute("data-dsh-mario-hero", "");
+					changed = true;
+				});
+				frame.querySelectorAll("[class*=\"_brandMark\"]").forEach((element) => {
+					if (element.hasAttribute("data-dsh-mario-brand")) return;
+					element.setAttribute("data-dsh-mario-brand", "");
+					changed = true;
+				});
+			} else changed = clearMarioSurface() || changed;
 			const conversation = frame.querySelector("[data-pane=\"conversation\"]");
 			const slottedHeader = (conversation?.querySelector("[data-slot=\"conversation.session.header\"]"))?.querySelector(":scope > header") ?? null;
 			const scrollport = conversation?.querySelector("[data-conversation-scroll]") ?? null;
@@ -42955,6 +43029,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 			const onPointerOver = (event) => {
 				const target = event.target;
 				if (!(target instanceof Element)) return;
+				if (readDisplayMode() !== "mario") return;
 				const hero = target.closest("[data-dsh-mario-hero]");
 				if (hero === null) return;
 				if (event.relatedTarget instanceof Node && hero.contains(event.relatedTarget)) return;
@@ -43007,7 +43082,9 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 			let mushroomVisible = false;
 			let mushroomSquashing = false;
 			let mushroomHideTimer = 0;
-			let nextMushroomAt = Date.now() + 9e3 + Math.random() * 12e3;
+			let nextMushroomAt = Date.now() + 3e3 + Math.random() * 6e3;
+			let skateboardTimer = 0;
+			let nextSkateboardAt = Date.now() + 1e4 + Math.random() * 14e3;
 			const maxX = () => Math.max(0, window.innerWidth - 116);
 			const paintPosition = () => {
 				runner.style.setProperty("--dsh-mario-x", `${Math.round(x)}px`);
@@ -43019,7 +43096,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 				mushroom.toggleAttribute("data-squashed", mushroomSquashing);
 			};
 			const scheduleNextMushroom = () => {
-				nextMushroomAt = Date.now() + 14e3 + Math.random() * 18e3;
+				nextMushroomAt = Date.now() + 8e3 + Math.random() * 1e4;
 			};
 			const hideMushroom = () => {
 				mushroomVisible = false;
@@ -43027,8 +43104,34 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 				paintMushroom();
 				scheduleNextMushroom();
 			};
+			const scheduleNextSkateboard = () => {
+				nextSkateboardAt = Date.now() + 16e3 + Math.random() * 2e4;
+			};
+			const stopSkateboard = () => {
+				runner.removeAttribute("data-dsh-mario-skateboard");
+				if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer);
+				skateboardTimer = 0;
+				scheduleNextSkateboard();
+			};
+			const startSkateboard = () => {
+				runner.setAttribute("data-dsh-mario-skateboard", "true");
+				if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer);
+				skateboardTimer = window.setTimeout(() => {
+					skateboardTimer = 0;
+					stopSkateboard();
+				}, 4200 + Math.random() * 2200);
+			};
 			const update = () => {
 				updateTimer = 0;
+				if (readDisplayMode() !== "mario") {
+					taskCount = 0;
+					speed = 0;
+					if (mushroomVisible) hideMushroom();
+					runner.removeAttribute("data-dsh-mario-skateboard");
+					document.body.removeAttribute("data-dsh-mario-active");
+					delete document.body.dataset.dshMarioTaskCount;
+					return;
+				}
 				const count = activeTaskCount();
 				const tempo = marioRunTempo(count);
 				taskCount = count;
@@ -43046,6 +43149,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 				const now = Date.now();
 				const dt = Math.min(240, now - lastMove) / 1e3;
 				lastMove = now;
+				if (readDisplayMode() !== "mario") return;
 				if (paused) return;
 				x += dir * speed * dt;
 				const right = maxX();
@@ -43057,19 +43161,20 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 					dir = 1;
 				}
 				paintPosition();
-				if (taskCount <= 1 && !mushroomVisible && Date.now() >= nextMushroomAt) {
+				if (taskCount <= 1 && skateboardTimer === 0 && !mushroomVisible && Date.now() >= nextSkateboardAt) startSkateboard();
+				if (taskCount <= 1 && skateboardTimer === 0 && !mushroomVisible && Date.now() >= nextMushroomAt) {
 					const right = maxX();
-					const lead = 180 + Math.random() * 120;
+					const lead = 110 + Math.random() * 70;
 					mushroomX = dir > 0 ? Math.min(right, x + lead) : Math.max(0, x - lead);
-					if (Math.abs(mushroomX - x) > 95) {
+					if (Math.abs(mushroomX - x) > 70) {
 						mushroomVisible = true;
 						mushroomSquashing = false;
 						paintMushroom();
 					} else scheduleNextMushroom();
 				}
 				if (mushroomVisible && !mushroomSquashing) {
-					if (taskCount > 1 || Math.abs(mushroomX - x) > 420) hideMushroom();
-					else if (Math.abs(mushroomX - x) < 24) {
+					if (taskCount > 1 || Math.abs(mushroomX - x) > 320) hideMushroom();
+					else if (Math.abs(mushroomX - x) < 30) {
 						mushroomSquashing = true;
 						paintMushroom();
 						interact();
@@ -43129,6 +43234,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 				if (updateTimer !== 0) window.clearTimeout(updateTimer);
 				if (interactTimer !== 0) window.clearTimeout(interactTimer);
 				if (mushroomHideTimer !== 0) window.clearTimeout(mushroomHideTimer);
+				if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer);
 				runner.removeEventListener("pointerenter", pause);
 				runner.removeEventListener("pointerleave", resume);
 				runner.removeEventListener("click", interact);
@@ -43148,11 +43254,13 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 			mountClientChildren(ctx).catch((error) => {
 				console.error("[dsh-web-all] client children mount failed", error);
 			});
+			installDisplayModeSetting(ctx);
 			ctx.effect(() => {
 				const responsiveStyle = ensureResponsiveStyle();
 				const bootShield = installBootShield();
 				const removeMarioRunner = installMarioRunner();
 				const removeMarioHeroEffects = installMarioHeroEffects();
+				const removeDisplayModeSync = installDisplayModeSync(applyShims);
 				applyShims();
 				let removeMobileDismiss = () => {};
 				let dismissFrame = null;
@@ -43178,6 +43286,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 					bootShield.remove();
 					responsiveStyle.remove();
 					removeMobileDismiss();
+					removeDisplayModeSync();
 					removeMarioRunner();
 					removeMarioHeroEffects();
 				};
