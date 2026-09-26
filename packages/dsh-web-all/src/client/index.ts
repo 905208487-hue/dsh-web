@@ -15,6 +15,8 @@
  * nodes and never disturbs React's reconciliation.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { mountClientChildren } from './mount-children.ts'
 import { subscribeBodyInvalidations } from './body-mutations.ts'
 
@@ -25,9 +27,211 @@ const COLUMN_SHIMS: ReadonlyArray<readonly [selector: string, attribute: string]
   ['[class*="detailsCol"]', 'data-pane="details"'],
 ]
 
+const DISPLAY_MODE_STORAGE_KEY = 'dsh-web-all-display-mode'
+const DISPLAY_MODE_CHANGE_EVENT = 'dsh-web-all-display-mode-change'
+type DisplayMode = 'mario' | 'default'
+
+function readDisplayMode(): DisplayMode {
+  try {
+    return window.localStorage.getItem(DISPLAY_MODE_STORAGE_KEY) === 'default' ? 'default' : 'mario'
+  } catch {
+    return 'mario'
+  }
+}
+
+function writeDisplayMode(mode: DisplayMode): void {
+  try {
+    window.localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, mode)
+  } catch {
+    // Ignore storage failures; the live page still updates through the event.
+  }
+  window.dispatchEvent(new CustomEvent(DISPLAY_MODE_CHANGE_EVENT, { detail: { mode } }))
+}
+
+function displayModeText(key: 'title' | 'mario' | 'default' | 'hint'): string {
+  const isEnglish = document.documentElement.lang.toLowerCase().startsWith('en')
+  if (isEnglish) {
+    if (key === 'title') return 'Display mode'
+    if (key === 'mario') return 'Mario mode'
+    if (key === 'default') return 'Default mode'
+    return 'Mario mode shows the themed hero and bottom interactions. Default mode restores the stock system appearance.'
+  }
+  if (key === 'title') return '\u663e\u793a\u6a21\u5f0f'
+  if (key === 'mario') return '\u9a6c\u91cc\u5965\u6a21\u5f0f'
+  if (key === 'default') return '\u9ed8\u8ba4\u6a21\u5f0f'
+  return '\u9a6c\u91cc\u5965\u6a21\u5f0f\u4f1a\u663e\u793a\u9996\u9875\u4e0e\u5e95\u90e8\u4e92\u52a8\uff1b\u9ed8\u8ba4\u6a21\u5f0f\u6062\u590d\u7cfb\u7edf\u51fa\u5382\u5916\u89c2\u3002'
+}
+
+type ReactishElement = {
+  $$typeof: symbol
+  type: string | ((props: unknown) => ReactishElement)
+  key: string | null
+  ref: null
+  props: Record<string, unknown>
+  _owner: null
+}
+
+function h(type: ReactishElement['type'], props: Record<string, unknown> | null, ...children: unknown[]): ReactishElement {
+  const childValue = children.length <= 1 ? children[0] : children
+  return {
+    $$typeof: Symbol.for('react.element'),
+    type,
+    key: null,
+    ref: null,
+    props: childValue === undefined ? { ...(props ?? {}) } : { ...(props ?? {}), children: childValue },
+    _owner: null,
+  }
+}
+
+function refreshDisplayModeButtons(root: HTMLElement, mode: DisplayMode): void {
+  root.querySelectorAll<HTMLButtonElement>('[data-dsh-display-mode-option]').forEach(button => {
+    const selected = button.dataset.dshDisplayModeOption === mode
+    button.setAttribute('aria-pressed', String(selected))
+    button.toggleAttribute('data-selected', selected)
+  })
+}
+
+function DisplayModeRow(): ReactishElement {
+  const mode = readDisplayMode()
+  const option = (value: DisplayMode, label: string): ReactishElement => h('button', {
+    type: 'button',
+    'data-dsh-display-mode-option': value,
+    'aria-pressed': mode === value,
+    'data-selected': mode === value ? '' : undefined,
+    onClick: (event: Event) => {
+      writeDisplayMode(value)
+      const target = event.currentTarget
+      if (target instanceof HTMLElement) {
+        const root = target.closest('[data-dsh-display-mode-row]')
+        if (root instanceof HTMLElement) refreshDisplayModeButtons(root, value)
+      }
+    },
+  },
+    h('span', { 'data-dsh-display-mode-icon': value, 'aria-hidden': 'true' }),
+    h('span', { 'data-dsh-display-mode-label': '' }, label),
+  )
+  return h('div', { 'data-dsh-display-mode-row': '' },
+    h('div', { 'data-dsh-display-mode-title': '' }, displayModeText('title')),
+    h('div', { 'data-dsh-display-mode-options': '' },
+      option('mario', displayModeText('mario')),
+      option('default', displayModeText('default')),
+    ),
+    h('div', { 'data-dsh-display-mode-hint': '' }, displayModeText('hint')),
+  )
+}
+
 /** Stable hooks consumed by the responsive compat layer (never text/hash selectors). */
 export const RESPONSIVE_CSS = `
 [data-dsh-frame] { min-height: 0; }
+[data-dsh-display-mode-row] {
+  border-bottom: .5px solid var(--dsw-alias-border-l2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0;
+  color: inherit;
+  font: inherit;
+}
+[data-dsh-display-mode-title] {
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+[data-dsh-display-mode-options] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+[data-dsh-display-mode-option] {
+  box-sizing: border-box;
+  min-width: 120px;
+  min-height: 76px;
+  padding: 10px 16px;
+  border: .5px solid var(--dsw-alias-border-l4, var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%)));
+  border-radius: var(--dsw-radius-xl, 12px);
+  background: transparent;
+  color: var(--dsw-alias-label-primary, inherit);
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+[data-dsh-display-mode-option]:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 45%, var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%)));
+}
+[data-dsh-display-mode-option][data-selected] {
+  border-color: var(--dsw-static-neutral-bluish-400, var(--dsw-alias-brand-primary, #3867d6));
+  background: var(--dsw-alias-bg-module-platform, color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 12%, transparent));
+  box-shadow: none;
+}
+[data-dsh-display-mode-icon] {
+  width: 38px;
+  height: 34px;
+  position: relative;
+  display: block;
+}
+[data-dsh-display-mode-icon="mario"]::before {
+  content: "";
+  width: 28px;
+  height: 34px;
+  image-rendering: pixelated;
+  background:
+    linear-gradient(#d83a2e 0 0) 7px 0 / 17px 4px no-repeat,
+    linear-gradient(#d83a2e 0 0) 4px 4px / 22px 4px no-repeat,
+    linear-gradient(#744016 0 0) 5px 8px / 6px 9px no-repeat,
+    linear-gradient(#ffd19a 0 0) 10px 8px / 15px 10px no-repeat,
+    linear-gradient(#17110d 0 0) 21px 10px / 3px 3px no-repeat,
+    linear-gradient(#744016 0 0) 18px 15px / 8px 3px no-repeat,
+    linear-gradient(#d83a2e 0 0) 6px 20px / 17px 7px no-repeat,
+    linear-gradient(#fff5dc 0 0) 1px 27px / 6px 4px no-repeat,
+    linear-gradient(#fff5dc 0 0) 22px 27px / 6px 4px no-repeat,
+    linear-gradient(#1f61b5 0 0) 9px 20px / 12px 11px no-repeat,
+    radial-gradient(circle at 12px 25px, #ffd75a 0 1.8px, transparent 2px),
+    radial-gradient(circle at 18px 25px, #ffd75a 0 1.8px, transparent 2px),
+    linear-gradient(#744016 0 0) 4px 31px / 9px 3px no-repeat,
+    linear-gradient(#744016 0 0) 17px 31px / 9px 3px no-repeat;
+  filter: drop-shadow(0 4px 5px rgb(0 0 0 / 18%));
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  transform: translateX(-50%) scale(.86);
+  transform-origin: 50% 100%;
+}
+[data-dsh-display-mode-icon="default"]::before {
+  content: "";
+  width: 31px;
+  height: 24px;
+  border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 7px 6px, color-mix(in srgb, currentColor 42%, transparent) 0 1.4px, transparent 1.7px),
+    radial-gradient(circle at 12px 6px, color-mix(in srgb, currentColor 26%, transparent) 0 1.4px, transparent 1.7px),
+    linear-gradient(color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 24%, transparent) 0 0) 6px 11px / 19px 4px no-repeat,
+    linear-gradient(color-mix(in srgb, currentColor 18%, transparent) 0 0) 8px 18px / 15px 3px no-repeat,
+    linear-gradient(color-mix(in srgb, currentColor 8%, transparent) 0 0) 0 8px / 100% 1px no-repeat,
+    var(--dsw-alias-bg-base, transparent);
+  box-shadow:
+    0 5px 9px rgb(0 0 0 / 9%),
+    5px -4px 0 -2px color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 16%, transparent);
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  transform: translateX(-50%);
+}
+[data-dsh-display-mode-hint] {
+  color: var(--dsw-alias-label-secondary, currentColor);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  opacity: .72;
+}
+
 /* Viewport lock for installs with no active visual. The identical lock lives in
    the skin-center shell-rendering stylesheet, but that stylesheet is inert
    unless a catalog skin, custom theme or wallpaper is active, so a stock
@@ -392,6 +596,10 @@ html:has([data-dsh-frame]) > body {
     animation: dsh-mario-brick-bump 620ms cubic-bezier(.2, .85, .2, 1) both;
   }
 }
+body[data-dsh-display-mode="default"] [data-dsh-mario-runner],
+body[data-dsh-display-mode="default"] [data-dsh-mario-mushroom] {
+  display: none !important;
+}
 [data-dsh-mario-runner] {
   width: 78px;
   height: 62px;
@@ -436,6 +644,22 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 }
 [data-dsh-mario-runner][data-dsh-mario-interact="true"]::after {
   animation: dsh-mario-runner-hop 560ms cubic-bezier(.2, .9, .25, 1) both;
+}
+[data-dsh-mario-runner][data-dsh-mario-skateboard="true"]::before {
+  width: 56px;
+  height: 11px;
+  left: 7px;
+  bottom: 0;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 12px 9px, #2b211a 0 3px, transparent 3.4px),
+    radial-gradient(circle at 44px 9px, #2b211a 0 3px, transparent 3.4px),
+    linear-gradient(#f7d47a 0 0) 6px 2px / 44px 4px no-repeat,
+    linear-gradient(#9a4f22 0 0) 3px 5px / 50px 4px no-repeat;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 20%));
+}
+[data-dsh-mario-runner][data-dsh-mario-skateboard="true"]::after {
+  animation: dsh-mario-skateboard-glide 720ms ease-in-out infinite;
 }
 [data-dsh-mario-mushroom] {
   width: 38px;
@@ -510,6 +734,10 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   35% { transform: translateY(-18px) scale(1.04) rotate(-5deg); }
   62% { transform: translateY(-10px) scale(1.02) rotate(5deg); }
 }
+@keyframes dsh-mario-skateboard-glide {
+  0%, 100% { transform: translateY(-3px) rotate(-2deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+}
 @keyframes dsh-mario-runner-mushroom-squash {
   0% { transform: translateY(0) scale(1); opacity: 1; }
   36% { transform: translateY(5px) scale(1.18, .46); opacity: .95; }
@@ -530,6 +758,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   [data-dsh-mario-hero]::after,
   [data-dsh-mario-brand]::before,
   [data-dsh-mario-runner],
+  [data-dsh-mario-runner]::before,
   [data-dsh-mario-runner]::after,
   [data-dsh-mario-mushroom],
   [data-dsh-mario-mushroom]::before { transition: none; animation: none !important; }
@@ -558,6 +787,58 @@ function ensureResponsiveStyle(): HTMLStyleElement {
   return style
 }
 
+function applyDisplayModeAttribute(): void {
+  document.body.dataset.dshDisplayMode = readDisplayMode()
+}
+
+function clearMarioSurface(): boolean {
+  let changed = false
+  document.querySelectorAll<HTMLElement>('[data-dsh-mario-hero], [data-dsh-mario-brand]').forEach(element => {
+    if (element.hasAttribute('data-dsh-mario-hero')) {
+      element.removeAttribute('data-dsh-mario-hero')
+      element.removeAttribute('data-dsh-mario-effect')
+      changed = true
+    }
+    if (element.hasAttribute('data-dsh-mario-brand')) {
+      element.removeAttribute('data-dsh-mario-brand')
+      changed = true
+    }
+  })
+  document.body.removeAttribute('data-dsh-mario-active')
+  delete document.body.dataset.dshMarioTaskCount
+  return changed
+}
+
+function installDisplayModeSync(onChange: () => void): () => void {
+  const sync = (): void => {
+    applyDisplayModeAttribute()
+    if (readDisplayMode() === 'default') clearMarioSurface()
+    onChange()
+  }
+  sync()
+  window.addEventListener(DISPLAY_MODE_CHANGE_EVENT, sync)
+  window.addEventListener('storage', sync)
+  return () => {
+    window.removeEventListener(DISPLAY_MODE_CHANGE_EVENT, sync)
+    window.removeEventListener('storage', sync)
+  }
+}
+
+function installDisplayModeSetting(ctx: Context): void {
+  const maybe = ctx as Context & {
+    slots?: {
+      inject: (name: string, callback: () => () => void) => void
+      register: (options: Record<string, unknown>, component: (props: unknown) => ReactishElement) => () => void
+    }
+  }
+  if (maybe.slots === undefined) return
+  maybe.slots.inject('settings.general.item', () => maybe.slots!.register({
+    name: 'settings.general.item',
+    id: 'dsh-web-display-mode',
+    order: 12,
+  }, DisplayModeRow))
+}
+
 function stampSemanticParts(frame: Element): boolean {
   let changed = false
   const mark = (element: Element, part: string): void => {
@@ -569,16 +850,20 @@ function stampSemanticParts(frame: Element): boolean {
   frame.querySelectorAll<HTMLElement>('pre').forEach(element => mark(element, 'code'))
   frame.querySelectorAll<HTMLElement>('[role="menu"], [data-subagent-menu]').forEach(element => mark(element, 'menu'))
   frame.querySelectorAll<HTMLElement>('[role="treeitem"]:not([data-dsh-part])').forEach(element => mark(element, 'sidebar-entry'))
-  frame.querySelectorAll<HTMLElement>('[class*="_fishHitbox"]').forEach(element => {
-    if (element.hasAttribute('data-dsh-mario-hero')) return
-    element.setAttribute('data-dsh-mario-hero', '')
-    changed = true
-  })
-  frame.querySelectorAll<HTMLElement>('[class*="_brandMark"]').forEach(element => {
-    if (element.hasAttribute('data-dsh-mario-brand')) return
-    element.setAttribute('data-dsh-mario-brand', '')
-    changed = true
-  })
+  if (readDisplayMode() === 'mario') {
+    frame.querySelectorAll<HTMLElement>('[class*="_fishHitbox"]').forEach(element => {
+      if (element.hasAttribute('data-dsh-mario-hero')) return
+      element.setAttribute('data-dsh-mario-hero', '')
+      changed = true
+    })
+    frame.querySelectorAll<HTMLElement>('[class*="_brandMark"]').forEach(element => {
+      if (element.hasAttribute('data-dsh-mario-brand')) return
+      element.setAttribute('data-dsh-mario-brand', '')
+      changed = true
+    })
+  } else {
+    changed = clearMarioSurface() || changed
+  }
   const conversation = frame.querySelector<HTMLElement>('[data-pane="conversation"]')
   const headerSlot = conversation?.querySelector<HTMLElement>('[data-slot="conversation.session.header"]')
   const slottedHeader = headerSlot?.querySelector<HTMLElement>(':scope > header') ?? null
@@ -733,6 +1018,7 @@ function installMarioHeroEffects(): () => void {
   const onPointerOver = (event: PointerEvent): void => {
     const target = event.target
     if (!(target instanceof Element)) return
+    if (readDisplayMode() !== 'mario') return
     const hero = target.closest<HTMLElement>('[data-dsh-mario-hero]')
     if (hero === null) return
     if (event.relatedTarget instanceof Node && hero.contains(event.relatedTarget)) return
@@ -789,7 +1075,9 @@ function installMarioRunner(): () => void {
   let mushroomVisible = false
   let mushroomSquashing = false
   let mushroomHideTimer = 0
-  let nextMushroomAt = Date.now() + 9000 + Math.random() * 12000
+  let nextMushroomAt = Date.now() + 3000 + Math.random() * 6000
+  let skateboardTimer = 0
+  let nextSkateboardAt = Date.now() + 10000 + Math.random() * 14000
 
   const maxX = (): number => Math.max(0, window.innerWidth - 116)
   const paintPosition = (): void => {
@@ -802,7 +1090,7 @@ function installMarioRunner(): () => void {
     mushroom.toggleAttribute('data-squashed', mushroomSquashing)
   }
   const scheduleNextMushroom = (): void => {
-    nextMushroomAt = Date.now() + 14000 + Math.random() * 18000
+    nextMushroomAt = Date.now() + 8000 + Math.random() * 10000
   }
   const hideMushroom = (): void => {
     mushroomVisible = false
@@ -810,8 +1098,34 @@ function installMarioRunner(): () => void {
     paintMushroom()
     scheduleNextMushroom()
   }
+  const scheduleNextSkateboard = (): void => {
+    nextSkateboardAt = Date.now() + 16000 + Math.random() * 20000
+  }
+  const stopSkateboard = (): void => {
+    runner.removeAttribute('data-dsh-mario-skateboard')
+    if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer)
+    skateboardTimer = 0
+    scheduleNextSkateboard()
+  }
+  const startSkateboard = (): void => {
+    runner.setAttribute('data-dsh-mario-skateboard', 'true')
+    if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer)
+    skateboardTimer = window.setTimeout(() => {
+      skateboardTimer = 0
+      stopSkateboard()
+    }, 4200 + Math.random() * 2200)
+  }
   const update = (): void => {
     updateTimer = 0
+    if (readDisplayMode() !== 'mario') {
+      taskCount = 0
+      speed = 0
+      if (mushroomVisible) hideMushroom()
+      runner.removeAttribute('data-dsh-mario-skateboard')
+      document.body.removeAttribute('data-dsh-mario-active')
+      delete document.body.dataset.dshMarioTaskCount
+      return
+    }
     const count = activeTaskCount()
     const tempo = marioRunTempo(count)
     taskCount = count
@@ -829,6 +1143,7 @@ function installMarioRunner(): () => void {
     const now = Date.now()
     const dt = Math.min(240, now - lastMove) / 1000
     lastMove = now
+    if (readDisplayMode() !== 'mario') return
     if (paused) return
     x += dir * speed * dt
     const right = maxX()
@@ -840,11 +1155,14 @@ function installMarioRunner(): () => void {
       dir = 1
     }
     paintPosition()
-    if (taskCount <= 1 && !mushroomVisible && Date.now() >= nextMushroomAt) {
+    if (taskCount <= 1 && skateboardTimer === 0 && !mushroomVisible && Date.now() >= nextSkateboardAt) {
+      startSkateboard()
+    }
+    if (taskCount <= 1 && skateboardTimer === 0 && !mushroomVisible && Date.now() >= nextMushroomAt) {
       const right = maxX()
-      const lead = 180 + Math.random() * 120
+      const lead = 110 + Math.random() * 70
       mushroomX = dir > 0 ? Math.min(right, x + lead) : Math.max(0, x - lead)
-      if (Math.abs(mushroomX - x) > 95) {
+      if (Math.abs(mushroomX - x) > 70) {
         mushroomVisible = true
         mushroomSquashing = false
         paintMushroom()
@@ -853,9 +1171,9 @@ function installMarioRunner(): () => void {
       }
     }
     if (mushroomVisible && !mushroomSquashing) {
-      if (taskCount > 1 || Math.abs(mushroomX - x) > 420) {
+      if (taskCount > 1 || Math.abs(mushroomX - x) > 320) {
         hideMushroom()
-      } else if (Math.abs(mushroomX - x) < 24) {
+      } else if (Math.abs(mushroomX - x) < 30) {
         mushroomSquashing = true
         paintMushroom()
         interact()
@@ -910,6 +1228,7 @@ function installMarioRunner(): () => void {
     if (updateTimer !== 0) window.clearTimeout(updateTimer)
     if (interactTimer !== 0) window.clearTimeout(interactTimer)
     if (mushroomHideTimer !== 0) window.clearTimeout(mushroomHideTimer)
+    if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer)
     runner.removeEventListener('pointerenter', pause)
     runner.removeEventListener('pointerleave', resume)
     runner.removeEventListener('click', interact)
@@ -920,8 +1239,8 @@ function installMarioRunner(): () => void {
   }
 }
 
-/** Required services: none — the shim must run before any DOM mount waits. */
-export const inject = [] as const
+/** Required services: slots seats the display-mode row in General settings. */
+export const inject = ['slots'] as const
 
 /**
  * Register the shim for the page lifetime.
@@ -936,11 +1255,13 @@ export function apply(ctx: Context): void {
   void mountClientChildren(ctx).catch(error => {
     console.error('[dsh-web-all] client children mount failed', error)
   })
+  installDisplayModeSetting(ctx)
   ctx.effect(() => {
     const responsiveStyle = ensureResponsiveStyle()
     const bootShield = installBootShield()
     const removeMarioRunner = installMarioRunner()
     const removeMarioHeroEffects = installMarioHeroEffects()
+    const removeDisplayModeSync = installDisplayModeSync(applyShims)
     applyShims()
     let removeMobileDismiss = (): void => {}
     let dismissFrame: HTMLElement | null = null
@@ -974,6 +1295,7 @@ export function apply(ctx: Context): void {
       bootShield.remove()
       responsiveStyle.remove()
       removeMobileDismiss()
+      removeDisplayModeSync()
       removeMarioRunner()
       removeMarioHeroEffects()
     }

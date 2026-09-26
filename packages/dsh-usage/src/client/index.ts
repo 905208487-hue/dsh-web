@@ -19,7 +19,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createUsageStore, type UsageStoreInstance } from './usage-store.ts'
 import { UsageSectionCard, type UsageSectionFace, type UsageSettings } from './UsageSectionCard.tsx'
-import { mountUsageFootCard, mountUsageFootAction, openUsageSettings } from './foot-card-mount.tsx'
+import { mountUsageFootAction, openUsageSettings } from './foot-card-mount.tsx'
 import { NS, en, zh, t } from './locales.ts'
 import type { UsageOverviewView } from '../core/types.ts'
 
@@ -177,31 +177,19 @@ export function apply(ctx: ClientContext): void {
   // Settings row. It shares the section's store and poll path (the sequence
   // guard absorbs interleaved calls), runs its own relaxed poll loop, and
   // opens the settings panel on the usage section when clicked.
-  const disposeFootCard = mountUsageFootCard({
-    store,
-    poll,
-    settings: settingsForm,
-    onOpen: () => { openUsageSettings(() => t('usage.title')) },
-    locale: ctx.locale,
-  })
-  // Sidebar foot action: the icon trigger seated where the download
-  // (self-update) trigger used to sit, left of the remote phone icon.
+  // Sidebar foot action: the icon trigger seated right next to the Settings
+  // trigger, opening the usage dashboard.
   const disposeFootAction = mountUsageFootAction({
     label: () => t('usage.entry'),
     onOpen: () => { openUsageSettings(() => t('usage.title')) },
   })
   ctx.effect(() => () => {
     try {
-      disposeFootCard()
-    } catch {
-      // Card container already gone (teardown race).
-    }
-    try {
       disposeFootAction()
     } catch {
       // Action container already gone (teardown race).
     }
-  }, 'dsh-usage: sidebar foot card')
+  }, 'dsh-usage: sidebar foot action')
 
   ctx.slots.inject('settings.section', () => {
     try {
