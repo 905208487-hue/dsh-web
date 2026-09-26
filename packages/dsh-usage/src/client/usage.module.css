@@ -524,21 +524,32 @@
   transform: translateX(-50%);
   z-index: 2;
   white-space: nowrap;
+  /* Hardcoded opaque palettes, no var chains: the tooltip floats over the
+     heatmap and any translucency lets the cells bleed through the text.
+     Light palette below; the dark one keys off the official theme switch. */
+  border: 1px solid rgb(0 0 0 / 0.14);
   border-radius: 8px;
   padding: 6px 10px;
-  /* Opaque theme surface (the app's raised layer), never translucent: the
-     tooltip floats over heatmap cells and must not let them bleed through. */
-  background: var(--dsw-alias-bg-layer-3, var(--dsw-alias-bg-layer-2, #ffffff));
-  color: inherit;
+  background: #ffffff;
+  color: #0f0f0f;
   font-size: 11px;
   line-height: 1.4;
   text-align: center;
-  box-shadow: 0 12px 32px color-mix(in srgb, currentColor 30%, transparent);
+  /* Frosted-glass guarantee: even if a translucent path ever slips through,
+     the backdrop is blurred beyond recognition. */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 0.28);
   pointer-events: none;
-  line-height: 1.4;
-  text-align: center;
-  box-shadow: 0 10px 28px color-mix(in srgb, currentColor 24%, transparent);
-  pointer-events: none;
+}
+
+/* The official dark-theme switch (the theme bundle keys every alias off
+   body[data-ds-dark-theme]). */
+:global(body[data-ds-dark-theme]) .heatTip {
+  background: #2c2c2e;
+  border-color: rgb(255 255 255 / 0.2);
+  color: #f5f5f5;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 0.55);
 }
 
 .heatTip strong {
