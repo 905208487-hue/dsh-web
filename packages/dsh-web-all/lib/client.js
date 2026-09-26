@@ -45197,6 +45197,8 @@ window.__ModuleLoader__.load({
 			"quick.restart.button": "重启 DSH 服务",
 			"quick.restart.confirm": "确认重启 DSH 服务？当前对话与后台任务会被中断，页面稍后会自动重连（约 10–30 秒）。",
 			"quick.restart.doing": "正在重启…页面将在服务恢复后自动重连。",
+			"quick.action.restarting": "重启中…",
+			"quick.restart.timeout": "服务未在预期时间内恢复，请手动刷新页面。",
 			"quick.restart.failed": "重启触发失败：{error}",
 			"quick.status.failed": "状态读取失败：{error}",
 			"quick.hint": "提示：重启会释放仍被 DSH 进程占用的会话——归档中被标记「进程占用」的会话在重启后即可删除；配置或插件变更也会在重启后生效。"
@@ -45208,6 +45210,8 @@ window.__ModuleLoader__.load({
 			"quick.restart.button": "Restart DSH service",
 			"quick.restart.confirm": "Restart the DSH service now? The current conversation and background tasks are interrupted; the page reconnects automatically (roughly 10–30 seconds).",
 			"quick.restart.doing": "Restarting… the page reconnects once the service is back.",
+			"quick.action.restarting": "Restarting…",
+			"quick.restart.timeout": "The service did not come back in time; reload the page manually.",
 			"quick.restart.failed": "Restart failed to trigger: {error}",
 			"quick.status.failed": "Status read failed: {error}",
 			"quick.hint": "Hint: a restart releases sessions still held by the DSH process — archived sessions marked \"held by process\" become deletable after the restart; configuration and plugin changes also take effect after it."
@@ -45221,6 +45225,61 @@ window.__ModuleLoader__.load({
 			const template = zh[key] ?? key;
 			if (!vars) return template;
 			return template.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? `{${name}}`);
+		}
+		//#endregion
+		//#region ../dsh-quick-restart/src/client/QuickRestartAction.tsx
+		/**
+		* Compact restart button for the settings dialog header (`settings.action`,
+		* next to 「打开配置文件」). Shares the restart flow with the section card:
+		* confirm, arm the restart, wait for the replacement host, then reload the
+		* page so the GUI reconnects on its own.
+		* @module @linxin666/dsh-quick-restart/client/QuickRestartAction
+		*/
+		/**
+		* The header action: a small outline button beside 「打开配置文件」. While the
+		* restart is in flight it reports progress and stays disabled; the reload
+		* happens once the replacement host answers.
+		*/
+		function QuickRestartAction(props) {
+			const [busy, setBusy] = (0, react.useState)(false);
+			const [failed, setFailed] = (0, react.useState)("");
+			const onRestart = async () => {
+				if (busy) return;
+				if (!window.confirm(t("quick.restart.confirm"))) return;
+				let previousPid;
+				try {
+					previousPid = (await props.status()).pid;
+				} catch {
+					previousPid = void 0;
+				}
+				setBusy(true);
+				setFailed("");
+				try {
+					const outcome = await props.restart();
+					if (!outcome.ok) {
+						setFailed(outcome.error ?? "");
+						setBusy(false);
+						return;
+					}
+					if (await props.waitUntilRestarted(previousPid)) {
+						window.location.reload();
+						return;
+					}
+					setFailed(t("quick.restart.timeout"));
+					setBusy(false);
+				} catch (cause) {
+					setFailed(cause instanceof Error ? cause.message : String(cause));
+					setBusy(false);
+				}
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				size: "sm",
+				disabled: busy,
+				title: failed === "" ? void 0 : failed,
+				onClick: () => void onRestart(),
+				children: busy ? t("quick.action.restarting") : t("quick.restart.button")
+			});
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-quick-restart/src/client/quick-restart.module.css.mjs
@@ -45282,7 +45341,14 @@ window.__ModuleLoader__.load({
 					if (!outcome.ok) {
 						setError(outcome.error ?? "");
 						setPhase("error");
+						return;
 					}
+					if (await props.waitUntilRestarted(status?.pid)) {
+						window.location.reload();
+						return;
+					}
+					setError(t("quick.restart.timeout"));
+					setPhase("error");
 				} catch (cause) {
 					setError(cause instanceof Error ? cause.message : String(cause));
 					setPhase("error");
@@ -45343,6 +45409,19 @@ window.__ModuleLoader__.load({
 		const inject$1 = ["slots", "locale"];
 		/** Hard ceiling for one status/restart call; a stalled host must not pile up. */
 		const QUICK_RESTART_FETCH_TIMEOUT_MS = 15e3;
+		/** How often the client re-probes the host while waiting for it to come back. */
+		const RESTART_POLL_MS = 2e3;
+		/** How long the client waits for the replacement host before giving up. */
+		const RESTART_WAIT_MS = 9e4;
+		/** Header action slot: the restart button sits beside 「打开配置文件」. */
+		const ACTION_ID = "quick-restart";
+		/** Order within `settings.action`; the config-file action registers at 0. */
+		const ACTION_ORDER = 10;
+		function delay(ms) {
+			return new Promise((resolve) => {
+				setTimeout(resolve, ms);
+			});
+		}
 		async function quickRestartFetch(path, method) {
 			const response = await fetch(path, {
 				...method === "POST" ? { method: "POST" } : {},
@@ -45351,14 +45430,34 @@ window.__ModuleLoader__.load({
 			if (!response.ok) throw new Error("dsh-quick-restart " + path + " failed: " + response.status);
 			return await response.json();
 		}
+		/**
+		* Poll the status route until the host answers with a pid different from the
+		* one captured before the restart (or any answer when the pid is unknown).
+		* The old host keeps answering while it drains, so the pid comparison — not
+		* mere reachability — is what marks the replacement as up.
+		*/
+		async function waitUntilRestarted(previousPid) {
+			const deadline = Date.now() + RESTART_WAIT_MS;
+			await delay(1500);
+			while (Date.now() < deadline) {
+				try {
+					const view = await quickRestartFetch("api/dsh-quick-restart/status", "GET");
+					if (previousPid === void 0 || view.pid !== previousPid) return true;
+				} catch {}
+				await delay(RESTART_POLL_MS);
+			}
+			return false;
+		}
 		const quickRestartApi = {
 			status: () => quickRestartFetch("api/dsh-quick-restart/status", "GET"),
-			restart: () => quickRestartFetch("api/dsh-quick-restart/restart", "POST")
+			restart: () => quickRestartFetch("api/dsh-quick-restart/restart", "POST"),
+			waitUntilRestarted
 		};
 		/**
-		* Client plugin body: register dictionaries and seat the settings section.
-		* The card fetches status only on mount, so no background traffic exists
-		* while the page is closed.
+		* Client plugin body: register dictionaries, seat the header action beside
+		* 「打开配置文件」 and the settings section that carries the status document.
+		* The status probe runs on mount (and during a restart only), so no background
+		* traffic exists while the page is closed.
 		*/
 		function apply$1(ctx) {
 			ctx.effect(() => {
@@ -45372,6 +45471,22 @@ window.__ModuleLoader__.load({
 				}
 			}, "dsh-quick-restart: dictionaries");
 			const face = () => quickRestartApi;
+			ctx.slots.inject("settings.action", () => {
+				try {
+					const unregister = ctx.slots.register({
+						name: "settings.action",
+						id: ACTION_ID,
+						order: ACTION_ORDER,
+						locale: NS,
+						inject: face
+					}, QuickRestartAction);
+					return () => {
+						unregister();
+					};
+				} catch {
+					return () => {};
+				}
+			});
 			ctx.slots.inject("settings.section", () => {
 				try {
 					const unregister = ctx.slots.register({

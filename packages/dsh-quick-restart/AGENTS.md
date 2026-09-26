@@ -5,14 +5,20 @@ DSH web GUI plugin dsh-quick-restart（包名 `@linxin666/dsh-quick-restart`）�
 
 ## 本包要点
 
-- 在浏览器设置区提供「快速重启 DSH 服务」：宿主半区注册回环围栏的
-  `/api/dsh-quick-restart/{status,restart}` 路由，浏览器半区在
-  `settings.section` 槽位（id `dsh-quick-restart`，order 9000）挂载设置卡。
+- 界面两处（同源 `face`）：设置头部动作 `settings.action`（id `quick-restart`，
+  order 10，紧挨官方「打开配置文件」的 order 0）与一级设置区 `settings.section`
+  （id `dsh-quick-restart`，order 9000）。宿主半区注册回环围栏的
+  `/api/dsh-quick-restart/{status,restart}` 路由。
 - 重启机制（host/restart.ts）：DSH 没有重启接缝，所以先拉起一个**零依赖、脱离
   终端**的 `node -e` 辅助进程等端口释放后重新 `dsh web`，再给自身发 SIGTERM
-  （profile-boot 的优雅退出处理器负责 drain）。辅助进程源码在仓库内以纯字符串
-  存在（helperSource），禁止把构建依赖写进去；改端口等待/轮询常数时同步改
-  README 与 tests/restart.spec.ts 的断言。
+  （profile-boot 的优雅退出处理器负责 drain，`HARD_EXIT_AFTER_MS` 后硬退出兜底）。
+  辅助进程拉起后会等端口重新应答，并在别的 supervisor 抢端口时重试
+  （`SPAWN_ATTEMPTS` / `SPAWN_UP_WAIT_MS`）。辅助进程源码在仓库内以纯字符串
+  存在（helperSource），禁止把构建依赖写进去；改等待/轮询常数时同步改 README、
+  AGENTS 与 tests/restart.spec.ts 的断言。
+- 浏览器侧重启流程：确认 → POST → `faces.waitUntilRestarted(previousPid)` 轮询
+  status 直到 pid 变化 → `window.location.reload()`。status 轮询与刷新是该插件
+  唯一的后台流量来源，不得常驻轮询。
 - 安全红线：`restart` 路由只接受 POST、只接受回环客户端；`terminate` 只在
   辅助进程拉起成功后才调用；失败返回 500 且不终止。不要绕过这道顺序。
 - 结构分区：`src/index.ts`（宿主入口，仅注册路由）、`src/host/`（路由与重启

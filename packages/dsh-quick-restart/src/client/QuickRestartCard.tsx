@@ -24,6 +24,12 @@ export interface QuickRestartFace {
   status(): Promise<QuickRestartStatusView>
   /** Arm the detached relaunch helper. */
   restart(): Promise<{ ok: boolean; error?: string }>
+  /**
+   * Resolve once the replacement host answers again (a different pid than
+   * `previousPid` when one is given). The caller reloads the page on true so
+   * the GUI reconnects by itself.
+   */
+  waitUntilRestarted(previousPid?: number): Promise<boolean>
 }
 
 export interface QuickRestartProps extends QuickRestartFace {
@@ -70,7 +76,15 @@ export function QuickRestartCard(props: QuickRestartProps): ReactNode {
       if (!outcome.ok) {
         setError(outcome.error ?? '')
         setPhase('error')
+        return
       }
+      const back = await props.waitUntilRestarted(status?.pid)
+      if (back) {
+        window.location.reload()
+        return
+      }
+      setError(t('quick.restart.timeout'))
+      setPhase('error')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
       setPhase('error')

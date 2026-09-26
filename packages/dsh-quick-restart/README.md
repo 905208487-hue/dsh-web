@@ -26,17 +26,38 @@ host half composes the restart from two steps:
    (`node -e`, dependency-free, stdio ignored) that survives the host's
    death. The helper polls the loopback port until it refuses connections,
    then relaunches `dsh web` from the recorded working directory with
-   stdout/stderr appended to the service log.
+   stdout/stderr appended to the service log. It then waits for the port to
+   answer again and retries the spawn (up to three attempts) when another
+   supervisor races for the same port.
 2. The route replies `200 { ok: true, reloading: true }` and then SIGTERMs
    the current process after a short grace (the host's own handler drains
-   state and exits 0). The helper sees the port free and boots the
-   replacement; the GUI reconnects automatically.
+   state and exits 0, with a hard exit as the fallback when the drain stalls).
+   The helper sees the port free and boots the replacement.
+
+The browser half then waits for the replacement: it polls the status route
+until the reported pid differs from the one captured before the restart and
+reloads the page, so the GUI reconnects without a manual refresh.
+
+## Where it appears
+
+- **Settings header action**: a compact 「重启 DSH 服务」button in the
+  `settings.action` slot, beside 「打开配置文件」.
+- **Settings section**: a first-level section with the hint, the live status
+  document (pid, port, start time) and the same restart button.
+
+## Known limitations
+
+- A deployment that runs its own supervisor for `dsh web` (the desktop app, a
+  launch agent, a pending plugin-manager restart) races this plugin for the
+  port. The helper retries until one of them serves the port, but the winning
+  launcher decides the final invocation flags.
+- The page reload is what completes the reconnect; a browser that blocks
+  reloads (`window.location.reload`) leaves the operator with the manual
+  refresh.
 
 If the relaunch command cannot be derived (`process.argv[1]` is not a JS
 file), the helper falls back to the `dsh` CLI on PATH with the `web`
-profile. If your service is launched by a supervisor (for example the
-desktop app), the helper's relaunch races with the supervisor — prefer the
-supervisor's own restart in that setup.
+profile.
 
 ## Routes
 

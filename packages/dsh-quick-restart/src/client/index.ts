@@ -14,6 +14,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls the ctx.slots merge (the renderer owns the slot registry since 0.1.2).
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createElement } from 'react'
+import { QuickRestartAction } from './QuickRestartAction.tsx'
 import { QuickRestartCard, type QuickRestartFace, type QuickRestartStatusView } from './QuickRestartCard.tsx'
 import { NS, en, zh } from './locales.ts'
 
@@ -36,6 +37,24 @@ export const inject = ['slots', 'locale']
 /** Hard ceiling for one status/restart call; a stalled host must not pile up. */
 const QUICK_RESTART_FETCH_TIMEOUT_MS = 15_000
 
+/** How often the client re-probes the host while waiting for it to come back. */
+const RESTART_POLL_MS = 2_000
+
+/** How long the client waits for the replacement host before giving up. */
+const RESTART_WAIT_MS = 90_000
+
+/** Header action slot: the restart button sits beside 「打开配置文件」. */
+const ACTION_ID = 'quick-restart'
+
+/** Order within `settings.action`; the config-file action registers at 0. */
+const ACTION_ORDER = 10
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
 async function quickRestartFetch<T>(path: string, method: 'GET' | 'POST'): Promise<T> {
   const response = await fetch(path, {
     ...(method === 'POST' ? { method: 'POST' } : {}),
@@ -45,17 +64,40 @@ async function quickRestartFetch<T>(path: string, method: 'GET' | 'POST'): Promi
   return (await response.json()) as T
 }
 
+/**
+ * Poll the status route until the host answers with a pid different from the
+ * one captured before the restart (or any answer when the pid is unknown).
+ * The old host keeps answering while it drains, so the pid comparison — not
+ * mere reachability — is what marks the replacement as up.
+ */
+async function waitUntilRestarted(previousPid?: number): Promise<boolean> {
+  const deadline = Date.now() + RESTART_WAIT_MS
+  await delay(1_500)
+  while (Date.now() < deadline) {
+    try {
+      const view = await quickRestartFetch<QuickRestartStatusView>('api/dsh-quick-restart/status', 'GET')
+      if (previousPid === undefined || view.pid !== previousPid) return true
+    } catch {
+      // Host still down; keep polling until the deadline.
+    }
+    await delay(RESTART_POLL_MS)
+  }
+  return false
+}
+
 const quickRestartApi: QuickRestartFace = {
   // DOCUMENT-RELATIVE routes: the GUI is served with `<base href="./">`, so a
   // sub-path deployment resolves these against its entry directory.
   status: () => quickRestartFetch<QuickRestartStatusView>('api/dsh-quick-restart/status', 'GET'),
   restart: () => quickRestartFetch<{ ok: boolean; error?: string }>('api/dsh-quick-restart/restart', 'POST'),
+  waitUntilRestarted,
 }
 
 /**
- * Client plugin body: register dictionaries and seat the settings section.
- * The card fetches status only on mount, so no background traffic exists
- * while the page is closed.
+ * Client plugin body: register dictionaries, seat the header action beside
+ * 「打开配置文件」 and the settings section that carries the status document.
+ * The status probe runs on mount (and during a restart only), so no background
+ * traffic exists while the page is closed.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => {
@@ -67,6 +109,23 @@ export function apply(ctx: ClientContext): void {
   }, 'dsh-quick-restart: dictionaries')
 
   const face = (): QuickRestartFace => quickRestartApi
+
+  ctx.slots.inject('settings.action', () => {
+    try {
+      const unregister = ctx.slots.register({
+        name: 'settings.action',
+        id: ACTION_ID,
+        order: ACTION_ORDER,
+        locale: NS,
+        inject: face,
+      }, QuickRestartAction)
+      return () => {
+        unregister()
+      }
+    } catch {
+      return () => {}
+    }
+  })
 
   ctx.slots.inject('settings.section', () => {
     try {

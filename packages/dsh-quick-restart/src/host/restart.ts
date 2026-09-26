@@ -54,6 +54,12 @@ export const PORT_FREE_WAIT_MS = 40_000
 /** Poll interval while waiting for the port to free (ms). */
 export const PORT_FREE_POLL_MS = 800
 
+/** How many times the helper spawns a replacement before giving up. */
+export const SPAWN_ATTEMPTS = 3
+
+/** How long the helper waits for a spawned replacement to answer (ms). */
+export const SPAWN_UP_WAIT_MS = 20_000
+
 /**
  * Derive the relaunch command from the running process. When `dsh web` boots
  * `lib/bin.js`, argv[1] is that script and node spawns it directly; otherwise
@@ -69,6 +75,12 @@ export function relaunchCommand(argv: string[] = process.argv, execPath: string 
  * The detached helper program. Carried over env: RS_PORT (listening port),
  * RS_CWD (working directory), RS_LOG (append log path), RS_NODE / RS_ENTRY
  * (relaunch command; empty RS_ENTRY means the `dsh` CLI on PATH).
+ *
+ * The helper waits for the port to free, spawns the replacement, then *verifies*
+ * the port is served again — another supervisor (the plugin manager's pending
+ * restart, a launch agent) may race for the same port, so a spawn that dies with
+ * EADDRINUSE is retried until either the port answers or the attempt budget
+ * runs out.
  */
 export function helperSource(): string {
   return [
@@ -80,25 +92,32 @@ export function helperSource(): string {
     "const net = require('net');",
     "const fs = require('fs');",
     "const { spawn } = require('child_process');",
-    "const free = () => new Promise((resolve) => {",
+    "const probe = () => new Promise((resolve) => {",
     "  const socket = net.connect({ host: '127.0.0.1', port: RS_PORT });",
-    "  socket.once('connect', () => { socket.destroy(); resolve(false); });",
-    "  socket.once('error', () => resolve(true));",
+    "  socket.once('connect', () => { socket.destroy(); resolve(true); });",
+    "  socket.once('error', () => resolve(false));",
     "});",
     "const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));",
     '(async () => {',
-    '  const deadline = Date.now() + ' + PORT_FREE_WAIT_MS + ';',
-    '  let down = false;',
-    '  while (Date.now() < deadline) {',
-    '    if (await free()) { down = true; break; }',
+    '  const freeDeadline = Date.now() + ' + PORT_FREE_WAIT_MS + ';',
+    '  while (Date.now() < freeDeadline) {',
+    '    if (!(await probe())) break;',
     '    await sleep(' + PORT_FREE_POLL_MS + ');',
     '  }',
-    '  if (!down) process.exit(1);',
+    '  if (await probe()) process.exit(1);',
     "  const fd = fs.openSync(RS_LOG, 'a');",
     "  const args = RS_ENTRY ? [RS_ENTRY, 'web'] : ['dsh', 'web'];",
     "  const command = RS_ENTRY ? RS_NODE : 'dsh';",
-    '  const child = spawn(command, args, { cwd: RS_CWD, detached: true, stdio: [\'ignore\', fd, fd], env: process.env });',
-    '  child.unref();',
+    '  for (let attempt = 0; attempt < ' + SPAWN_ATTEMPTS + '; attempt += 1) {',
+    "    const child = spawn(command, args, { cwd: RS_CWD, detached: true, stdio: ['ignore', fd, fd], env: process.env });",
+    '    child.unref();',
+    '    const upDeadline = Date.now() + ' + SPAWN_UP_WAIT_MS + ';',
+    '    while (Date.now() < upDeadline) {',
+    '      await sleep(1000);',
+    '      if (await probe()) process.exit(0);',
+    '    }',
+    '  }',
+    '  process.exit(3);',
     '})().catch(() => process.exit(2));',
   ].join('\n')
 }
@@ -136,8 +155,9 @@ export function armRestart(
 
 /**
  * SIGTERM this process after a grace period so the HTTP response flushes.
- * The host's profile-boot handler drains and exits 0; `exit(0)` is a fallback
- * in case the signal handler is unavailable.
+ * The host's profile-boot handler drains and exits 0. A stalled drain must not
+ * leave the port bound forever (the helper waits for it), so a hard `exit(0)`
+ * fires when the graceful path has not finished within {@link HARD_EXIT_AFTER_MS}.
  */
 export function scheduleTermination(graceMs = 800): void {
   setTimeout(() => {
@@ -147,4 +167,10 @@ export function scheduleTermination(graceMs = 800): void {
       process.exit(0)
     }
   }, graceMs)
+  setTimeout(() => {
+    process.exit(0)
+  }, graceMs + HARD_EXIT_AFTER_MS).unref?.()
 }
+
+/** How long the graceful shutdown may take before the hard exit (ms). */
+export const HARD_EXIT_AFTER_MS = 9_000

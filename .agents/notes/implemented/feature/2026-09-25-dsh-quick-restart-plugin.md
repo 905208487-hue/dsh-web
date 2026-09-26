@@ -1,45 +1,77 @@
-# Agent Note: dsh-quick-restart 快速重启插件
+# Agent Note: the dsh-quick-restart plugin
 
 Status: implemented
 
 ## Problem
 
-宿主进程会把 GUI 里打开的每一个会话留在内存里，直到进程结束。归档会话因此经常报
-「会话仍被 DSH 进程占用，重启服务或关闭该会话后可删除」而拒绝删除；配置与插件变更
-也只在启动时加载。重启是用户的出路，但服务是脱终端后台运行的（`nohup dsh web`），
-每次都要开终端找进程，成本高。需求：在 web 端加一个能快速重启服务的插件按钮。
+The host process keeps every GUI-opened session in memory until the process
+ends. Archived sessions therefore commonly refuse deletion with 「会话仍被 DSH
+进程占用，重启服务或关闭该会话后可删除」; configuration and plugin changes
+also only load at boot. A restart is the way out, but the service runs detached
+(`nohup dsh web`), and reaching for a terminal each time is expensive. The
+request: a web-side plugin button that restarts the service quickly.
 
 ## Decision
 
-新增独立 bundle 包 `@linxin666/dsh-quick-restart`（`packages/dsh-quick-restart/`），
-在设置区挂「快速重启 DSH 服务」卡片。DSH 没有重启接缝（`apps/cli/src/profile-boot.ts`
-对 SIGTERM 做优雅退出但不负责重新拉起），所以重启由两步拼成：
+Ship a standalone bundle package `@linxin666/dsh-quick-restart`
+(`packages/dsh-quick-restart/`). The browser half seats two surfaces over one
+shared face: a compact restart button in the settings header
+(`settings.action`, id `quick-restart`, order 10, beside the official
+「打开配置文件」 action at order 0) and a first-level settings section
+(`settings.section`, id `dsh-quick-restart`, order 9000) carrying the hint and
+the live status document.
 
-1. `POST /api/dsh-quick-restart/restart` 先拉起一个**零依赖、脱离终端**的辅助进程
-   （`node -e`，stdio ignore，`detached: true`，.unref()）。它轮询回环端口直到拒绝
-   连接（上限 40s、间隔 800ms），然后用记录下的 cwd 重新拉起 `dsh web`
-   （`process.argv[1]` 是 JS 文件时用 node+entry，否则回退 PATH 上的 `dsh`），
-   stdout/stderr 追加到 `/tmp/dsh-web.log`（可用 `DSH_QUICK_RESTART_LOG` 覆盖）。
-2. 路由先应答 `200 {ok:true,reloading:true}`，再在 800ms 宽限后给自身发 SIGTERM，
-   由宿主自己的处理器 drain 后以 0 退出；辅助进程看到端口释放即拉起替代进程，
-   GUI 自动重连。
+DSH has no restart seam (`apps/cli/src/profile-boot.ts` drains SIGTERM
+gracefully but nothing relaunches the service), so the restart is composed of
+two steps:
 
-### 安全与边界
+1. `POST /api/dsh-quick-restart/restart` first arms a **dependency-free,
+   detached** helper process (`node -e`, stdio ignored, `detached: true`,
+   `.unref()`). It polls the loopback port until connections are refused (cap
+   40s, interval 800ms), then relaunches `dsh web` from the recorded cwd (node
+   plus the entry from `process.argv[1]` when it is a JS file, otherwise the
+   `dsh` CLI on PATH), appending stdout/stderr to `/tmp/dsh-web.log` (override
+   with `DSH_QUICK_RESTART_LOG`). It then waits for the port to answer again and
+   retries the spawn (three attempts, 20s each) when another supervisor races
+   for the same port.
+2. The route answers `200 {ok:true,reloading:true}` first, then SIGTERMs the
+   current process after an 800ms grace; the host's own handler drains and exits
+   0, with a hard exit 9s later when the drain stalls (the helper waits for the
+   port, so a stuck drain must not hold it). The helper sees the port free and
+   boots the replacement.
 
-- 所有路由回环围栏（非 loopback 一律 403，语义同 dsh-session-archive）；restart 只
-  接受 POST；`terminate` 只在辅助进程拉起成功、且应答写出后才调用；失败返回 500
-  且不终止。
-- 辅助进程必须保持零依赖（源码以纯字符串存在于 `host/restart.ts` 的
-  `helperSource()`），不 import 本包模块、不用构建产物——它在宿主死后存活。
-- 该插件**不会自己重启**服务：只提供按钮。挂载后仍需一次手动重启让插件加载。
-- 语义属性：根容器 `data-dsh-plugin="quick-restart"`，部件 `data-dsh-part` 用
-  hint/status/error/actions/restart-button。契约表的插件枚举更新在 dsh-skins 侧
-  （当前无网络发布通道，先在此记录；下次 dsh-skins 契约更新时补表）。
+The browser half then waits for the replacement: it polls the status route until
+the reported pid differs from the one captured before the restart, then calls
+`window.location.reload()`, so the GUI reconnects without a manual refresh.
 
-### 与既有发布工作的关系
+### Safety and boundaries
 
-- 插件挂载到 profile 即见效：不需要等 0.4.3。归档删除的根治（待删除队列）仍在
-  `ae38511c`（0.4.3），重启按钮是它的互补与过渡手段：即便队列上线，重启仍是用户
-  想要的显式操作。
-- 运行中的宿主还是旧 dsh 0.1.7-rc.1（这是另一个问题的现场），本插件
-  `dsh.engines.dsh` 与 peer 都声明 `>=0.1.7-rc.1`，与家族当前 cohort 一致。
+- Every route is loopback-fenced (non-loopback clients get 403, mirroring
+  dsh-session-archive semantics); restart accepts POST only; `terminate` runs
+  only after the helper is armed and the response is written; failure answers
+  500 without terminating.
+- The helper must stay dependency-free (its source lives as a plain string in
+  `host/restart.ts`'s `helperSource()`), importing no package modules and using
+  no build artifacts — it outlives the host.
+- This plugin never restarts the service on its own: it only provides the
+  button. One manual restart is still needed after mounting to load it.
+- A deployment that supervises `dsh web` itself (desktop app, launch agent, a
+  pending plugin-manager restart) races this plugin for the port; whichever
+  launcher wins serves the port, and the losing side's attempts fail with
+  EADDRINUSE until then. The helper's retry makes the plugin side converge
+  either way.
+- Semantic attributes: root container `data-dsh-plugin="quick-restart"`, parts
+  use bare `data-dsh-part` (hint/status/error/actions/restart-button). The
+  contract-table plugin enumeration updates on the dsh-skins side (no network
+  release path just now; recorded here first, the table gets the entry at the
+  next dsh-skins contract update).
+
+### Relationship to the in-flight release work
+
+- Mounting this plugin into a profile takes effect immediately; it does not
+  wait for 0.4.3. The archival-deletion cure (deferred-delete queue) still
+  lives in `ae38511c` (0.4.3); the restart button is its complement and a
+  transitional tool — even after the queue ships, restart stays an explicit
+  operation users want.
+- The plugin declares `dsh.engines.dsh` and peer `>=0.1.7-rc.1`, matching the
+  family cohort; the host it runs against is dsh 0.1.7-rc.2.

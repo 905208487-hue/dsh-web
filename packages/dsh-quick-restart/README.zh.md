@@ -19,14 +19,30 @@ DSH 宿主没有内置重启接缝（`apps/cli/src/profile-boot.ts` 对 SIGTERM 
 1. `POST /api/dsh-quick-restart/restart` 先拉起一个**脱离终端**的辅助进程
    （`node -e`，零依赖，stdio 忽略），它会在宿主死后继续存活：轮询回环端口直到
    拒绝连接，然后用记录的 working directory 重新拉起 `dsh web`，stdout/stderr
-   追加到服务日志。
+   追加到服务日志。拉起后它会等端口重新应答，并在别的 supervisor 抢同一端口时
+   重试拉起（最多三次）。
 2. 路由先回 `200 { ok: true, reloading: true }`，随后在短暂宽限后给当前进程发
-   SIGTERM（宿主自己的处理器会排空状态并以 0 退出）。辅助进程看到端口释放后拉起
-   替代进程，GUI 自动重连。
+   SIGTERM（宿主自己的处理器会排空状态并以 0 退出；排空卡住时用硬退出兜底）。
+   辅助进程看到端口释放后拉起替代进程。
+
+浏览器半区随后等待替代进程：轮询状态路由，直到返回的 pid 与重启前捕获的不同，
+然后刷新页面，因此 GUI 无需手动刷新即可恢复连接。
+
+## 界面位置
+
+- **设置头部动作**：`settings.action` 槽位里的紧凑「重启 DSH 服务」按钮，紧挨
+  「打开配置文件」。
+- **设置区**：一个一级设置区，含提示、实时状态文档（pid、端口、启动时间）与同一个
+  重启按钮。
+
+## 已知限制
+
+- 自带 supervisor 的部署（桌面版、launch agent、插件管理器里挂起的重启）会与本插件
+  抢端口。辅助进程会重试到某一方成功伺服端口为止，最终由胜出的拉起方决定启动参数。
+- 自动重连由页面刷新完成；浏览器若禁止 `window.location.reload`，就只能手动刷新。
 
 若无法从 `process.argv[1]` 推导重启命令（不是 JS 文件），辅助进程回退到 PATH
-上的 `dsh` CLI 的 `web` profile。如果你的服务由 supervisor（例如桌面版）托管，
-辅助进程的拉起会与 supervisor 竞争——那种部署请优先用 supervisor 自己的重启。
+上的 `dsh` CLI 的 `web` profile。
 
 ## 路由
 
