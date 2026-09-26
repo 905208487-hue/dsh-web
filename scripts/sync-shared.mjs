@@ -27,7 +27,7 @@ export const REPO_ROOT = resolve(SCRIPT_DIR, '..')
  * live exactly once under shared/; consumers import the committed copy.
  */
 // Consumers of the settings card trio: one list, three derivations below.
-const SETTINGS_CONSUMERS = ['dsh-task-board', 'dsh-remote-web-ui', 'dsh-market', 'dsh-liangshen']
+const SETTINGS_CONSUMERS = ['dsh-task-board', 'dsh-remote-web-ui', 'dsh-liangshen']
 const SETTINGS_CARD_CONSUMERS = [...SETTINGS_CONSUMERS]
 
 const MANIFEST = [
@@ -87,7 +87,6 @@ const MANIFEST = [
       'packages/dsh-remote-web-ui/src/dsh-home.ts',
       'packages/dsh-ssh/src/dsh-home.ts',
       'packages/dsh-web-settings/src/dsh-home.ts',
-      'packages/dsh-market/src/dsh-home.ts',
       'packages/dsh-git-graph/src/host/dsh-home.ts',
       'packages/dsh-usage/src/dsh-home.ts',
       'packages/dsh-session-archive/src/dsh-home.ts',
@@ -117,7 +116,6 @@ const MANIFEST = [
       'packages/dsh-plugin-manager/src/mount-once.ts',
       'packages/dsh-web-settings/src/mount-once.ts',
       'packages/dsh-skill-explorer/src/mount-once.ts',
-      'packages/dsh-market/src/mount-once.ts',
       'packages/dsh-usage/src/mount-once.ts',
       'packages/dsh-session-archive/src/mount-once.ts',
       'packages/dsh-model-capabilities/src/mount-once.ts',
@@ -128,7 +126,6 @@ const MANIFEST = [
     file: 'telemetry.ts',
     source: 'shared/client/telemetry.ts',
     targets: [
-      'packages/dsh-market/src/client/telemetry.ts',
       'packages/dsh-git-graph/src/client/telemetry.ts',
       'packages/dsh-plugin-manager/src/client/telemetry.ts',
       'packages/dsh-remote-web-ui/src/client/telemetry.ts',
@@ -167,13 +164,12 @@ const MANIFEST = [
   {
     file: 'loopback.ts',
     source: 'shared/host/loopback.ts',
-    targets: ['packages/dsh-ssh/src/loopback.ts', 'packages/dsh-git-graph/src/host/loopback.ts', 'packages/dsh-remote-web-ui/src/loopback.ts', 'packages/dsh-task-board/src/loopback.ts', 'packages/dsh-skill-explorer/src/loopback.ts', 'packages/dsh-plugin-manager/src/host/loopback.ts', 'packages/dsh-market/src/loopback.ts', 'packages/dsh-usage/src/host/loopback.ts', 'packages/dsh-session-archive/src/host/loopback.ts'],
+    targets: ['packages/dsh-ssh/src/loopback.ts', 'packages/dsh-git-graph/src/host/loopback.ts', 'packages/dsh-remote-web-ui/src/loopback.ts', 'packages/dsh-task-board/src/loopback.ts', 'packages/dsh-skill-explorer/src/loopback.ts', 'packages/dsh-plugin-manager/src/host/loopback.ts', 'packages/dsh-usage/src/host/loopback.ts', 'packages/dsh-session-archive/src/host/loopback.ts'],
   },
   {
     file: 'http.ts',
     source: 'shared/host/http.ts',
     targets: [
-      'packages/dsh-market/src/http.ts',
       'packages/dsh-skill-explorer/src/http.ts',
       'packages/dsh-web-settings/src/http.ts',
       'packages/dsh-git-graph/src/host/http.ts',
