@@ -5,10 +5,16 @@ packages/AGENTS.md 的全局/包级规则。
 
 ## 本包要点
 
-- 本包占位官方 Models 设置页的 `settings.models.footer` 插槽:列出路由已下线
-  (官方「移除提供方」同款 unset)但 profile 仍在本包存档里的提供方,是唯一恢复
-  入口。原 `settings.models.provider-card` 模型能力扩展区(逐模型推理档位声明)
-  已移除:模型能力无需逐用户编辑,不再注册该插槽,Models 页不显示能力选择器。
+- 本包占位官方 Models 设置页的两个插槽:
+  - `settings.models.provider-card`(key `llm-pi-ai`):每张提供方卡片的
+    **模型名称直改区**(`ModelNamePanel`)。每个模型行显示只读模型 ID + 可编辑
+    「显示名称」;保存 = 一次 set 操作整体替换 `providers.<route>.models`
+    数组(settings mutate 的 path op 不支持下标进数组),非本面板编辑的字段
+    (id/input/contextWindow/maxTokens/compat/reasoningEfforts 等)原样保留。
+  - `settings.models.footer`:列出路由已下线但 profile 仍在本包存档里的提供方,
+    唯一恢复入口。
+  - 原逐模型推理档位声明(三态编辑器)已移除:模型能力无需逐用户编辑,
+    Models 页不显示能力选择器。
 - host 半区不再注册任何服务:0.1.7 起插件自身的 Cordis `Config` 就是它的设置项,
   Host 由该 schema 生成设置页并伺服可写表单(只有 volatile 字段可写,故 `disabled`
   标注 volatile);host 半区只剩 schema 与一个空 apply(仍经 `src/mount-once.ts`
@@ -30,7 +36,8 @@ packages/AGENTS.md 的全局/包级规则。
 - 冲突姿态与官方卡片一致:携带读取时的 revision 作为 `expectedRevision`,
   收到 `settings/conflict` 后重新 describe 并提示用户重试,绝不盲写。
 - **刷新只跟两个条目**:`settings/document-updated` 仅当 `llm-pi-ai` 或本包条目
-  (两种可能行 id 拼写)变化时刷新;并发 `describe` 合并为一次 wire 调用。
+  (两种可能行 id 拼写)变化时刷新;并发 `describe` 合并为一次 wire 调用;
+  名称面板后台刷新保留未保存草稿,并把写入围栏钉在草稿读取时的 revision。
 
 ## 提交前检查
 

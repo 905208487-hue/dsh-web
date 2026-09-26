@@ -1,16 +1,18 @@
 /**
  * Browser-half entry for the dsh-model-capabilities plugin — runs inside the dsh web GUI.
  *
- * Seats one Models-page extension area for the `llm-pi-ai` adapter family:
- * the `settings.models.footer` archive listing where disabled providers come
+ * Seats two Models-page extension areas for the `llm-pi-ai` adapter family:
+ * the `settings.models.provider-card` inline model-name editor (per-model
+ * display names, edited in place on the card) and the
+ * `settings.models.footer` archive listing where disabled providers come
  * back. Reads and writes the official `llm-pi-ai` settings entry plus this
  * plugin's own entry (its Config, resolved from the describe answer because
  * the settings wire addresses profile entry ids) over the standard remote
  * settings wire.
  *
- * The former `settings.models.provider-card` capability editor (per-model
- * reasoning-effort declarations) is intentionally not seated: model abilities
- * need no per-user editing, so the panel is hidden from the Models page.
+ * The former reasoning-effort declarations (which thinking levels a model
+ * offers) are intentionally not offered: model abilities need no per-user
+ * editing. Only the display name is editable on the card.
  * @module @linxin666/dsh-client-ui-model-capabilities/client
  */
 
@@ -25,6 +27,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // owner-props types the footer reads.
 import type {} from '@deepseek-ai/dsh-client-ui-settings-models/client'
 import { DisabledProvidersFooter } from './DisabledProvidersFooter.tsx'
+import { ModelNamePanel } from './ModelNamePanel.tsx'
 import { coalesceDescribe, type RefreshBus } from './settings-face.ts'
 import { CAPS_ENTRY_IDS } from '../core/provider-toggle.ts'
 import { PI_AI_SETTINGS_NAMESPACE } from '../core/capabilities.ts'
@@ -81,6 +84,23 @@ export function apply(ctx: ClientContext): void {
       return () => {}
     }
   }, 'dsh-model-capabilities: document events')
+
+  ctx.slots.inject('settings.models.provider-card', () => {
+    try {
+      const unregister = ctx.slots.register({
+        name: 'settings.models.provider-card',
+        key: 'llm-pi-ai',
+        inject: () => ({ settings, refresh }),
+      }, ModelNamePanel)
+      return () => {
+        unregister()
+      }
+    } catch {
+      // The seat is declared by the official Models section; a host without
+      // it (older deployment) offers no slot to fill, so register nothing.
+      return () => {}
+    }
+  })
 
   ctx.slots.inject('settings.models.footer', () => {
     try {

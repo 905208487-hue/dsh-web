@@ -2,30 +2,36 @@
 
 English | [中文](README.zh.md)
 
-Disabled-provider archive listing for the Models settings page: providers whose
-profile was taken down through the official Remove-provider seam are listed in a
-footer area, where their archived configuration can be restored with one click.
+Two Models-page extension areas for the `llm-pi-ai` adapter family: an inline
+model display-name editor on each provider card, and a disabled-provider
+archive listing in the page footer where archived configurations can be
+restored with one click.
 
 The former per-model reasoning-effort editor (declaring which thinking levels a
 model offers and the wire value each one sends) was removed: model abilities
-need no per-user editing, so the `settings.models.provider-card` extension area
-is intentionally not seated and the Models page shows no capability selector.
+need no per-user editing, so the card extension asks nothing about reasoning
+levels.
 
 ## What it does
 
-- **Seats the Models-page footer**: registers the `settings.models.footer` slot
-  for the `llm-pi-ai` adapter family, listing providers whose archived profile
-  is still off the model catalog that both the composer model picker and the
-  subagent selection read.
-- **Provider restore**: one click restores the archived profile verbatim and
-  clears the archive entry (API keys live in the credentials service and are
-  never touched). Restoring refuses when the route has grown a new profile in
-  the meantime, so it can never clobber newer configuration.
-- **No capability editor**: the former `settings.models.provider-card` panel
-  (tri-state reasoning-effort editor with per-level wire spellings) is not
-  registered. The Models page's own editor keeps writing model rows, input
-  modality claims, and whatever the official card manages; nothing on the card
-  asks the user about reasoning levels.
+- **Inline model-name editing**: registers the `settings.models.provider-card`
+  slot for the `llm-pi-ai` adapter family. Every model row of a custom-provider
+  card shows its model ID (read-only) next to an editable display-name input.
+  Saving writes the provider's whole `models` array through the official
+  settings wire — the same whole-array override the official card performs —
+  preserving every other model field (input modalities, context windows,
+  reasoning-effort declarations, ...). An empty name falls back to the model ID.
+- **Provider restore**: registers the `settings.models.footer` slot, listing
+  providers whose archived profile is still off the model catalog that both the
+  composer model picker and the subagent selection read. One click restores the
+  archived profile verbatim and clears the archive entry (API keys live in the
+  credentials service and are never touched). Restoring refuses when the route
+  has grown a new profile in the meantime, so it can never clobber newer
+  configuration.
+- **No capability editor**: the former tri-state reasoning-effort editor with
+  per-level wire spellings is not registered. The Models page's own editor keeps
+  writing model rows, input modality claims, and whatever the official card
+  manages; nothing on the card asks the user about reasoning levels.
 
 ## Install
 
@@ -43,8 +49,8 @@ pnpm -r build
 dsh plugin --profile web add link:$(pwd)/packages/dsh-model-capabilities
 ```
 
-Restart `dsh web`. Open Web settings, Models; disabled providers are listed in
-the footer of the Models page.
+Restart `dsh web`. Open Web settings, Models; each provider card shows the
+model-name editor, and disabled providers are listed in the page footer.
 
 ## Configuration
 
@@ -64,6 +70,11 @@ state live in the official `llm-pi-ai` entry plus this archive.
   can leave a harmless duplicate archive but never a lost profile. While a
   provider is down, delegation to it fails closed at the host (`NO_ADAPTER`),
   not just in the UI.
+- **Name edits are whole-array writes**: renaming one model rewrites the
+  provider's entire `models` array (the settings path walker cannot index into
+  arrays), with every field the panel does not edit preserved as-is. Edits carry
+  the revision the panel read at; a concurrent change reloads and asks for a
+  retry instead of overwriting.
 - **Reasoning levels are declared in configuration only**: profiles may carry
   `reasoningEfforts` field values (as the official pi-ai schema allows), but no
   UI in this plugin asks about them.

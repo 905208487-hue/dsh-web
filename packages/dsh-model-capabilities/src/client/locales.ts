@@ -10,6 +10,20 @@ export const NS = 'model-caps'
 
 /** Chinese copy (key source). */
 export const zh = {
+  'name.hint': '直接修改模型显示名称，保存写入设置文档并立即生效；留空则使用模型 ID。',
+  'name.loading': '正在读取模型列表…',
+  'name.loadFailed': '读取失败：{error}',
+  'name.reload': '重新读取',
+  'name.empty': '此提供方还没有可编辑的模型目录。先在上方模型目录中添加模型行，再回到这里修改名称。',
+  'name.readOnly': '当前设置文档只读，无法修改。',
+  'name.label': '显示名称',
+  'name.placeholder': '留空时使用模型 ID',
+  'name.save': '保存',
+  'name.saving': '保存中…',
+  'name.discard': '重置',
+  'name.saved': '已保存',
+  'name.conflict': '配置已被其他界面修改，已重新读取，请重试。',
+  'name.failed': '保存失败：{error}',
   'caps.conflict': '配置已被其他界面修改，已重新读取，请重试。',
   'caps.failed': '操作失败：{error}',
   'caps.action.enable': '启用',
@@ -25,6 +39,20 @@ export type CapsKey = keyof typeof zh
 
 /** English copy (full key parity with zh). */
 export const en: Record<CapsKey, string> = {
+  'name.hint': 'Edit model display names here; saving writes the settings document and applies immediately. Empty names fall back to the model ID.',
+  'name.loading': 'Loading model list…',
+  'name.loadFailed': 'Failed to load: {error}',
+  'name.reload': 'Reload',
+  'name.empty': 'No editable model catalog for this provider yet. Add model rows in the catalog above, then come back here to edit names.',
+  'name.readOnly': 'The settings document is read-only; changes are disabled.',
+  'name.label': 'Display name',
+  'name.placeholder': 'Uses the model ID when empty',
+  'name.save': 'Save',
+  'name.saving': 'Saving…',
+  'name.discard': 'Reset',
+  'name.saved': 'Saved',
+  'name.conflict': 'The configuration changed in another surface; reloaded — please retry.',
+  'name.failed': 'Save failed: {error}',
   'caps.conflict': 'The configuration changed in another surface; reloaded — please retry.',
   'caps.failed': 'Operation failed: {error}',
   'caps.action.enable': 'Enable',

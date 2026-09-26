@@ -1,6 +1,130 @@
-/* Models-page footer extension area: the disabled-provider archive listing.
- * Aligned with the family settings-card CSS: same semantic tokens, radius and
- * typography so the area reads as part of the official Models page. */
+/* Models-page extension areas: the inline model-name editor on each provider
+ * card, and the disabled-provider archive footer. Aligned with the family
+ * settings-card CSS: same semantic tokens, radius and typography so the areas
+ * read as part of the official Models page. */
+
+.namePanel {
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nameHint {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.nameRows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nameRow {
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-3);
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  display: flex;
+}
+
+.nameId {
+  color: var(--dsw-alias-label-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.nameInput {
+  appearance: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nameInput:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: -1px;
+}
+
+.nameInput::placeholder {
+  color: var(--dsw-alias-label-dimmed);
+}
+
+.status {
+  margin: 0;
+  color: var(--dsw-alias-label-dimmed);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.readOnly {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+}
+
+.statusRow {
+  align-items: center;
+  gap: 10px;
+  display: flex;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Fill primary button: the mandated alias trio (never --dsw-alias-brand-primary
+   as a fill — it aliases the foreground under the official theme). */
+.primary {
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 14px;
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
+}
+
+.primary:hover:enabled {
+  background: var(--dsw-alias-button-primary-hover);
+}
+
+.primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.primary:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 1px;
+}
 
 .archive {
   border: 1px solid var(--dsw-alias-border-l2);
