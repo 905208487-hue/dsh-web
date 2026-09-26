@@ -42868,13 +42868,13 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 			};
 		}
 		function installDisplayModeSetting(ctx) {
-			ctx.inject(["slots"], (scope) => {
-				scope.slots.inject("settings.general.item", () => scope.slots.register({
-					name: "settings.general.item",
-					id: "dsh-web-display-mode",
-					order: 12
-				}, DisplayModeRow));
-			});
+			const maybe = ctx;
+			if (maybe.slots === void 0) return;
+			maybe.slots.inject("settings.general.item", () => maybe.slots.register({
+				name: "settings.general.item",
+				id: "dsh-web-display-mode",
+				order: 12
+			}, DisplayModeRow));
 		}
 		function stampSemanticParts(frame) {
 			let changed = false;
@@ -43267,8 +43267,8 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 				mushroom?.remove();
 			};
 		}
-		/** Required services: none — the shim must run before any DOM mount waits. */
-		const inject = [];
+		/** Required services: slots seats the display-mode row in General settings. */
+		const inject = ["slots"];
 		/**
 		* Register the shim for the page lifetime.
 		* @param ctx - client root context.
