@@ -145,9 +145,9 @@ export const RESPONSIVE_CSS = `
 }
 [data-dsh-display-mode-option] {
   box-sizing: border-box;
-  min-width: 120px;
-  min-height: 76px;
-  padding: 10px 16px;
+  min-width: 116px;
+  min-height: 72px;
+  padding: 8px 14px;
   border: .5px solid var(--dsw-alias-border-l4, var(--dsw-elevation-stroke-color, rgb(0 0 0 / 16%)));
   border-radius: var(--dsw-radius-xl, 12px);
   background: transparent;
@@ -171,8 +171,8 @@ export const RESPONSIVE_CSS = `
   box-shadow: none;
 }
 [data-dsh-display-mode-icon] {
-  width: 38px;
-  height: 34px;
+  width: 36px;
+  height: 32px;
   position: relative;
   display: block;
 }
@@ -200,29 +200,44 @@ export const RESPONSIVE_CSS = `
   position: absolute;
   left: 50%;
   bottom: -1px;
-  transform: translateX(-50%) scale(.86);
+  transform: translateX(-50%) scale(.8);
   transform-origin: 50% 100%;
 }
 [data-dsh-display-mode-icon="default"]::before {
   content: "";
-  width: 31px;
-  height: 24px;
-  border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
+  width: 30px;
+  height: 22px;
+  border: 1.5px solid color-mix(in srgb, currentColor 28%, transparent);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 7px 6px, color-mix(in srgb, currentColor 42%, transparent) 0 1.4px, transparent 1.7px),
-    radial-gradient(circle at 12px 6px, color-mix(in srgb, currentColor 26%, transparent) 0 1.4px, transparent 1.7px),
-    linear-gradient(color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 24%, transparent) 0 0) 6px 11px / 19px 4px no-repeat,
-    linear-gradient(color-mix(in srgb, currentColor 18%, transparent) 0 0) 8px 18px / 15px 3px no-repeat,
+    radial-gradient(circle at 6px 5px, color-mix(in srgb, currentColor 42%, transparent) 0 1.25px, transparent 1.55px),
+    radial-gradient(circle at 11px 5px, color-mix(in srgb, currentColor 24%, transparent) 0 1.25px, transparent 1.55px),
+    linear-gradient(90deg, color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 34%, transparent), color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 14%, transparent)) 6px 10px / 18px 4px no-repeat,
+    linear-gradient(color-mix(in srgb, currentColor 18%, transparent) 0 0) 8px 17px / 14px 3px no-repeat,
     linear-gradient(color-mix(in srgb, currentColor 8%, transparent) 0 0) 0 8px / 100% 1px no-repeat,
+    linear-gradient(135deg, color-mix(in srgb, currentColor 4%, transparent), transparent 58%),
     var(--dsw-alias-bg-base, transparent);
   box-shadow:
     0 5px 9px rgb(0 0 0 / 9%),
-    5px -4px 0 -2px color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 16%, transparent);
+    inset 0 1px 0 rgb(255 255 255 / 48%);
   position: absolute;
+  z-index: 1;
   left: 50%;
   bottom: 5px;
   transform: translateX(-50%);
+}
+[data-dsh-display-mode-icon="default"]::after {
+  content: "";
+  width: 24px;
+  height: 18px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary, #3867d6) 18%, transparent);
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translateX(-36%);
+  box-shadow: 0 3px 7px rgb(0 0 0 / 7%);
 }
 [data-dsh-display-mode-hint] {
   color: var(--dsw-alias-label-secondary, currentColor);

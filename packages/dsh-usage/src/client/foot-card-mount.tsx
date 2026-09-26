@@ -91,19 +91,19 @@ export function mountUsageFootAction(props: UsageFootActionProps): () => void {
   const root: Root = createRoot(container)
   root.render(createElement(UsageFootAction, props))
 
-  /** Keep the trigger right next to (after) the Settings seat. */
+  /** Keep the trigger inside the action cluster: right of Settings, left of Remote access. */
   const place = (): void => {
     const foot = footArea()
     if (foot === undefined) return
-    const settings = foot.querySelector<HTMLElement>('[class*="settingsArea"]')
-    if (settings !== null) {
-      if (container.previousElementSibling !== settings) settings.insertAdjacentElement('afterend', container)
-      return
-    }
-    // No Settings seat (shell change): fall back to the foot action seat head.
     const seat = foot.querySelector<HTMLElement>('[data-slot="sidebar.footer.action"]')
     if (seat !== null) {
       if (seat.firstChild !== container) seat.insertBefore(container, seat.firstChild)
+      return
+    }
+    // No action cluster (shell change): keep the usage trigger immediately after Settings.
+    const settings = foot.querySelector<HTMLElement>('[class*="settingsArea"]')
+    if (settings !== null) {
+      if (container.previousElementSibling !== settings) settings.insertAdjacentElement('afterend', container)
       return
     }
     if (container.parentElement !== foot) foot.append(container)

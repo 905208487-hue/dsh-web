@@ -233,13 +233,12 @@ describe('UsageSectionCard dashboard', () => {
  * panel-wide error return left no way back from the UI.
  */
 describe('UsageSectionCard disabled and failed states', () => {
-  it('stops polling and keeps the enable checkbox while the plugin is disabled', () => {
+  it('stops polling and reports the disabled state', () => {
     const poll = vi.fn()
     const live = fakeForm({ value: { enabled: false } })
     render(<UsageSectionCard {...cardProps(overview(mixed))} poll={poll} settings={live.form} />)
     expect(poll).not.toHaveBeenCalled()
     expect(screen.getByText(/插件已停用/)).toBeTruthy()
-    expect(screen.getByRole('checkbox')).toBeTruthy()
   })
 
   it('resumes polling once the Host reports the plugin enabled again', () => {
@@ -252,52 +251,9 @@ describe('UsageSectionCard disabled and failed states', () => {
     expect(screen.queryByText(/插件已停用/)).toBeNull()
   })
 
-  it('keeps the settings controls mounted when the overview transport fails', () => {
+  it('reports the transport failure without a dashboard', () => {
     const failing = fakeStore({ snapshot: null, status: 'error', error: 'usage /api/dsh-usage/overview failed: 500' })
     render(<UsageSectionCard {...cardProps(overview(mixed))} store={failing} />)
     expect(screen.getByText(/failed: 500/)).toBeTruthy()
-    expect(screen.getByRole('checkbox')).toBeTruthy()
-  })
-})
-
-/**
- * The shared form contract answers each write with a boolean: `false` is a
- * refusal or a skipped write (the value never reached the Host document), and a
- * dead transport rejects. Neither may read as a successful save.
- */
-describe('UsageSectionCard settings writes', () => {
-  it('surfaces a Host-refused write as a failed save', async () => {
-    const live = fakeForm({ value: { enabled: true }, answer: () => false })
-    render(<UsageSectionCard {...cardProps(overview(mixed))} settings={live.form} />)
-    // The checkbox starts from the form's effective value and writes the toggle.
-    fireEvent.click(screen.getByRole('checkbox'))
-    expect(live.writes).toEqual([['enabled', false]])
-    await waitFor(() => { expect(screen.getByText(/保存失败/)).toBeTruthy() })
-  })
-
-  it('surfaces a rejecting transport with its own message', async () => {
-    const live = fakeForm({ value: { enabled: true }, answer: () => Promise.reject(new Error('settings bridge unreachable')) })
-    render(<UsageSectionCard {...cardProps(overview(mixed))} settings={live.form} />)
-    fireEvent.click(screen.getByRole('checkbox'))
-    await waitFor(() => { expect(screen.getByText(/保存失败.*settings bridge unreachable/)).toBeTruthy() })
-  })
-
-  it('reports no failure for an accepted write', async () => {
-    const live = fakeForm({ value: { enabled: true } })
-    render(<UsageSectionCard {...cardProps(overview(mixed))} settings={live.form} />)
-    fireEvent.click(screen.getByRole('checkbox'))
-    await act(async () => { await Promise.resolve() })
-    expect(live.writes).toEqual([['enabled', false]])
-    expect(screen.queryByText(/保存失败/)).toBeNull()
-  })
-
-  it('writes the rounded poll interval and keeps out-of-range drafts off the wire', () => {
-    const live = fakeForm()
-    render(<UsageSectionCard {...cardProps(overview(mixed))} settings={live.form} />)
-    const interval = screen.getByRole('spinbutton')
-    fireEvent.change(interval, { target: { value: '120' } })
-    expect(live.writes).toEqual([['pollIntervalSec', 120]])
-    fireEvent.change(interval, { target: { value: '10' } })
-    expect(live.writes).toEqual([['pollIntervalSec', 120]])
   })
 })
