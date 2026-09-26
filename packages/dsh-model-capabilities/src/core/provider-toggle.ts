@@ -1,15 +1,16 @@
 /**
- * Provider disable/enable core: the disabled-profile archive and the path ops
- * a toggle performs.
+ * Provider enable core: the disabled-profile archive and the path ops an
+ * enable performs.
  *
- * Disabling a provider uses the only sanctioned seam that takes it out of the
- * model catalog (which both the composer picker and the subagent selection
- * read): unset `llm-pi-ai.providers.<route>` — the same write the official
- * Remove-provider button performs. Because that deletes the profile, the
- * toggle first stashes it in this plugin's own settings entry (the `disabled`
- * field of its own Config) under `disabled.<route>`; enabling restores the
- * profile verbatim and clears the archive entry. Orderings are chosen so the
- * worst case is a harmless duplicate archive, never a lost profile.
+ * The archive keeps profiles of providers disabled by older deployments or
+ * restored routes: the official Remove-provider seam (`unset
+ * llm-pi-ai.providers.<route>`) is what takes a provider out of the model
+ * catalog (which both the composer picker and the subagent selection read),
+ * and disabling through the Models page archives nothing on its own. This
+ * plugin's own settings entry (the `disabled` field of its own Config) is
+ * where profiles land so an enable can restore the profile verbatim and
+ * clear the archive entry. The former card-side disable affordance was
+ * removed with the capability editor, so only the enable path survives.
  *
  * @module @linxin666/dsh-client-ui-model-capabilities/core/provider-toggle
  */
@@ -144,20 +145,9 @@ export function hasNonUserProfile(
   return !hasProfileAt(view.user, route) && hasProfileAt(view.value, route)
 }
 
-/** Archive one profile: `disabled.<route> = stash` in the plugin namespace. */
-export function buildStashOp(route: string, stash: StashedProvider): SetPathOp {
-  // The stash is the JSON-parsed stored profile plus a display-name string.
-  return { op: 'set', path: ['disabled', route], value: stash as unknown as JsonValue }
-}
-
 /** Drop one archive entry: unset `disabled.<route>` in the plugin namespace. */
 export function buildUnstashOp(route: string): PathOp {
   return { op: 'unset', path: ['disabled', route] }
-}
-
-/** Take the route down: unset `providers.<route>` in the pi-ai namespace. */
-export function buildUnsetProviderOp(route: string): PathOp {
-  return { op: 'unset', path: ['providers', route] }
 }
 
 /** Bring the route back: restore the archived profile verbatim. */

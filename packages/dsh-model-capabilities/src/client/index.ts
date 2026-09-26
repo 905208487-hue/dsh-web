@@ -1,14 +1,16 @@
 /**
  * Browser-half entry for the dsh-model-capabilities plugin — runs inside the dsh web GUI.
  *
- * Seats two Models-page extension areas for the `llm-pi-ai` adapter family:
- * the `settings.models.provider-card` capability editor (reasoning efforts +
- * provider disable/enable) on every custom-provider card,
- * and the `settings.models.footer` archive listing where disabled providers
- * come back. Both read and write the official `llm-pi-ai` settings entry plus
- * this plugin's own entry (its Config, resolved from the describe answer
- * because the settings wire addresses profile entry ids) over the standard
- * remote settings wire.
+ * Seats one Models-page extension area for the `llm-pi-ai` adapter family:
+ * the `settings.models.footer` archive listing where disabled providers come
+ * back. Reads and writes the official `llm-pi-ai` settings entry plus this
+ * plugin's own entry (its Config, resolved from the describe answer because
+ * the settings wire addresses profile entry ids) over the standard remote
+ * settings wire.
+ *
+ * The former `settings.models.provider-card` capability editor (per-model
+ * reasoning-effort declarations) is intentionally not seated: model abilities
+ * need no per-user editing, so the panel is hidden from the Models page.
  * @module @linxin666/dsh-client-ui-model-capabilities/client
  */
 
@@ -19,10 +21,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the ctx.locale merge.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the Models-page SlotMap declarations
-// ('settings.models.provider-card' / 'settings.models.footer'), our own
-// LocaleNamespaceMap merge, and the owner-props types the panel reads.
+// ('settings.models.footer'), our own LocaleNamespaceMap merge, and the
+// owner-props types the footer reads.
 import type {} from '@deepseek-ai/dsh-client-ui-settings-models/client'
-import { CapabilitiesPanel } from './CapabilitiesPanel.tsx'
 import { DisabledProvidersFooter } from './DisabledProvidersFooter.tsx'
 import { coalesceDescribe, type RefreshBus } from './settings-face.ts'
 import { CAPS_ENTRY_IDS } from '../core/provider-toggle.ts'
@@ -38,7 +39,7 @@ export const inject = ['slots', 'locale', 'remote', 'remote.settings']
 
 /**
  * Client plugin body: register dictionaries, wire the refresh bus, and seat
- * both Models-page extension areas for the pi-ai family.
+ * the Models-page footer extension area for the pi-ai family.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
@@ -50,8 +51,8 @@ export function apply(ctx: ClientContext): void {
     }
   }, 'dsh-model-capabilities: dictionaries')
 
-  // Concurrent readers (every provider-card panel plus the footer area) share
-  // one describe per refresh instead of one full-document read each.
+  // Concurrent readers (the footer area) share one describe per refresh
+  // instead of one full-document read each.
   const settings = coalesceDescribe((ctx.get('remote') as unknown as ClientRemote).settings)
 
   // Refresh bus: our own toggles notify directly; the host's committed-change
@@ -69,10 +70,10 @@ export function apply(ctx: ClientContext): void {
   }
   ctx.effect(() => {
     try {
-      // Only the two entries this plugin renders from: a write anywhere else
-      // in the settings document cannot change what a panel shows. The
-      // archive is this plugin's own entry, under whichever row id this
-      // deployment mounted it.
+      // Only the entries this plugin renders from: a write anywhere else in
+      // the settings document cannot change what a surface shows. The archive
+      // is this plugin's own entry, under whichever row id this deployment
+      // mounted it.
       return ctx.remote.$on('settings/document-updated', (ns) => {
         if (ns === PI_AI_SETTINGS_NAMESPACE || CAPS_ENTRY_IDS.includes(ns)) refresh.notify()
       })
@@ -80,23 +81,6 @@ export function apply(ctx: ClientContext): void {
       return () => {}
     }
   }, 'dsh-model-capabilities: document events')
-
-  ctx.slots.inject('settings.models.provider-card', () => {
-    try {
-      const unregister = ctx.slots.register({
-        name: 'settings.models.provider-card',
-        key: 'llm-pi-ai',
-        inject: () => ({ settings, refresh }),
-      }, CapabilitiesPanel)
-      return () => {
-        unregister()
-      }
-    } catch {
-      // The seat is declared by the official Models section; a host without
-      // it (older deployment) offers no slot to fill, so register nothing.
-      return () => {}
-    }
-  })
 
   ctx.slots.inject('settings.models.footer', () => {
     try {
@@ -109,7 +93,8 @@ export function apply(ctx: ClientContext): void {
         unregister()
       }
     } catch {
-      // Same posture as the provider-card seat: no declaration, no entry.
+      // The seat is declared by the official Models section; a host without
+      // it (older deployment) offers no slot to fill, so register nothing.
       return () => {}
     }
   })
