@@ -36,10 +36,11 @@ window.__ModuleLoader__.load({
 			enumerable: true
 		}) : target, mod));
 		//#endregion
+		let react = require("react");
+		let react$1 = __toESM(react, 1);
+		react = __toESM(react);
 		let _deepseek_ai_cordis = require("@deepseek-ai/cordis");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		let react = require("react");
-		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_dom_client = require("react-dom/client");
 		let react_dom = require("react-dom");
@@ -1036,24 +1037,24 @@ window.__ModuleLoader__.load({
 		/** The plugin-manager settings tab. */
 		function PluginManagerTab(props) {
 			const { t, isLoopback, list, update, checkUpdates, status, failures, setSafeMode, repairPlugin, controlsList, controlsSetEnabled, lastInstallConflicts } = props;
-			const [view, setView] = (0, react.useState)({ status: "loading" });
-			const [busy, setBusy] = (0, react.useState)(void 0);
-			const [toggleBusy, setToggleBusy] = (0, react.useState)(void 0);
-			const [error, setError] = (0, react.useState)(void 0);
-			const [dirty, setDirty] = (0, react.useState)(false);
-			const [repairing, setRepairing] = (0, react.useState)(void 0);
-			const [copied, setCopied] = (0, react.useState)(void 0);
-			const [updates, setUpdates] = (0, react.useState)(/* @__PURE__ */ new Map());
-			const [conflicts, setConflicts] = (0, react.useState)([]);
-			const [progress, setProgress] = (0, react.useState)({
+			const [view, setView] = (0, react$1.useState)({ status: "loading" });
+			const [busy, setBusy] = (0, react$1.useState)(void 0);
+			const [toggleBusy, setToggleBusy] = (0, react$1.useState)(void 0);
+			const [error, setError] = (0, react$1.useState)(void 0);
+			const [dirty, setDirty] = (0, react$1.useState)(false);
+			const [repairing, setRepairing] = (0, react$1.useState)(void 0);
+			const [copied, setCopied] = (0, react$1.useState)(void 0);
+			const [updates, setUpdates] = (0, react$1.useState)(/* @__PURE__ */ new Map());
+			const [conflicts, setConflicts] = (0, react$1.useState)([]);
+			const [progress, setProgress] = (0, react$1.useState)({
 				kind: "idle",
 				stage: "fetch"
 			});
 			/** Parent rows whose aggregate child list is expanded; collapsed by default. */
-			const [expandedChildren, setExpandedChildren] = (0, react.useState)(() => /* @__PURE__ */ new Set());
+			const [expandedChildren, setExpandedChildren] = (0, react$1.useState)(() => /* @__PURE__ */ new Set());
 			/** Synchronous in-flight mirror of `busy`: the render-time guard alone lets a
 			* click and an Enter land in the same frame and double-fire. */
-			const busyRef = (0, react.useRef)(false);
+			const busyRef = (0, react$1.useRef)(false);
 			/**
 			* Reload every snapshot into the ready view. The conflict ledger is the
 			* host's record of the last install or update that ran through this
@@ -1075,7 +1076,7 @@ window.__ModuleLoader__.load({
 					failures: failureSnapshot
 				});
 			};
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				let cancelled = false;
 				reload().catch(() => {
 					if (!cancelled) setView({ status: "error" });
@@ -1101,7 +1102,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 			/** Poll update progress while such an operation is in flight. */
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (busy === void 0 || busy.kind !== "update") {
 					setProgress({
 						kind: "idle",
@@ -5002,38 +5003,38 @@ window.__ModuleLoader__.load({
 		/** New-task form overlay. */
 		function NewTaskModal({ controller, onClose, initialTask, defaultWorkspaceId, onDuplicateSuccess, parentTask }) {
 			const isDuplicate = initialTask !== void 0;
-			const [title, setTitle] = (0, react.useState)(initialTask?.title ?? "");
-			const [description, setDescription] = (0, react.useState)(initialTask?.description ?? "");
-			const [prompt, setPrompt] = (0, react.useState)(initialTask?.prompt ?? "");
-			const [workspaceId, setWorkspaceId] = (0, react.useState)(initialTask?.workspaceId ?? parentTask?.workspaceId ?? defaultWorkspaceId ?? "");
-			const [mode, setMode] = (0, react.useState)(initialTask?.mode ?? parentTask?.mode ?? "");
-			const [permission, setPermission] = (0, react.useState)(initialTask?.permission ?? "");
-			const [model, setModel] = (0, react.useState)(initialTask?.model ?? parentTask?.model ?? "");
+			const [title, setTitle] = (0, react$1.useState)(initialTask?.title ?? "");
+			const [description, setDescription] = (0, react$1.useState)(initialTask?.description ?? "");
+			const [prompt, setPrompt] = (0, react$1.useState)(initialTask?.prompt ?? "");
+			const [workspaceId, setWorkspaceId] = (0, react$1.useState)(initialTask?.workspaceId ?? parentTask?.workspaceId ?? defaultWorkspaceId ?? "");
+			const [mode, setMode] = (0, react$1.useState)(initialTask?.mode ?? parentTask?.mode ?? "");
+			const [permission, setPermission] = (0, react$1.useState)(initialTask?.permission ?? "");
+			const [model, setModel] = (0, react$1.useState)(initialTask?.model ?? parentTask?.model ?? "");
 			const inheritedPermission = parentTask === void 0 ? void 0 : effectiveTaskPermission(parentTask);
-			const [reuseSession, setReuseSession] = (0, react.useState)(initialTask?.reuseSession ?? false);
-			const [scheduleEnabled, setScheduleEnabled] = (0, react.useState)(initialTask?.schedule?.enabled ?? false);
-			const [scheduleCron, setScheduleCron] = (0, react.useState)(initialTask?.schedule?.cron ?? "");
-			const [scheduleError, setScheduleError] = (0, react.useState)(void 0);
-			const [freezeText, setFreezeText] = (0, react.useState)("");
-			const [freezeError, setFreezeError] = (0, react.useState)(void 0);
-			const [handoverText, setHandoverText] = (0, react.useState)(initialTask?.handover?.references !== void 0 ? initialTask.handover.references.join("\n") : "");
-			const [tags, setTags] = (0, react.useState)(initialTask?.tags ?? []);
-			const [archiveOriginal, setArchiveOriginal] = (0, react.useState)(true);
-			const [error, setError] = (0, react.useState)(void 0);
-			const [pending, setPending] = (0, react.useState)(false);
-			const [options, setOptions] = (0, react.useState)(controller.getSnapshot().executionOptions);
-			const [canParse] = (0, react.useState)(controller.getSnapshot().canParseTask === true);
-			const [parseText, setParseText] = (0, react.useState)("");
-			const [parseModel, setParseModel] = (0, react.useState)(() => readParseModelPreference());
-			const [parsePending, setParsePending] = (0, react.useState)(false);
-			const [parseError, setParseError] = (0, react.useState)(void 0);
-			const parseAbort = (0, react.useRef)(void 0);
+			const [reuseSession, setReuseSession] = (0, react$1.useState)(initialTask?.reuseSession ?? false);
+			const [scheduleEnabled, setScheduleEnabled] = (0, react$1.useState)(initialTask?.schedule?.enabled ?? false);
+			const [scheduleCron, setScheduleCron] = (0, react$1.useState)(initialTask?.schedule?.cron ?? "");
+			const [scheduleError, setScheduleError] = (0, react$1.useState)(void 0);
+			const [freezeText, setFreezeText] = (0, react$1.useState)("");
+			const [freezeError, setFreezeError] = (0, react$1.useState)(void 0);
+			const [handoverText, setHandoverText] = (0, react$1.useState)(initialTask?.handover?.references !== void 0 ? initialTask.handover.references.join("\n") : "");
+			const [tags, setTags] = (0, react$1.useState)(initialTask?.tags ?? []);
+			const [archiveOriginal, setArchiveOriginal] = (0, react$1.useState)(true);
+			const [error, setError] = (0, react$1.useState)(void 0);
+			const [pending, setPending] = (0, react$1.useState)(false);
+			const [options, setOptions] = (0, react$1.useState)(controller.getSnapshot().executionOptions);
+			const [canParse] = (0, react$1.useState)(controller.getSnapshot().canParseTask === true);
+			const [parseText, setParseText] = (0, react$1.useState)("");
+			const [parseModel, setParseModel] = (0, react$1.useState)(() => readParseModelPreference());
+			const [parsePending, setParsePending] = (0, react$1.useState)(false);
+			const [parseError, setParseError] = (0, react$1.useState)(void 0);
+			const parseAbort = (0, react$1.useRef)(void 0);
 			const parseModels = options.models ?? [];
 			const workspaceKnown = workspaceId === "" || options.workspaces.some((item) => item.workspaceId === workspaceId);
 			const modeKnown = mode === "" || options.presets.some((item) => item.id === mode);
 			const modelKnown = model === "" || parseModels.some((item) => item.id === model);
-			(0, react.useEffect)(() => controller.subscribe(() => setOptions(controller.getSnapshot().executionOptions)), [controller]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => controller.subscribe(() => setOptions(controller.getSnapshot().executionOptions)), [controller]);
+			(0, react$1.useEffect)(() => {
 				if (parseModel === "" || parseModels.length === 0) return;
 				if (parseModels.some((option) => option.id === parseModel)) return;
 				setParseModel("");
@@ -5625,7 +5626,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** Memoized card: re-renders only when the card's own task record changes. */
-		const TaskCard = (0, react.memo)(TaskCardInner);
+		const TaskCard = (0, react$1.memo)(TaskCardInner);
 		//#endregion
 		//#region ../dsh-task-board/src/client/board/ConfirmDialog.tsx
 		/**
@@ -5680,12 +5681,12 @@ window.__ModuleLoader__.load({
 		*/
 		/** Edit-task form overlay. */
 		function EditTaskModal({ controller, task, onClose }) {
-			const [title, setTitle] = (0, react.useState)(task.title);
-			const [description, setDescription] = (0, react.useState)(task.description);
-			const [prompt, setPrompt] = (0, react.useState)(task.prompt);
-			const [tags, setTags] = (0, react.useState)(task.tags ?? []);
-			const [error, setError] = (0, react.useState)(void 0);
-			const [pending, setPending] = (0, react.useState)(false);
+			const [title, setTitle] = (0, react$1.useState)(task.title);
+			const [description, setDescription] = (0, react$1.useState)(task.description);
+			const [prompt, setPrompt] = (0, react$1.useState)(task.prompt);
+			const [tags, setTags] = (0, react$1.useState)(task.tags ?? []);
+			const [error, setError] = (0, react$1.useState)(void 0);
+			const [pending, setPending] = (0, react$1.useState)(false);
 			const submit = async () => {
 				if (title.trim() === "") {
 					setError(t$5("new.required"));
@@ -5735,9 +5736,9 @@ window.__ModuleLoader__.load({
 		}
 		/** Edit-tags modal: edit labels only, shown for tasks after first execution. */
 		function EditTagsModal({ controller, task, onClose }) {
-			const [tags, setTags] = (0, react.useState)(task.tags ?? []);
-			const [error, setError] = (0, react.useState)(void 0);
-			const [pending, setPending] = (0, react.useState)(false);
+			const [tags, setTags] = (0, react$1.useState)(task.tags ?? []);
+			const [error, setError] = (0, react$1.useState)(void 0);
+			const [pending, setPending] = (0, react$1.useState)(false);
 			const submit = async () => {
 				setPending(true);
 				const tagList = cleanTags(tags);
@@ -5776,8 +5777,8 @@ window.__ModuleLoader__.load({
 		*/
 		/** Link-subtask overlay. */
 		function LinkSubtaskModal({ controller, parent, onClose }) {
-			const [pending, setPending] = (0, react.useState)(false);
-			const [error, setError] = (0, react.useState)(void 0);
+			const [pending, setPending] = (0, react$1.useState)(false);
+			const [error, setError] = (0, react$1.useState)(void 0);
 			const snapshot = controller.getSnapshot();
 			const limit = snapshot.host?.maxSubtaskDepth ?? 1;
 			const candidates = snapshot.tasks.filter((task) => task.archivedAt === void 0 && task.status !== "running" && task.parentId === void 0 && task.id !== parent.id && checkParentLink(snapshot.tasks, task.id, parent.id, limit).ok);
@@ -5913,10 +5914,10 @@ window.__ModuleLoader__.load({
 		}
 		/** The execution-target editor: workspace / mode / permission pickers. */
 		function ExecutionSettingsSection({ controller, task, pending }) {
-			const [options, setOptions] = (0, react.useState)(controller.getSnapshot().executionOptions);
+			const [options, setOptions] = (0, react$1.useState)(controller.getSnapshot().executionOptions);
 			const teamRunOffered = () => controller.getSnapshot().host?.teamRunAvailable === true;
-			const [teamRunAvailable, setTeamRunAvailable] = (0, react.useState)(teamRunOffered());
-			(0, react.useEffect)(() => controller.subscribe(() => {
+			const [teamRunAvailable, setTeamRunAvailable] = (0, react$1.useState)(teamRunOffered());
+			(0, react$1.useEffect)(() => controller.subscribe(() => {
 				const snapshot = controller.getSnapshot();
 				setOptions(snapshot.executionOptions);
 				setTeamRunAvailable(snapshot.host?.teamRunAvailable === true);
@@ -6082,13 +6083,13 @@ window.__ModuleLoader__.load({
 		/** The scheduled-runs editor: enable toggle, cron input + presets, next-run info. */
 		function ScheduleSection({ controller, task, pending }) {
 			const schedule = task.schedule;
-			const [cron, setCron] = (0, react.useState)(schedule?.cron ?? "0 9 * * *");
-			const [enabled, setEnabled] = (0, react.useState)(schedule?.enabled ?? false);
-			const [nextRunAt, setNextRunAt] = (0, react.useState)(schedule?.nextRunAt);
-			const [lastTriggeredAt, setLastTriggeredAt] = (0, react.useState)(schedule?.lastTriggeredAt);
-			const [error, setError] = (0, react.useState)(void 0);
+			const [cron, setCron] = (0, react$1.useState)(schedule?.cron ?? "0 9 * * *");
+			const [enabled, setEnabled] = (0, react$1.useState)(schedule?.enabled ?? false);
+			const [nextRunAt, setNextRunAt] = (0, react$1.useState)(schedule?.nextRunAt);
+			const [lastTriggeredAt, setLastTriggeredAt] = (0, react$1.useState)(schedule?.lastTriggeredAt);
+			const [error, setError] = (0, react$1.useState)(void 0);
 			const timeZone = controller.getSnapshot().host?.scheduler.timeZone;
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				setCron(schedule?.cron ?? "0 9 * * *");
 				setEnabled(schedule?.enabled ?? false);
 				setNextRunAt(schedule?.nextRunAt);
@@ -6209,10 +6210,10 @@ window.__ModuleLoader__.load({
 		* Host lineage gate for affordance only; the Host re-checks the action.
 		*/
 		function SubtaskSection({ controller, task, pending, archived }) {
-			const [snapshot, setSnapshot] = (0, react.useState)(controller.getSnapshot());
-			(0, react.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
-			const [showAdd, setShowAdd] = (0, react.useState)(false);
-			const [showLink, setShowLink] = (0, react.useState)(false);
+			const [snapshot, setSnapshot] = (0, react$1.useState)(controller.getSnapshot());
+			(0, react$1.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
+			const [showAdd, setShowAdd] = (0, react$1.useState)(false);
+			const [showLink, setShowLink] = (0, react$1.useState)(false);
 			const tasks = snapshot.tasks;
 			const parent = task.parentId === void 0 ? void 0 : tasks.find((candidate) => candidate.id === task.parentId);
 			const children = directSubtasks(tasks, task.id);
@@ -6324,15 +6325,15 @@ window.__ModuleLoader__.load({
 		}
 		/** Task detail overlay. */
 		function TaskDetail({ controller, task }) {
-			const [confirmDelete, setConfirmDelete] = (0, react.useState)(false);
-			const [showEdit, setShowEdit] = (0, react.useState)(false);
-			const [showEditTags, setShowEditTags] = (0, react.useState)(false);
-			const [showDuplicate, setShowDuplicate] = (0, react.useState)(false);
-			const [latest, setLatest] = (0, react.useState)(task);
-			(0, react.useEffect)(() => {
+			const [confirmDelete, setConfirmDelete] = (0, react$1.useState)(false);
+			const [showEdit, setShowEdit] = (0, react$1.useState)(false);
+			const [showEditTags, setShowEditTags] = (0, react$1.useState)(false);
+			const [showDuplicate, setShowDuplicate] = (0, react$1.useState)(false);
+			const [latest, setLatest] = (0, react$1.useState)(task);
+			(0, react$1.useEffect)(() => {
 				setLatest(task);
 			}, [task]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				setShowEdit(false);
 				setShowEditTags(false);
 				setShowDuplicate(false);
@@ -6732,12 +6733,12 @@ window.__ModuleLoader__.load({
 		* re-renders only when its own task changes — not when a sibling card status,
 		* the filter, or the selection moves.
 		*/
-		const MemoTaskCard = (0, react.memo)(function MemoTaskCard({ task, pending, timeZone, onOpen, subtaskCount, isSubtask, subtasksDone, subtasksRunning, subtasksFailed }) {
+		const MemoTaskCard = (0, react$1.memo)(function MemoTaskCard({ task, pending, timeZone, onOpen, subtaskCount, isSubtask, subtasksDone, subtasksRunning, subtasksFailed }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskCard, {
 				task,
 				pending,
 				timeZone,
-				onClick: (0, react.useCallback)(() => {
+				onClick: (0, react$1.useCallback)(() => {
 					onOpen(task.id);
 				}, [task.id, onOpen]),
 				subtaskCount,
@@ -6749,17 +6750,17 @@ window.__ModuleLoader__.load({
 		});
 		/** Board component; subscribes to the controller snapshot. */
 		function TaskBoard({ controller }) {
-			const [snapshot, setSnapshot] = (0, react.useState)(controller.getSnapshot());
-			(0, react.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
-			const [filter, setFilter] = (0, react.useState)("");
-			const [tagFilter, setTagFilter] = (0, react.useState)([]);
-			const [hideSubtasks, setHideSubtasks] = (0, react.useState)(true);
-			const [showNew, setShowNew] = (0, react.useState)(false);
-			const [projectId, setProjectId] = (0, react.useState)("");
-			const [showNewProject, setShowNewProject] = (0, react.useState)(false);
-			const [newProjectPath, setNewProjectPath] = (0, react.useState)("");
-			const [newProjectError, setNewProjectError] = (0, react.useState)(void 0);
-			const [newProjectPending, setNewProjectPending] = (0, react.useState)(false);
+			const [snapshot, setSnapshot] = (0, react$1.useState)(controller.getSnapshot());
+			(0, react$1.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
+			const [filter, setFilter] = (0, react$1.useState)("");
+			const [tagFilter, setTagFilter] = (0, react$1.useState)([]);
+			const [hideSubtasks, setHideSubtasks] = (0, react$1.useState)(true);
+			const [showNew, setShowNew] = (0, react$1.useState)(false);
+			const [projectId, setProjectId] = (0, react$1.useState)("");
+			const [showNewProject, setShowNewProject] = (0, react$1.useState)(false);
+			const [newProjectPath, setNewProjectPath] = (0, react$1.useState)("");
+			const [newProjectError, setNewProjectError] = (0, react$1.useState)(void 0);
+			const [newProjectPending, setNewProjectPending] = (0, react$1.useState)(false);
 			const selected = selectedTaskOf(snapshot);
 			const archiveView = snapshot.archiveView;
 			const knownTags = collectKnownTags(snapshot.tasks);
@@ -6801,10 +6802,10 @@ window.__ModuleLoader__.load({
 					setNewProjectPending(false);
 				}
 			};
-			const toggleTag = (0, react.useCallback)((name) => {
+			const toggleTag = (0, react$1.useCallback)((name) => {
 				setTagFilter((current) => current.includes(name) ? current.filter((entry) => entry !== name) : [...current, name]);
 			}, []);
-			const openTask = (0, react.useCallback)((id) => {
+			const openTask = (0, react$1.useCallback)((id) => {
 				controller.openTask(id);
 			}, [controller]);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -7561,7 +7562,7 @@ window.__ModuleLoader__.load({
 		* @returns the card, or nothing while the namespace is still loading.
 		*/
 		function PluginSettingsCard$2(props) {
-			const [open, setOpen] = (0, react.useState)(props.defaultOpen ?? true);
+			const [open, setOpen] = (0, react$1.useState)(props.defaultOpen ?? true);
 			const { state, alwaysOpen } = props;
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
@@ -7696,18 +7697,18 @@ window.__ModuleLoader__.load({
 		*/
 		function SelectField$2(props) {
 			const { id, options, value } = props;
-			const [open, setOpen] = (0, react.useState)(false);
-			const [closing, setClosing] = (0, react.useState)(false);
-			const [phase, setPhase] = (0, react.useState)("initial");
-			const [activeIndex, setActiveIndex] = (0, react.useState)(0);
-			const closeTimer = (0, react.useRef)(void 0);
-			const wrapRef = (0, react.useRef)(null);
-			const popupRef = (0, react.useRef)(null);
+			const [open, setOpen] = (0, react$1.useState)(false);
+			const [closing, setClosing] = (0, react$1.useState)(false);
+			const [phase, setPhase] = (0, react$1.useState)("initial");
+			const [activeIndex, setActiveIndex] = (0, react$1.useState)(0);
+			const closeTimer = (0, react$1.useRef)(void 0);
+			const wrapRef = (0, react$1.useRef)(null);
+			const popupRef = (0, react$1.useRef)(null);
 			const currentIndex = () => {
 				const index = options.findIndex((option) => option.value === value);
 				return index >= 0 ? index : 0;
 			};
-			const close = (0, react.useCallback)(() => {
+			const close = (0, react$1.useCallback)(() => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 				setClosing(true);
 				closeTimer.current = setTimeout(() => {
@@ -7758,10 +7759,10 @@ window.__ModuleLoader__.load({
 						break;
 				}
 			};
-			(0, react.useEffect)(() => () => {
+			(0, react$1.useEffect)(() => () => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 			}, []);
-			(0, react.useLayoutEffect)(() => {
+			(0, react$1.useLayoutEffect)(() => {
 				if (open && !closing && phase === "initial") {
 					popupRef.current?.offsetHeight;
 					setPhase("open");
@@ -7771,7 +7772,7 @@ window.__ModuleLoader__.load({
 				closing,
 				phase
 			]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					const target = event.target;
@@ -7780,7 +7781,7 @@ window.__ModuleLoader__.load({
 				document.addEventListener("pointerdown", onPointerDown);
 				return () => document.removeEventListener("pointerdown", onPointerDown);
 			}, [open, close]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (props.disabled && open) close();
 			}, [
 				props.disabled,
@@ -8289,8 +8290,8 @@ window.__ModuleLoader__.load({
 			const { t } = props;
 			const state = props.useTaskBoardSettingsCard((snapshot) => snapshot);
 			const disabled = !state.writable;
-			const [power, setPower] = (0, react.useState)();
-			(0, react.useEffect)(() => {
+			const [power, setPower] = (0, react$1.useState)();
+			(0, react$1.useEffect)(() => {
 				let live = true;
 				const events = new EventSource("api/task-board/events");
 				events.onmessage = (message) => {
@@ -9401,20 +9402,20 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link BranchPopoverProps}.
 		*/
 		function BranchPopover({ view, onSwitch, onSwitched, onCreate, onGraph, onCreateWorktree, onManageWorktrees, onClose, t, hero = false }) {
-			const [query, setQuery] = (0, react.useState)("");
-			const [pending, setPending] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const [success, setSuccess] = (0, react.useState)(null);
-			const dismissTimer = (0, react.useRef)(void 0);
-			const [tipReadyName, setTipReadyName] = (0, react.useState)(null);
-			const [tipActive, setTipActive] = (0, react.useState)(false);
-			const [tipDir, setTipDir] = (0, react.useState)("up");
-			const tipTimer = (0, react.useRef)(void 0);
-			(0, react.useEffect)(() => () => {
+			const [query, setQuery] = (0, react$1.useState)("");
+			const [pending, setPending] = (0, react$1.useState)(null);
+			const [error, setError] = (0, react$1.useState)(null);
+			const [success, setSuccess] = (0, react$1.useState)(null);
+			const dismissTimer = (0, react$1.useRef)(void 0);
+			const [tipReadyName, setTipReadyName] = (0, react$1.useState)(null);
+			const [tipActive, setTipActive] = (0, react$1.useState)(false);
+			const [tipDir, setTipDir] = (0, react$1.useState)("up");
+			const tipTimer = (0, react$1.useRef)(void 0);
+			(0, react$1.useEffect)(() => () => {
 				if (dismissTimer.current !== void 0) clearTimeout(dismissTimer.current);
 				if (tipTimer.current !== void 0) clearTimeout(tipTimer.current);
 			}, []);
-			const filtered = (0, react.useMemo)(() => {
+			const filtered = (0, react$1.useMemo)(() => {
 				const needle = query.trim().toLowerCase();
 				if (needle === "") return view.branches;
 				return view.branches.filter((branch) => branch.name.toLowerCase().includes(needle));
@@ -9616,9 +9617,9 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link CreateBranchDialogProps}.
 		*/
 		function CreateBranchDialog({ onCreate, onClose, t }) {
-			const [name, setName] = (0, react.useState)("");
-			const [pending, setPending] = (0, react.useState)(false);
-			const [error, setError] = (0, react.useState)(null);
+			const [name, setName] = (0, react$1.useState)("");
+			const [pending, setPending] = (0, react$1.useState)(false);
+			const [error, setError] = (0, react$1.useState)(null);
 			const submit = () => {
 				if (pending) return;
 				const trimmed = name.trim();
@@ -9708,10 +9709,10 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link CreateWorktreeDialogProps}.
 		*/
 		function CreateWorktreeDialog({ branches, currentBranch, onCreate, onClose, t }) {
-			const [name, setName] = (0, react.useState)("");
-			const [baseRef, setBaseRef] = (0, react.useState)(currentBranch);
-			const [pending, setPending] = (0, react.useState)(false);
-			const [error, setError] = (0, react.useState)(null);
+			const [name, setName] = (0, react$1.useState)("");
+			const [baseRef, setBaseRef] = (0, react$1.useState)(currentBranch);
+			const [pending, setPending] = (0, react$1.useState)(false);
+			const [error, setError] = (0, react$1.useState)(null);
 			const sanitized = sanitizeWorktreeName(name);
 			const submit = () => {
 				if (pending) return;
@@ -9822,15 +9823,15 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link WorktreeManagerProps}.
 		*/
 		function WorktreeManager({ fetchWorktrees, onRemove, onClose, t }) {
-			const [view, setView] = (0, react.useState)(null);
-			const [loading, setLoading] = (0, react.useState)(true);
-			const [error, setError] = (0, react.useState)(null);
+			const [view, setView] = (0, react$1.useState)(null);
+			const [loading, setLoading] = (0, react$1.useState)(true);
+			const [error, setError] = (0, react$1.useState)(null);
 			/** Row awaiting an inline force-confirm after a worktree-dirty rejection. */
-			const [forcePath, setForcePath] = (0, react.useState)(null);
+			const [forcePath, setForcePath] = (0, react$1.useState)(null);
 			/** Rows whose wt/ branch should be deleted together with the worktree. */
-			const [branchDelete, setBranchDelete] = (0, react.useState)(/* @__PURE__ */ new Set());
-			const [pending, setPending] = (0, react.useState)(null);
-			const reload = (0, react.useCallback)(() => {
+			const [branchDelete, setBranchDelete] = (0, react$1.useState)(/* @__PURE__ */ new Set());
+			const [pending, setPending] = (0, react$1.useState)(null);
+			const reload = (0, react$1.useCallback)(() => {
 				let live = true;
 				setLoading(true);
 				fetchWorktrees().then((fresh) => {
@@ -9842,7 +9843,7 @@ window.__ModuleLoader__.load({
 					live = false;
 				};
 			}, [fetchWorktrees]);
-			(0, react.useEffect)(() => reload(), [reload]);
+			(0, react$1.useEffect)(() => reload(), [reload]);
 			const remove = (item, force) => {
 				if (pending !== null) return;
 				setPending(item.path);
@@ -10067,11 +10068,11 @@ window.__ModuleLoader__.load({
 		* @param props - see {@link GraphDialogProps}.
 		*/
 		function GraphDialog({ graph, onClose, t }) {
-			const [view, setView] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const [loading, setLoading] = (0, react.useState)(true);
-			const requestSeq = (0, react.useRef)(0);
-			const load = (0, react.useCallback)((limit) => {
+			const [view, setView] = (0, react$1.useState)(null);
+			const [error, setError] = (0, react$1.useState)(null);
+			const [loading, setLoading] = (0, react$1.useState)(true);
+			const requestSeq = (0, react$1.useRef)(0);
+			const load = (0, react$1.useCallback)((limit) => {
 				const seq = requestSeq.current + 1;
 				requestSeq.current = seq;
 				setLoading(true);
@@ -10086,16 +10087,16 @@ window.__ModuleLoader__.load({
 					if (seq === requestSeq.current) setLoading(false);
 				});
 			}, [graph, t]);
-			const loadRef = (0, react.useRef)(load);
+			const loadRef = (0, react$1.useRef)(load);
 			loadRef.current = load;
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				loadRef.current(INITIAL_LIMIT);
 			}, []);
-			const lanes = (0, react.useMemo)(() => {
+			const lanes = (0, react$1.useMemo)(() => {
 				if (view === null) return [];
 				return computeLanes(view.commits);
 			}, [view]);
-			const laneCount = (0, react.useMemo)(() => {
+			const laneCount = (0, react$1.useMemo)(() => {
 				let count = 0;
 				for (const row of lanes) count = Math.max(count, row.columns.length);
 				return count;
@@ -10218,8 +10219,8 @@ window.__ModuleLoader__.load({
 		}
 		/** Track stock-light theme changes from body attributes. */
 		function useStockLightTheme() {
-			const [stockLightTheme, setStockLightTheme] = (0, react.useState)(readStockLightTheme);
-			(0, react.useEffect)(() => {
+			const [stockLightTheme, setStockLightTheme] = (0, react$1.useState)(readStockLightTheme);
+			(0, react$1.useEffect)(() => {
 				const update = () => {
 					setStockLightTheme(readStockLightTheme());
 				};
@@ -10270,17 +10271,17 @@ window.__ModuleLoader__.load({
 			const showBranchSelector = dockSeat ? heroSeat : blankSession;
 			const stockLightTheme = useStockLightTheme();
 			/** Repository state: undefined = loading, null = not a repository, else the snapshot. */
-			const [repo, setRepo] = (0, react.useState)(void 0);
+			const [repo, setRepo] = (0, react$1.useState)(void 0);
 			/** Fresh branch list, fetched when the branch popover opens. */
-			const [branchesView, setBranchesView] = (0, react.useState)(null);
-			const [branchOpen, setBranchOpen] = (0, react.useState)(false);
-			const [createOpen, setCreateOpen] = (0, react.useState)(false);
-			const [graphOpen, setGraphOpen] = (0, react.useState)(false);
-			const [worktreeCreateOpen, setWorktreeCreateOpen] = (0, react.useState)(false);
-			const [worktreeManageOpen, setWorktreeManageOpen] = (0, react.useState)(false);
-			const [heroRow, setHeroRow] = (0, react.useState)(null);
-			const anchorRef = (0, react.useRef)(null);
-			(0, react.useLayoutEffect)(() => {
+			const [branchesView, setBranchesView] = (0, react$1.useState)(null);
+			const [branchOpen, setBranchOpen] = (0, react$1.useState)(false);
+			const [createOpen, setCreateOpen] = (0, react$1.useState)(false);
+			const [graphOpen, setGraphOpen] = (0, react$1.useState)(false);
+			const [worktreeCreateOpen, setWorktreeCreateOpen] = (0, react$1.useState)(false);
+			const [worktreeManageOpen, setWorktreeManageOpen] = (0, react$1.useState)(false);
+			const [heroRow, setHeroRow] = (0, react$1.useState)(null);
+			const anchorRef = (0, react$1.useRef)(null);
+			(0, react$1.useLayoutEffect)(() => {
 				if (!heroSeat || repo === void 0 || repo === null) {
 					setHeroRow(null);
 					return;
@@ -10301,7 +10302,7 @@ window.__ModuleLoader__.load({
 					observer.disconnect();
 				};
 			}, [heroSeat, repo !== void 0 && repo !== null]);
-			const refetch = (0, react.useCallback)(() => {
+			const refetch = (0, react$1.useCallback)(() => {
 				let live = true;
 				props.repoStatus(sessionId).then((status) => {
 					if (live) setRepo(status);
@@ -10312,12 +10313,12 @@ window.__ModuleLoader__.load({
 					live = false;
 				};
 			}, [props.repoStatus, sessionId]);
-			const lastFocusRefetch = (0, react.useRef)(0);
-			(0, react.useEffect)(() => {
+			const lastFocusRefetch = (0, react$1.useRef)(0);
+			(0, react$1.useEffect)(() => {
 				if (!showBranchSelector) return void 0;
 				return refetch();
 			}, [showBranchSelector, refetch]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!showBranchSelector) return void 0;
 				const unsubscribe = props.subscribeChanges(sessionId, () => {
 					refetch();
@@ -10343,7 +10344,7 @@ window.__ModuleLoader__.load({
 				setCreateOpen(false);
 				refetch();
 			};
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!showBranchSelector || !branchOpen) return void 0;
 				let live = true;
 				setBranchesView(null);
@@ -12526,7 +12527,7 @@ window.__ModuleLoader__.load({
 		* frame (a paired phone heartbeats every 10s), and qrcode.react rebuilds the
 		* SVG path and element tree on each render.
 		*/
-		const PairQrCode = (0, react.memo)(function PairQrCode({ url, className }) {
+		const PairQrCode = (0, react$1.memo)(function PairQrCode({ url, className }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(QRCodeSVG, {
 				value: url,
 				size: 184,
@@ -12904,21 +12905,21 @@ window.__ModuleLoader__.load({
 		* @returns the entry element tree.
 		*/
 		function RemoteEntry({ wide, t }) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const [state, setState] = (0, react.useState)({ kind: "lan-required" });
-			const stateRef = (0, react.useRef)(state);
-			(0, react.useEffect)(() => {
+			const [open, setOpen] = (0, react$1.useState)(false);
+			const [state, setState] = (0, react$1.useState)({ kind: "lan-required" });
+			const stateRef = (0, react$1.useRef)(state);
+			(0, react$1.useEffect)(() => {
 				stateRef.current = state;
 			}, [state]);
-			const [copied, setCopied] = (0, react.useState)(false);
-			const [copiedToken, setCopiedToken] = (0, react.useState)(false);
-			const eventSource = (0, react.useRef)(void 0);
-			const openSeq = (0, react.useRef)(0);
-			const closeEventSource = (0, react.useCallback)(() => {
+			const [copied, setCopied] = (0, react$1.useState)(false);
+			const [copiedToken, setCopiedToken] = (0, react$1.useState)(false);
+			const eventSource = (0, react$1.useRef)(void 0);
+			const openSeq = (0, react$1.useRef)(0);
+			const closeEventSource = (0, react$1.useCallback)(() => {
 				eventSource.current?.close();
 				eventSource.current = void 0;
 			}, []);
-			const mint = (0, react.useCallback)(async (address) => {
+			const mint = (0, react$1.useCallback)(async (address) => {
 				let result;
 				try {
 					result = await issuePair(address);
@@ -12947,7 +12948,7 @@ window.__ModuleLoader__.load({
 					lanAddresses: result.lanAddresses
 				};
 			}, []);
-			const openPanel = (0, react.useCallback)(async () => {
+			const openPanel = (0, react$1.useCallback)(async () => {
 				const seq = ++openSeq.current;
 				setOpen(true);
 				const next = await mint();
@@ -12969,12 +12970,12 @@ window.__ModuleLoader__.load({
 					} catch {}
 				};
 			}, [mint]);
-			const closePanel = (0, react.useCallback)(() => {
+			const closePanel = (0, react$1.useCallback)(() => {
 				openSeq.current += 1;
 				closeEventSource();
 				setOpen(false);
 			}, [closeEventSource]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (state.kind !== "ready") return;
 				if (state.expired) return;
 				const delay = state.expiresAt - Date.now();
@@ -12995,8 +12996,8 @@ window.__ModuleLoader__.load({
 					window.clearTimeout(timer);
 				};
 			}, [state]);
-			(0, react.useEffect)(() => closeEventSource, [closeEventSource]);
-			const handleStop = (0, react.useCallback)(() => {
+			(0, react$1.useEffect)(() => closeEventSource, [closeEventSource]);
+			const handleStop = (0, react$1.useCallback)(() => {
 				stopPair().then(() => {
 					setState((previous) => previous.kind === "ready" ? {
 						...previous,
@@ -13005,7 +13006,7 @@ window.__ModuleLoader__.load({
 					} : previous);
 				}).catch(() => {});
 			}, []);
-			const handleRevoke = (0, react.useCallback)((deviceId) => {
+			const handleRevoke = (0, react$1.useCallback)((deviceId) => {
 				revokePair(deviceId).then(() => {
 					setState((previous) => previous.kind === "ready" ? {
 						...previous,
@@ -13013,18 +13014,18 @@ window.__ModuleLoader__.load({
 					} : previous);
 				}).catch(() => {});
 			}, []);
-			const handleRefresh = (0, react.useCallback)(() => {
+			const handleRefresh = (0, react$1.useCallback)(() => {
 				mint().then(setState);
 			}, [mint]);
 			/** Re-mint against another LAN literal (multi-homed machines). */
-			const handlePickAddress = (0, react.useCallback)((address) => {
+			const handlePickAddress = (0, react$1.useCallback)((address) => {
 				mint(address).then(setState);
 			}, [mint]);
 			/** Re-mint against the configured public (tunneled) base. */
-			const handlePickPublic = (0, react.useCallback)(() => {
+			const handlePickPublic = (0, react$1.useCallback)(() => {
 				mint().then(setState);
 			}, [mint]);
-			const handleCopy = (0, react.useCallback)((url) => {
+			const handleCopy = (0, react$1.useCallback)((url) => {
 				copyText(url).then((ok) => {
 					if (!ok) return;
 					setCopied(true);
@@ -13033,7 +13034,7 @@ window.__ModuleLoader__.load({
 					}, 1500);
 				});
 			}, []);
-			const handleCopyToken = (0, react.useCallback)((token) => {
+			const handleCopyToken = (0, react$1.useCallback)((token) => {
 				copyText(token).then((ok) => {
 					if (!ok) return;
 					setCopiedToken(true);
@@ -13114,8 +13115,8 @@ window.__ModuleLoader__.load({
 		* @returns the toast element.
 		*/
 		function PairFailedNotice({ t }) {
-			const [visible, setVisible] = (0, react.useState)(true);
-			(0, react.useEffect)(() => {
+			const [visible, setVisible] = (0, react$1.useState)(true);
+			(0, react$1.useEffect)(() => {
 				const timer = window.setTimeout(() => {
 					setVisible(false);
 				}, 8e3);
@@ -13204,7 +13205,7 @@ window.__ModuleLoader__.load({
 		* @returns the card, or nothing while the namespace is still loading.
 		*/
 		function PluginSettingsCard$1(props) {
-			const [open, setOpen] = (0, react.useState)(props.defaultOpen ?? true);
+			const [open, setOpen] = (0, react$1.useState)(props.defaultOpen ?? true);
 			const { state, alwaysOpen } = props;
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
@@ -13384,18 +13385,18 @@ window.__ModuleLoader__.load({
 		*/
 		function SelectField$1(props) {
 			const { id, options, value } = props;
-			const [open, setOpen] = (0, react.useState)(false);
-			const [closing, setClosing] = (0, react.useState)(false);
-			const [phase, setPhase] = (0, react.useState)("initial");
-			const [activeIndex, setActiveIndex] = (0, react.useState)(0);
-			const closeTimer = (0, react.useRef)(void 0);
-			const wrapRef = (0, react.useRef)(null);
-			const popupRef = (0, react.useRef)(null);
+			const [open, setOpen] = (0, react$1.useState)(false);
+			const [closing, setClosing] = (0, react$1.useState)(false);
+			const [phase, setPhase] = (0, react$1.useState)("initial");
+			const [activeIndex, setActiveIndex] = (0, react$1.useState)(0);
+			const closeTimer = (0, react$1.useRef)(void 0);
+			const wrapRef = (0, react$1.useRef)(null);
+			const popupRef = (0, react$1.useRef)(null);
 			const currentIndex = () => {
 				const index = options.findIndex((option) => option.value === value);
 				return index >= 0 ? index : 0;
 			};
-			const close = (0, react.useCallback)(() => {
+			const close = (0, react$1.useCallback)(() => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 				setClosing(true);
 				closeTimer.current = setTimeout(() => {
@@ -13446,10 +13447,10 @@ window.__ModuleLoader__.load({
 						break;
 				}
 			};
-			(0, react.useEffect)(() => () => {
+			(0, react$1.useEffect)(() => () => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 			}, []);
-			(0, react.useLayoutEffect)(() => {
+			(0, react$1.useLayoutEffect)(() => {
 				if (open && !closing && phase === "initial") {
 					popupRef.current?.offsetHeight;
 					setPhase("open");
@@ -13459,7 +13460,7 @@ window.__ModuleLoader__.load({
 				closing,
 				phase
 			]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					const target = event.target;
@@ -13468,7 +13469,7 @@ window.__ModuleLoader__.load({
 				document.addEventListener("pointerdown", onPointerDown);
 				return () => document.removeEventListener("pointerdown", onPointerDown);
 			}, [open, close]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (props.disabled && open) close();
 			}, [
 				props.disabled,
@@ -14184,8 +14185,8 @@ window.__ModuleLoader__.load({
 		* nothing — the pairing panel carries the loopback banner instead.
 		*/
 		function LanBindStatus({ t }) {
-			const [frame, setFrame] = (0, react.useState)(void 0);
-			(0, react.useEffect)(() => {
+			const [frame, setFrame] = (0, react$1.useState)(void 0);
+			(0, react$1.useEffect)(() => {
 				let alive = true;
 				const read = () => {
 					readLanBindStatus().then((value) => {
@@ -15038,9 +15039,9 @@ window.__ModuleLoader__.load({
 		* @returns the notice element.
 		*/
 		function FenceNotice({ t, onRetry, onAccept = acceptPair }) {
-			const [tokenInput, setTokenInput] = (0, react.useState)("");
-			const [submitting, setSubmitting] = (0, react.useState)(false);
-			const [errorMsg, setErrorMsg] = (0, react.useState)(void 0);
+			const [tokenInput, setTokenInput] = (0, react$1.useState)("");
+			const [submitting, setSubmitting] = (0, react$1.useState)(false);
+			const [errorMsg, setErrorMsg] = (0, react$1.useState)(void 0);
 			const handleSubmit = async (event) => {
 				event.preventDefault();
 				const token = extractPairToken(tokenInput);
@@ -17314,13 +17315,13 @@ window.__ModuleLoader__.load({
 		}
 		/** The cluster execution tab. */
 		function ClusterTab({ api }) {
-			const [command, setCommand] = (0, react.useState)("");
-			const [aliases, setAliases] = (0, react.useState)("");
-			const [environment, setEnvironment] = (0, react.useState)("");
-			const [tags, setTags] = (0, react.useState)("");
-			const [running, setRunning] = (0, react.useState)(false);
-			const [results, setResults] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
+			const [command, setCommand] = (0, react$1.useState)("");
+			const [aliases, setAliases] = (0, react$1.useState)("");
+			const [environment, setEnvironment] = (0, react$1.useState)("");
+			const [tags, setTags] = (0, react$1.useState)("");
+			const [running, setRunning] = (0, react$1.useState)(false);
+			const [results, setResults] = (0, react$1.useState)(null);
+			const [error, setError] = (0, react$1.useState)(null);
 			const run = async () => {
 				if (command.trim() === "" || running) return;
 				if (!window.confirm(tt$1("cluster.confirm"))) return;
@@ -17506,10 +17507,10 @@ window.__ModuleLoader__.load({
 		}
 		/** The create/edit host modal. */
 		function HostFormDialog({ api, editing, onClose, onSaved }) {
-			const [form, setForm] = (0, react.useState)(() => blankOf(editing));
-			const [saving, setSaving] = (0, react.useState)(false);
-			const [error, setError] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
+			const [form, setForm] = (0, react$1.useState)(() => blankOf(editing));
+			const [saving, setSaving] = (0, react$1.useState)(false);
+			const [error, setError] = (0, react$1.useState)(null);
+			(0, react$1.useEffect)(() => {
 				const onKey = (event) => {
 					if (event.key === "Escape") onClose();
 				};
@@ -17962,25 +17963,25 @@ window.__ModuleLoader__.load({
 		}
 		/** The hosts table plus its toolbar and dialogs. */
 		function HostsTab({ api, onConnect }) {
-			const [hosts, setHosts] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const [search, setSearch] = (0, react.useState)("");
-			const [testingAlias, setTestingAlias] = (0, react.useState)(null);
-			const [testResults, setTestResults] = (0, react.useState)({});
-			const [importing, setImporting] = (0, react.useState)(false);
-			const [notice, setNotice] = (0, react.useState)(null);
+			const [hosts, setHosts] = (0, react$1.useState)(null);
+			const [error, setError] = (0, react$1.useState)(null);
+			const [search, setSearch] = (0, react$1.useState)("");
+			const [testingAlias, setTestingAlias] = (0, react$1.useState)(null);
+			const [testResults, setTestResults] = (0, react$1.useState)({});
+			const [importing, setImporting] = (0, react$1.useState)(false);
+			const [notice, setNotice] = (0, react$1.useState)(null);
 			/** Blocks the last import skipped, with the reason each one was left out. */
-			const [importSkips, setImportSkips] = (0, react.useState)([]);
-			const [dialog, setDialog] = (0, react.useState)(null);
-			const [groupBy, setGroupBy] = (0, react.useState)("none");
-			const [collapsed, setCollapsed] = (0, react.useState)({});
-			const [testingGroup, setTestingGroup] = (0, react.useState)(null);
-			const seqRef = (0, react.useRef)(0);
-			const mountedRef = (0, react.useRef)(true);
-			(0, react.useEffect)(() => () => {
+			const [importSkips, setImportSkips] = (0, react$1.useState)([]);
+			const [dialog, setDialog] = (0, react$1.useState)(null);
+			const [groupBy, setGroupBy] = (0, react$1.useState)("none");
+			const [collapsed, setCollapsed] = (0, react$1.useState)({});
+			const [testingGroup, setTestingGroup] = (0, react$1.useState)(null);
+			const seqRef = (0, react$1.useRef)(0);
+			const mountedRef = (0, react$1.useRef)(true);
+			(0, react$1.useEffect)(() => () => {
 				mountedRef.current = false;
 			}, []);
-			const load = (0, react.useCallback)(async (query) => {
+			const load = (0, react$1.useCallback)(async (query) => {
 				const seq = ++seqRef.current;
 				try {
 					const list = await api.listHosts(query);
@@ -17992,10 +17993,10 @@ window.__ModuleLoader__.load({
 					setError(errorMessage(cause));
 				}
 			}, [api]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				load();
 			}, [load]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				const timer = setTimeout(() => {
 					const query = search.trim();
 					load(query === "" ? void 0 : query);
@@ -31399,22 +31400,22 @@ window.__ModuleLoader__.load({
 		};
 		/** The xterm terminal view. */
 		function TerminalTab({ api, presetAlias, requestId, terminalFont }) {
-			const [hosts, setHosts] = (0, react.useState)([]);
-			const [alias, setAlias] = (0, react.useState)(presetAlias ?? "");
-			const [status, setStatus] = (0, react.useState)({ kind: "idle" });
-			const [authPrompt, setAuthPrompt] = (0, react.useState)(void 0);
-			const [authInputs, setAuthInputs] = (0, react.useState)([]);
-			const containerRef = (0, react.useRef)(null);
-			const termRef = (0, react.useRef)(null);
-			const fitRef = (0, react.useRef)(null);
-			const connRef = (0, react.useRef)(null);
-			const dataSubRef = (0, react.useRef)(null);
+			const [hosts, setHosts] = (0, react$1.useState)([]);
+			const [alias, setAlias] = (0, react$1.useState)(presetAlias ?? "");
+			const [status, setStatus] = (0, react$1.useState)({ kind: "idle" });
+			const [authPrompt, setAuthPrompt] = (0, react$1.useState)(void 0);
+			const [authInputs, setAuthInputs] = (0, react$1.useState)([]);
+			const containerRef = (0, react$1.useRef)(null);
+			const termRef = (0, react$1.useRef)(null);
+			const fitRef = (0, react$1.useRef)(null);
+			const connRef = (0, react$1.useRef)(null);
+			const dataSubRef = (0, react$1.useRef)(null);
 			const fontSource = terminalFont ?? NO_FONT_SOURCE;
-			const fontOverride = (0, react.useSyncExternalStore)(fontSource.subscribe, fontSource.get);
-			(0, react.useEffect)(() => {
+			const fontOverride = (0, react$1.useSyncExternalStore)(fontSource.subscribe, fontSource.get);
+			(0, react$1.useEffect)(() => {
 				ensureXtermCss();
 			}, []);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				const term = termRef.current;
 				if (term === null) return;
 				const next = resolveTerminalFontFamily(fontOverride);
@@ -31423,7 +31424,7 @@ window.__ModuleLoader__.load({
 				fitRef.current?.fit();
 				connRef.current?.resize(term.cols, term.rows);
 			}, [fontOverride]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				let disposed = false;
 				(async () => {
 					try {
@@ -31440,7 +31441,7 @@ window.__ModuleLoader__.load({
 					disposed = true;
 				};
 			}, [api]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (presetAlias !== void 0) setAlias(presetAlias);
 			}, [presetAlias, requestId]);
 			const teardown = () => {
@@ -31461,10 +31462,10 @@ window.__ModuleLoader__.load({
 				termRef.current = null;
 				fitRef.current = null;
 			};
-			(0, react.useEffect)(() => () => {
+			(0, react$1.useEffect)(() => () => {
 				teardown();
 			}, []);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				let lastCols = -1;
 				let lastRows = -1;
 				const sync = () => {
@@ -31730,19 +31731,19 @@ window.__ModuleLoader__.load({
 		}
 		/** The upload/download tab. */
 		function TransferTab({ api }) {
-			const [hosts, setHosts] = (0, react.useState)([]);
-			const [listError, setListError] = (0, react.useState)(null);
-			const [alias, setAlias] = (0, react.useState)("");
-			const [remotePath, setRemotePath] = (0, react.useState)("");
-			const [browseOpen, setBrowseOpen] = (0, react.useState)(false);
-			const [browseDir, setBrowseDir] = (0, react.useState)("/");
-			const [entries, setEntries] = (0, react.useState)([]);
-			const [browsing, setBrowsing] = (0, react.useState)(false);
-			const [transfer, setTransfer] = (0, react.useState)(null);
-			const [status, setStatus] = (0, react.useState)(null);
-			const fileRef = (0, react.useRef)(null);
-			const seqRef = (0, react.useRef)(0);
-			(0, react.useEffect)(() => {
+			const [hosts, setHosts] = (0, react$1.useState)([]);
+			const [listError, setListError] = (0, react$1.useState)(null);
+			const [alias, setAlias] = (0, react$1.useState)("");
+			const [remotePath, setRemotePath] = (0, react$1.useState)("");
+			const [browseOpen, setBrowseOpen] = (0, react$1.useState)(false);
+			const [browseDir, setBrowseDir] = (0, react$1.useState)("/");
+			const [entries, setEntries] = (0, react$1.useState)([]);
+			const [browsing, setBrowsing] = (0, react$1.useState)(false);
+			const [transfer, setTransfer] = (0, react$1.useState)(null);
+			const [status, setStatus] = (0, react$1.useState)(null);
+			const fileRef = (0, react$1.useRef)(null);
+			const seqRef = (0, react$1.useRef)(0);
+			(0, react$1.useEffect)(() => {
 				let disposed = false;
 				(async () => {
 					try {
@@ -32045,16 +32046,16 @@ window.__ModuleLoader__.load({
 		}
 		/** The tunnels tab. */
 		function TunnelsTab({ api, active = true }) {
-			const [hosts, setHosts] = (0, react.useState)([]);
-			const [tunnels, setTunnels] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const [notice, setNotice] = (0, react.useState)(null);
-			const [alias, setAlias] = (0, react.useState)("");
-			const [remotePort, setRemotePort] = (0, react.useState)("");
-			const [remoteHost, setRemoteHost] = (0, react.useState)("");
-			const [localPort, setLocalPort] = (0, react.useState)("");
-			const [busy, setBusy] = (0, react.useState)(false);
-			(0, react.useEffect)(() => {
+			const [hosts, setHosts] = (0, react$1.useState)([]);
+			const [tunnels, setTunnels] = (0, react$1.useState)(null);
+			const [error, setError] = (0, react$1.useState)(null);
+			const [notice, setNotice] = (0, react$1.useState)(null);
+			const [alias, setAlias] = (0, react$1.useState)("");
+			const [remotePort, setRemotePort] = (0, react$1.useState)("");
+			const [remoteHost, setRemoteHost] = (0, react$1.useState)("");
+			const [localPort, setLocalPort] = (0, react$1.useState)("");
+			const [busy, setBusy] = (0, react$1.useState)(false);
+			(0, react$1.useEffect)(() => {
 				let disposed = false;
 				(async () => {
 					try {
@@ -32066,9 +32067,9 @@ window.__ModuleLoader__.load({
 					disposed = true;
 				};
 			}, [api]);
-			const seqRef = (0, react.useRef)(0);
-			const automaticRead = (0, react.useRef)({ running: false });
-			(0, react.useEffect)(() => {
+			const seqRef = (0, react$1.useRef)(0);
+			const automaticRead = (0, react$1.useRef)({ running: false });
+			(0, react$1.useEffect)(() => {
 				if (!active) return;
 				let disposed = false;
 				const read = automaticRead.current;
@@ -32365,9 +32366,9 @@ window.__ModuleLoader__.load({
 		];
 		/** The tabbed SSH panel. */
 		function SshPanel({ controller, api, terminalFont }) {
-			const panelOpen = (0, react.useSyncExternalStore)((0, react.useCallback)((listener) => controller.subscribe(listener), [controller]), (0, react.useCallback)(() => controller.getSnapshot().panelOpen, [controller]));
-			const [activeTab, setActiveTab] = (0, react.useState)("hosts");
-			const [connectRequest, setConnectRequest] = (0, react.useState)(null);
+			const panelOpen = (0, react$1.useSyncExternalStore)((0, react$1.useCallback)((listener) => controller.subscribe(listener), [controller]), (0, react$1.useCallback)(() => controller.getSnapshot().panelOpen, [controller]));
+			const [activeTab, setActiveTab] = (0, react$1.useState)("hosts");
+			const [connectRequest, setConnectRequest] = (0, react$1.useState)(null);
 			const handleConnect = (alias) => {
 				setActiveTab("terminal");
 				setConnectRequest((prev) => ({
@@ -33170,18 +33171,18 @@ window.__ModuleLoader__.load({
 		}
 		/** Slot entry for `conversation.input.right` (left of the model selector). */
 		function LiangShenLever(face) {
-			const { state, restoreLabel, busy, error, burst } = (0, react.useSyncExternalStore)(face.store.subscribe, face.store.getSnapshot);
-			const [burstKey, setBurstKey] = (0, react.useState)(0);
-			const seen = (0, react.useRef)(burst);
-			const drag = (0, react.useRef)(void 0);
+			const { state, restoreLabel, busy, error, burst } = (0, react$1.useSyncExternalStore)(face.store.subscribe, face.store.getSnapshot);
+			const [burstKey, setBurstKey] = (0, react$1.useState)(0);
+			const seen = (0, react$1.useRef)(burst);
+			const drag = (0, react$1.useRef)(void 0);
 			const actionable = !busy && (state === "on" || state === "off");
 			const on = state === "on";
 			const errorText = error === void 0 ? void 0 : error.kind === "locked" ? face.t("lever.failed.locked") : error.kind === "missing" ? face.t("lever.failed.missing") : error.kind === "timeout" ? face.t("lever.failed.timeout") : face.t("lever.failed.failed", { reason: error.reason });
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (burst > seen.current) setBurstKey(burst);
 				seen.current = burst;
 			}, [burst]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (burstKey === 0) return;
 				const timer = setTimeout(() => {
 					setBurstKey(0);
@@ -33190,8 +33191,8 @@ window.__ModuleLoader__.load({
 					clearTimeout(timer);
 				};
 			}, [burstKey]);
-			const prevState = (0, react.useRef)(state);
-			(0, react.useEffect)(() => {
+			const prevState = (0, react$1.useRef)(state);
+			(0, react$1.useEffect)(() => {
 				if (state === "on") syncHeroChip(face.t("lever.name"));
 				else if (prevState.current === "on" && state === "off" && restoreLabel !== "") syncHeroChip(restoreLabel);
 				prevState.current = state;
@@ -33760,7 +33761,7 @@ window.__ModuleLoader__.load({
 		* @returns the card, or nothing while the namespace is still loading.
 		*/
 		function PluginSettingsCard(props) {
-			const [open, setOpen] = (0, react.useState)(props.defaultOpen ?? true);
+			const [open, setOpen] = (0, react$1.useState)(props.defaultOpen ?? true);
 			const { state, alwaysOpen } = props;
 			if (!state.available) return null;
 			const title = props.t(props.titleKey);
@@ -33940,18 +33941,18 @@ window.__ModuleLoader__.load({
 		*/
 		function SelectField(props) {
 			const { id, options, value } = props;
-			const [open, setOpen] = (0, react.useState)(false);
-			const [closing, setClosing] = (0, react.useState)(false);
-			const [phase, setPhase] = (0, react.useState)("initial");
-			const [activeIndex, setActiveIndex] = (0, react.useState)(0);
-			const closeTimer = (0, react.useRef)(void 0);
-			const wrapRef = (0, react.useRef)(null);
-			const popupRef = (0, react.useRef)(null);
+			const [open, setOpen] = (0, react$1.useState)(false);
+			const [closing, setClosing] = (0, react$1.useState)(false);
+			const [phase, setPhase] = (0, react$1.useState)("initial");
+			const [activeIndex, setActiveIndex] = (0, react$1.useState)(0);
+			const closeTimer = (0, react$1.useRef)(void 0);
+			const wrapRef = (0, react$1.useRef)(null);
+			const popupRef = (0, react$1.useRef)(null);
 			const currentIndex = () => {
 				const index = options.findIndex((option) => option.value === value);
 				return index >= 0 ? index : 0;
 			};
-			const close = (0, react.useCallback)(() => {
+			const close = (0, react$1.useCallback)(() => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 				setClosing(true);
 				closeTimer.current = setTimeout(() => {
@@ -34002,10 +34003,10 @@ window.__ModuleLoader__.load({
 						break;
 				}
 			};
-			(0, react.useEffect)(() => () => {
+			(0, react$1.useEffect)(() => () => {
 				if (closeTimer.current !== void 0) clearTimeout(closeTimer.current);
 			}, []);
-			(0, react.useLayoutEffect)(() => {
+			(0, react$1.useLayoutEffect)(() => {
 				if (open && !closing && phase === "initial") {
 					popupRef.current?.offsetHeight;
 					setPhase("open");
@@ -34015,7 +34016,7 @@ window.__ModuleLoader__.load({
 				closing,
 				phase
 			]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					const target = event.target;
@@ -34024,7 +34025,7 @@ window.__ModuleLoader__.load({
 				document.addEventListener("pointerdown", onPointerDown);
 				return () => document.removeEventListener("pointerdown", onPointerDown);
 			}, [open, close]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (props.disabled && open) close();
 			}, [
 				props.disabled,
@@ -35463,9 +35464,9 @@ window.__ModuleLoader__.load({
 		}
 		/** One skill card: name, badges, toggle switch, edit and delete buttons. */
 		function SkillCard({ skill, api, onChanged, onEdit }) {
-			const [busy, setBusy] = (0, react.useState)(false);
-			const [error, setError] = (0, react.useState)(void 0);
-			const busyRef = (0, react.useRef)(false);
+			const [busy, setBusy] = (0, react$1.useState)(false);
+			const [error, setError] = (0, react$1.useState)(void 0);
+			const busyRef = (0, react$1.useRef)(false);
 			const toggle = async () => {
 				if (busyRef.current) return;
 				const path = skill.path;
@@ -35592,11 +35593,11 @@ window.__ModuleLoader__.load({
 		}
 		/** The grouped skill list tab. */
 		function ListTab({ api, refreshTick, onCwd, onEdit }) {
-			const [payload, setPayload] = (0, react.useState)(void 0);
-			const [selectedWorkspace, setSelectedWorkspace] = (0, react.useState)("all");
-			const [query, setQuery] = (0, react.useState)("");
-			const [error, setError] = (0, react.useState)(void 0);
-			const loadSeq = (0, react.useRef)(0);
+			const [payload, setPayload] = (0, react$1.useState)(void 0);
+			const [selectedWorkspace, setSelectedWorkspace] = (0, react$1.useState)("all");
+			const [query, setQuery] = (0, react$1.useState)("");
+			const [error, setError] = (0, react$1.useState)(void 0);
+			const loadSeq = (0, react$1.useRef)(0);
 			const load = async () => {
 				const seq = ++loadSeq.current;
 				try {
@@ -35611,7 +35612,7 @@ window.__ModuleLoader__.load({
 					setError(tt("list.loadFailed", { error: err instanceof Error ? err.message : String(err) }));
 				}
 			};
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				load();
 			}, [api, refreshTick]);
 			if (error !== void 0 && payload === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -35730,13 +35731,13 @@ window.__ModuleLoader__.load({
 		}
 		/** The create form tab. */
 		function CreateTab({ api, cwd }) {
-			const [root, setRoot] = (0, react.useState)("user");
-			const [name, setName] = (0, react.useState)("");
-			const [description, setDescription] = (0, react.useState)("");
-			const [whenToUse, setWhenToUse] = (0, react.useState)("");
-			const [content, setContent] = (0, react.useState)("");
-			const [busy, setBusy] = (0, react.useState)(false);
-			const [feedback, setFeedback] = (0, react.useState)(void 0);
+			const [root, setRoot] = (0, react$1.useState)("user");
+			const [name, setName] = (0, react$1.useState)("");
+			const [description, setDescription] = (0, react$1.useState)("");
+			const [whenToUse, setWhenToUse] = (0, react$1.useState)("");
+			const [content, setContent] = (0, react$1.useState)("");
+			const [busy, setBusy] = (0, react$1.useState)(false);
+			const [feedback, setFeedback] = (0, react$1.useState)(void 0);
 			const submit = async (event) => {
 				event.preventDefault();
 				if (name.trim() === "" || description.trim() === "" || content.trim() === "") {
@@ -35857,13 +35858,13 @@ window.__ModuleLoader__.load({
 		/** The edit form tab: loads the skill's editable fields and rewrites it in place. */
 		function EditTab({ api, skill, onDone, onCancel }) {
 			const skillPath = skill.path ?? "";
-			const [description, setDescription] = (0, react.useState)("");
-			const [whenToUse, setWhenToUse] = (0, react.useState)("");
-			const [content, setContent] = (0, react.useState)("");
-			const [loading, setLoading] = (0, react.useState)(true);
-			const [busy, setBusy] = (0, react.useState)(false);
-			const [error, setError] = (0, react.useState)(void 0);
-			(0, react.useEffect)(() => {
+			const [description, setDescription] = (0, react$1.useState)("");
+			const [whenToUse, setWhenToUse] = (0, react$1.useState)("");
+			const [content, setContent] = (0, react$1.useState)("");
+			const [loading, setLoading] = (0, react$1.useState)(true);
+			const [busy, setBusy] = (0, react$1.useState)(false);
+			const [error, setError] = (0, react$1.useState)(void 0);
+			(0, react$1.useEffect)(() => {
 				let cancelled = false;
 				const load = async () => {
 					try {
@@ -35988,10 +35989,10 @@ window.__ModuleLoader__.load({
 		}
 		/** The skill center overlay modal. */
 		function SkillPanel({ api, onClose }) {
-			const [tab, setTab] = (0, react.useState)("list");
-			const [cwd, setCwd] = (0, react.useState)(void 0);
-			const [refreshTick, setRefreshTick] = (0, react.useState)(0);
-			const [editing, setEditing] = (0, react.useState)(void 0);
+			const [tab, setTab] = (0, react$1.useState)("list");
+			const [cwd, setCwd] = (0, react$1.useState)(void 0);
+			const [refreshTick, setRefreshTick] = (0, react$1.useState)(0);
+			const [editing, setEditing] = (0, react$1.useState)(void 0);
 			/** Open the edit form for one card (issue #1622). */
 			const openEdit = (skill) => {
 				setEditing(skill);
@@ -36003,7 +36004,7 @@ window.__ModuleLoader__.load({
 				setTab("list");
 				setRefreshTick((tick) => tick + 1);
 			};
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				const onKey = (event) => {
 					if (event.key !== "Escape") return;
 					const target = event.target;
@@ -36722,7 +36723,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-usage/src/client/usage.module.css.mjs
-		const css$2 = ".cvtkAW_section{color:inherit;flex-direction:column;gap:14px;display:flex}.cvtkAW_header{justify-content:space-between;align-items:center;gap:12px;padding:2px 2px 0;display:flex}.cvtkAW_headerMeta{flex:none;align-items:center;gap:8px;display:inline-flex}.cvtkAW_currentProvider{text-overflow:ellipsis;white-space:nowrap;opacity:.82;min-width:0;font-size:13px;font-weight:600;overflow:hidden}.cvtkAW_refreshBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.85;background:0 0;border:1px solid;border-radius:8px;padding:4px 12px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_refreshBtn:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_refreshBtn:disabled{cursor:default;opacity:.5}.cvtkAW_refreshBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_card{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:linear-gradient(180deg, color-mix(in srgb, currentColor 4%, transparent), transparent 80%), color-mix(in srgb, currentColor 2%, transparent);box-shadow:0 1px 0 color-mix(in srgb, currentColor 5%, transparent);border-radius:16px;flex-direction:column;gap:10px;padding:14px;display:flex}.cvtkAW_todayCard{gap:12px}.cvtkAW_cardHead{justify-content:space-between;align-items:center;gap:10px;display:flex}.cvtkAW_cardTitle{letter-spacing:.08em;text-transform:uppercase;opacity:.56;font-size:11px;font-weight:700}.cvtkAW_peakStatus{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 5%, transparent);opacity:.72;white-space:nowrap;border-radius:999px;padding:3px 8px;font-size:11px;line-height:1.2}.cvtkAW_statRow{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;display:grid}.cvtkAW_stat{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 4%, transparent);border-radius:12px;flex-direction:column;gap:3px;min-width:0;padding:10px 11px;display:flex}.cvtkAW_stat:first-child{background:radial-gradient(circle at 18% 0%, color-mix(in srgb, currentColor 11%, transparent), transparent 42%), color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_statValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:0;font-size:19px;font-weight:700;line-height:1.15;overflow:hidden}.cvtkAW_statLabel{opacity:.58;font-size:11px;line-height:1.2}@media (width>=680px){.cvtkAW_stat:first-child{grid-column:span 2}}.cvtkAW_providerList{flex-direction:column;gap:6px;display:flex}.cvtkAW_providerRow{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:11px;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:8px 10px;font-size:13px;display:flex}.cvtkAW_costRow{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_providerName{text-overflow:ellipsis;white-space:nowrap;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}.cvtkAW_providerTokens{text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums;opacity:.72;white-space:nowrap;flex:none;max-width:58%;overflow:hidden}.cvtkAW_providerBalance{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}.cvtkAW_currentBadge{border:1px solid color-mix(in srgb, currentColor 20%, transparent);background:color-mix(in srgb, currentColor 8%, transparent);opacity:.82;border-radius:999px;flex:none;padding:1px 7px;font-size:10px;font-weight:700}.cvtkAW_chart{flex-direction:column;gap:8px;display:flex}.cvtkAW_chartProvider{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:13px;flex-direction:column;gap:6px;padding:10px 11px;display:flex}.cvtkAW_chartProviderCurrent{border-color:color-mix(in srgb, currentColor 18%, transparent);background:linear-gradient(90deg, color-mix(in srgb, currentColor 6%, transparent), transparent 70%), color-mix(in srgb, currentColor 3%, transparent)}.cvtkAW_chartHead{justify-content:space-between;align-items:center;gap:10px;font-size:13px;display:flex}.cvtkAW_chartTokens{font-variant-numeric:tabular-nums;opacity:.64;white-space:nowrap;flex:none;font-size:11px}.cvtkAW_chartBar{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:9px;display:block;overflow:hidden}.cvtkAW_chartFill{background:linear-gradient(90deg, color-mix(in srgb, currentColor 62%, transparent), color-mix(in srgb, currentColor 34%, transparent));border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartModel{opacity:.76;grid-template-columns:minmax(96px,34%) 1fr 52px;align-items:center;gap:8px;padding-left:10px;font-size:11px;display:grid}.cvtkAW_chartModelName{text-overflow:ellipsis;white-space:nowrap;opacity:.82;overflow:hidden}.cvtkAW_chartModelBar{background:color-mix(in srgb, currentColor 5%, transparent);border-radius:999px;height:4px;display:block;overflow:hidden}.cvtkAW_chartModelFill{background:color-mix(in srgb, currentColor 30%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartMore{background:color-mix(in srgb, currentColor 6%, transparent);opacity:.58;border-radius:999px;align-self:flex-start;margin-left:10px;padding:2px 7px;font-size:10px;line-height:1.2}.cvtkAW_trendAxis{opacity:.5;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:10px;display:flex}.cvtkAW_muted{opacity:.6;font-size:12px}.cvtkAW_errorLine{opacity:.75;font-size:12px}.cvtkAW_settingsGrid{flex-wrap:wrap;align-items:center;gap:16px;display:flex}.cvtkAW_settingItem{align-items:center;gap:8px;font-size:13px;display:flex}.cvtkAW_settingItem input[type=checkbox]{accent-color:currentColor}.cvtkAW_settingItem input[type=number]{border:1px solid color-mix(in srgb, currentColor 25%, transparent);width:90px;color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem select{border:1px solid color-mix(in srgb, currentColor 25%, transparent);color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem input:focus-visible,.cvtkAW_settingItem select:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_usageDashboard{flex-direction:column;gap:14px;display:flex;container:cvtkAW_usageDash/inline-size}.cvtkAW_kpiStrip{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;display:grid}.cvtkAW_kpiCard{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:64px;padding:10px 8px;display:flex}.cvtkAW_kpiValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;max-width:100%;font-size:18px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_kpiLabel{text-overflow:ellipsis;text-align:center;max-width:100%;color:color-mix(in srgb, currentColor 56%, transparent);font-size:11px;line-height:1.25;overflow:hidden}.cvtkAW_activityCard,.cvtkAW_detailCard,.cvtkAW_balanceOverview{background:color-mix(in srgb, canvas 94%, currentColor 2%);border-radius:14px;padding:18px 20px}.cvtkAW_dashboardCardHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.cvtkAW_dashboardTitle{letter-spacing:-.01em;align-items:center;gap:8px;min-width:0;font-size:14px;font-weight:700;line-height:1.25;display:inline-flex}.cvtkAW_dotBlue,.cvtkAW_dotGreen{width:8px;height:8px;box-shadow:0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);border-radius:999px}.cvtkAW_dotBlue{background:#3b82f6}.cvtkAW_dotGreen{background:#34d399}.cvtkAW_rangePill,.cvtkAW_autoRefreshPill{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);white-space:nowrap;border-radius:10px;flex:none;justify-content:center;align-items:center;gap:5px;padding:5px 9px;font-size:12px;line-height:1;display:inline-flex}.cvtkAW_autoRefreshPill{color:color-mix(in srgb, #059669 86%, currentColor 14%);background:#34d39914;border-color:#34d3995c}.cvtkAW_activityBody{flex-direction:column;gap:12px;padding-top:4px;display:flex}.cvtkAW_heatmapGrid{gap:4px;width:100%;height:18px;display:flex}.cvtkAW_activityCell{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:3px;flex:1 1 0;min-width:0;height:100%;transition:transform .12s,box-shadow .12s;display:block;position:relative}.cvtkAW_activityCell:hover{box-shadow:0 4px 10px color-mix(in srgb, currentColor 14%, transparent);transform:translateY(-1px)}.cvtkAW_activityCellEmpty{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_activityCellLevel1{background:color-mix(in srgb, #93c5fd 45%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel2{background:color-mix(in srgb, #60a5fa 58%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel3{background:color-mix(in srgb, #3b82f6 70%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel4{background:color-mix(in srgb, #2563eb 82%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel5{background:#1d4ed8}.cvtkAW_activityAxis{color:color-mix(in srgb, currentColor 54%, transparent);font-variant-numeric:tabular-nums;justify-content:space-between;font-size:11px;display:flex}.cvtkAW_heatTip{z-index:2;white-space:nowrap;background:color-mix(in srgb, currentColor 88%, canvas);color:canvas;text-align:center;box-shadow:0 6px 18px color-mix(in srgb, currentColor 20%, transparent);pointer-events:none;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.4;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%)}.cvtkAW_heatTip strong{font-size:12px;font-weight:700;display:block}.cvtkAW_activityCell:nth-child(-n+3) .cvtkAW_heatTip{left:0;transform:none}.cvtkAW_activityCell:nth-last-child(-n+3) .cvtkAW_heatTip{left:auto;right:0;transform:none}.cvtkAW_scopeBar{flex-wrap:wrap;align-items:center;gap:10px;display:flex}.cvtkAW_scopeSeg{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:999px;gap:2px;padding:2px;display:inline-flex}.cvtkAW_scopeSegBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.6;background:0 0;border:none;border-radius:999px;padding:5px 14px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_scopeSegBtn:hover{opacity:.9}.cvtkAW_scopeSegBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_scopeSegBtnActive{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent);font-weight:600}.cvtkAW_scopeInput{border:1px solid color-mix(in srgb, currentColor 20%, transparent);color:inherit;font:inherit;background:0 0;border-radius:8px;padding:4px 8px;font-size:12px}.cvtkAW_scopeInput:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_detailToolbar{flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;display:inline-flex}.cvtkAW_detailStats{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:12px;display:grid}.cvtkAW_detailStat{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;min-width:0;padding:14px 16px}.cvtkAW_detailStatLabel,.cvtkAW_detailStatHint{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 55%, transparent);font-size:11px;display:block;overflow:hidden}.cvtkAW_detailStatValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:7px 0 4px;font-size:17px;font-weight:700;line-height:1.1;display:block;overflow:hidden}.cvtkAW_cacheMeter{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2%, transparent);border-radius:12px;grid-template-columns:auto 1fr;align-items:center;gap:14px;padding:10px 12px;display:grid}.cvtkAW_cacheLabel{min-width:132px;color:color-mix(in srgb, currentColor 66%, transparent);font-size:13px}.cvtkAW_cacheLabel strong{color:currentColor;font-variant-numeric:tabular-nums;margin-left:6px;font-size:15px}.cvtkAW_cacheTrack{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:10px;overflow:hidden}.cvtkAW_cacheFill{border-radius:inherit;background:linear-gradient(90deg,#34d399,#10b981);height:100%;transition:width .3s;display:block}.cvtkAW_modelTable{flex-direction:column;gap:12px;display:flex}.cvtkAW_modelRow{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 1.8%, transparent);border-radius:12px;grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(0,.72fr));align-items:center;gap:14px;padding:15px 18px;display:grid}.cvtkAW_modelRowCurrent{border-color:color-mix(in srgb, #3b82f6 26%, currentColor 8%);background:linear-gradient(90deg,#3b82f612,#0000 72%)}.cvtkAW_modelIdentity{flex-direction:column;gap:3px;min-width:0;display:flex}.cvtkAW_modelIdentity strong{text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em;font-size:13px;font-weight:700;line-height:1.2;overflow:hidden}.cvtkAW_modelIdentity span{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px;overflow:hidden}.cvtkAW_modelMetric{font-variant-numeric:tabular-nums;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;display:flex}.cvtkAW_modelMetric strong{text-overflow:ellipsis;max-width:100%;font-size:14px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_modelMetric span{color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px}.cvtkAW_balanceRows{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;display:grid}@container cvtkAW_usageDash (width<=640px){.cvtkAW_modelMetric:nth-child(n+5){display:none}}@container cvtkAW_usageDash (width<=520px){.cvtkAW_modelRow{grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,.8fr))}.cvtkAW_modelMetric:nth-child(n+4){display:none}.cvtkAW_cacheMeter{grid-template-columns:1fr;align-items:stretch;gap:8px}.cvtkAW_cacheLabel{min-width:0}}.cvtkAW_footCard{box-sizing:border-box;background:color-mix(in srgb, currentColor 4%, transparent);width:100%;color:inherit;border:none;border-radius:12px;margin:2px 0 4px;transition:background-color .12s;position:relative}.cvtkAW_footCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.cvtkAW_footCardCollapsed{background:0 0}.cvtkAW_footMain{appearance:none;box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:none;border-radius:12px;flex-direction:column;gap:4px;padding:8px;display:flex}.cvtkAW_footMain:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle{appearance:none;width:20px;height:20px;color:inherit;cursor:pointer;opacity:.55;background:0 0;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex;position:absolute;top:6px;right:6px}.cvtkAW_footCard:hover .cvtkAW_footToggle{opacity:.8}.cvtkAW_footToggle:hover{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.cvtkAW_footToggle:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle svg{display:block}.cvtkAW_footHead{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.cvtkAW_footTitle{opacity:.65;white-space:nowrap;align-items:center;gap:6px;min-width:0;font-size:12px;display:inline-flex}.cvtkAW_footTitle svg{flex:none;display:block}.cvtkAW_footValue{font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:18px;font-size:15px;font-weight:600}.cvtkAW_footLine{opacity:.7;font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.cvtkAW_footMeta{opacity:.5;font-variant-numeric:tabular-nums;font-size:10px}.cvtkAW_footCardCollapsed .cvtkAW_footMain{min-height:36px;padding:7px 8px}.cvtkAW_footStrip{white-space:nowrap;align-items:center;gap:6px;padding-right:20px;font-size:12px;display:flex;overflow:hidden}.cvtkAW_footStrip svg{opacity:.65;flex:none;display:block}.cvtkAW_footStripProvider{text-overflow:ellipsis;flex:none;max-width:45%;font-weight:500;overflow:hidden}.cvtkAW_footStripLabel{opacity:.65;text-overflow:ellipsis;overflow:hidden}.cvtkAW_footStripValue{font-variant-numeric:tabular-nums;margin-left:auto;font-weight:600}[data-dsh-frame][data-sidebar-collapsed] .cvtkAW_footCard,[data-sidebar-collapsed] .cvtkAW_footCard{display:none}.cvtkAW_footAction{appearance:none;box-sizing:border-box;width:26px;height:26px;color:inherit;cursor:pointer;font:inherit;border:1px solid color-mix(in srgb, currentColor 14%, transparent);background:0 0;border-radius:8px;justify-content:center;align-items:center;gap:4px;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex}.cvtkAW_footAction:hover{opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_footAction:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.cvtkAW_footAction svg{display:block}";
+		const css$2 = ".cvtkAW_section{color:inherit;flex-direction:column;gap:14px;display:flex}.cvtkAW_header{justify-content:space-between;align-items:center;gap:12px;padding:2px 2px 0;display:flex}.cvtkAW_headerMeta{flex:none;align-items:center;gap:8px;display:inline-flex}.cvtkAW_currentProvider{text-overflow:ellipsis;white-space:nowrap;opacity:.82;min-width:0;font-size:13px;font-weight:600;overflow:hidden}.cvtkAW_refreshBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.85;background:0 0;border:1px solid;border-radius:8px;padding:4px 12px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_refreshBtn:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_refreshBtn:disabled{cursor:default;opacity:.5}.cvtkAW_refreshBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_card{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:linear-gradient(180deg, color-mix(in srgb, currentColor 4%, transparent), transparent 80%), color-mix(in srgb, currentColor 2%, transparent);box-shadow:0 1px 0 color-mix(in srgb, currentColor 5%, transparent);border-radius:16px;flex-direction:column;gap:10px;padding:14px;display:flex}.cvtkAW_todayCard{gap:12px}.cvtkAW_cardHead{justify-content:space-between;align-items:center;gap:10px;display:flex}.cvtkAW_cardTitle{letter-spacing:.08em;text-transform:uppercase;opacity:.56;font-size:11px;font-weight:700}.cvtkAW_peakStatus{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 5%, transparent);opacity:.72;white-space:nowrap;border-radius:999px;padding:3px 8px;font-size:11px;line-height:1.2}.cvtkAW_statRow{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;display:grid}.cvtkAW_stat{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 4%, transparent);border-radius:12px;flex-direction:column;gap:3px;min-width:0;padding:10px 11px;display:flex}.cvtkAW_stat:first-child{background:radial-gradient(circle at 18% 0%, color-mix(in srgb, currentColor 11%, transparent), transparent 42%), color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_statValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:0;font-size:19px;font-weight:700;line-height:1.15;overflow:hidden}.cvtkAW_statLabel{opacity:.58;font-size:11px;line-height:1.2}@media (width>=680px){.cvtkAW_stat:first-child{grid-column:span 2}}.cvtkAW_providerList{flex-direction:column;gap:6px;display:flex}.cvtkAW_providerRow{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:11px;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:8px 10px;font-size:13px;display:flex}.cvtkAW_costRow{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_providerName{text-overflow:ellipsis;white-space:nowrap;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}.cvtkAW_providerTokens{text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums;opacity:.72;white-space:nowrap;flex:none;max-width:58%;overflow:hidden}.cvtkAW_providerBalance{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}.cvtkAW_currentBadge{border:1px solid color-mix(in srgb, currentColor 20%, transparent);background:color-mix(in srgb, currentColor 8%, transparent);opacity:.82;border-radius:999px;flex:none;padding:1px 7px;font-size:10px;font-weight:700}.cvtkAW_chart{flex-direction:column;gap:8px;display:flex}.cvtkAW_chartProvider{border:1px solid color-mix(in srgb, currentColor 8%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:13px;flex-direction:column;gap:6px;padding:10px 11px;display:flex}.cvtkAW_chartProviderCurrent{border-color:color-mix(in srgb, currentColor 18%, transparent);background:linear-gradient(90deg, color-mix(in srgb, currentColor 6%, transparent), transparent 70%), color-mix(in srgb, currentColor 3%, transparent)}.cvtkAW_chartHead{justify-content:space-between;align-items:center;gap:10px;font-size:13px;display:flex}.cvtkAW_chartTokens{font-variant-numeric:tabular-nums;opacity:.64;white-space:nowrap;flex:none;font-size:11px}.cvtkAW_chartBar{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:9px;display:block;overflow:hidden}.cvtkAW_chartFill{background:linear-gradient(90deg, color-mix(in srgb, currentColor 62%, transparent), color-mix(in srgb, currentColor 34%, transparent));border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartModel{opacity:.76;grid-template-columns:minmax(96px,34%) 1fr 52px;align-items:center;gap:8px;padding-left:10px;font-size:11px;display:grid}.cvtkAW_chartModelName{text-overflow:ellipsis;white-space:nowrap;opacity:.82;overflow:hidden}.cvtkAW_chartModelBar{background:color-mix(in srgb, currentColor 5%, transparent);border-radius:999px;height:4px;display:block;overflow:hidden}.cvtkAW_chartModelFill{background:color-mix(in srgb, currentColor 30%, transparent);border-radius:999px;height:100%;transition:width .3s;display:block}.cvtkAW_chartMore{background:color-mix(in srgb, currentColor 6%, transparent);opacity:.58;border-radius:999px;align-self:flex-start;margin-left:10px;padding:2px 7px;font-size:10px;line-height:1.2}.cvtkAW_trendAxis{opacity:.5;font-variant-numeric:tabular-nums;justify-content:space-between;font-size:10px;display:flex}.cvtkAW_muted{opacity:.6;font-size:12px}.cvtkAW_errorLine{opacity:.75;font-size:12px}.cvtkAW_settingsGrid{flex-wrap:wrap;align-items:center;gap:16px;display:flex}.cvtkAW_settingItem{align-items:center;gap:8px;font-size:13px;display:flex}.cvtkAW_settingItem input[type=checkbox]{accent-color:currentColor}.cvtkAW_settingItem input[type=number]{border:1px solid color-mix(in srgb, currentColor 25%, transparent);width:90px;color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem select{border:1px solid color-mix(in srgb, currentColor 25%, transparent);color:inherit;font:inherit;background:0 0;border-radius:6px;padding:3px 8px;font-size:13px}.cvtkAW_settingItem input:focus-visible,.cvtkAW_settingItem select:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_usageDashboard{flex-direction:column;gap:14px;display:flex;container:cvtkAW_usageDash/inline-size}.cvtkAW_kpiStrip{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;display:grid}.cvtkAW_kpiCard{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:64px;padding:10px 8px;display:flex}.cvtkAW_kpiValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;max-width:100%;font-size:18px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_kpiLabel{text-overflow:ellipsis;text-align:center;max-width:100%;color:color-mix(in srgb, currentColor 56%, transparent);font-size:11px;line-height:1.25;overflow:hidden}.cvtkAW_activityCard,.cvtkAW_detailCard,.cvtkAW_balanceOverview{background:color-mix(in srgb, canvas 94%, currentColor 2%);border-radius:14px;padding:18px 20px}.cvtkAW_dashboardCardHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.cvtkAW_dashboardTitle{letter-spacing:-.01em;align-items:center;gap:8px;min-width:0;font-size:14px;font-weight:700;line-height:1.25;display:inline-flex}.cvtkAW_dotBlue,.cvtkAW_dotGreen{width:8px;height:8px;box-shadow:0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);border-radius:999px}.cvtkAW_dotBlue{background:#3b82f6}.cvtkAW_dotGreen{background:#34d399}.cvtkAW_rangePill,.cvtkAW_autoRefreshPill{border:1px solid color-mix(in srgb, currentColor 12%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);white-space:nowrap;border-radius:10px;flex:none;justify-content:center;align-items:center;gap:5px;padding:5px 9px;font-size:12px;line-height:1;display:inline-flex}.cvtkAW_autoRefreshPill{color:color-mix(in srgb, #059669 86%, currentColor 14%);background:#34d39914;border-color:#34d3995c}.cvtkAW_activityBody{flex-direction:column;gap:12px;padding-top:4px;display:flex}.cvtkAW_heatmapGrid{gap:4px;width:100%;height:18px;display:flex}.cvtkAW_activityCell{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:3px;flex:1 1 0;min-width:0;height:100%;transition:transform .12s,box-shadow .12s;display:block;position:relative}.cvtkAW_activityCell:hover{box-shadow:0 4px 10px color-mix(in srgb, currentColor 14%, transparent);transform:translateY(-1px)}.cvtkAW_activityCellEmpty{background:color-mix(in srgb, currentColor 6%, transparent)}.cvtkAW_activityCellLevel1{background:color-mix(in srgb, #93c5fd 45%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel2{background:color-mix(in srgb, #60a5fa 58%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel3{background:color-mix(in srgb, #3b82f6 70%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel4{background:color-mix(in srgb, #2563eb 82%, color-mix(in srgb, currentColor 6%, transparent))}.cvtkAW_activityCellLevel5{background:#1d4ed8}.cvtkAW_activityAxis{color:color-mix(in srgb, currentColor 54%, transparent);font-variant-numeric:tabular-nums;justify-content:space-between;font-size:11px;display:flex}.cvtkAW_heatTip{z-index:2;white-space:nowrap;background:color-mix(in srgb, currentColor 88%, canvas);color:canvas;text-align:center;box-shadow:0 6px 18px color-mix(in srgb, currentColor 20%, transparent);pointer-events:none;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.4;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%)}.cvtkAW_heatTip strong{font-size:12px;font-weight:700;display:block}.cvtkAW_activityCell:nth-child(-n+3) .cvtkAW_heatTip{left:0;transform:none}.cvtkAW_activityCell:nth-last-child(-n+3) .cvtkAW_heatTip{left:auto;right:0;transform:none}.cvtkAW_scopeBar{flex-wrap:wrap;align-items:center;gap:10px;display:flex}.cvtkAW_scopeSeg{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 3%, transparent);border-radius:999px;gap:2px;padding:2px;display:inline-flex}.cvtkAW_scopeSegBtn{appearance:none;color:inherit;font:inherit;cursor:pointer;opacity:.6;background:0 0;border:none;border-radius:999px;padding:5px 14px;font-size:12px;transition:opacity .12s,background-color .12s}.cvtkAW_scopeSegBtn:hover{opacity:.9}.cvtkAW_scopeSegBtn:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_scopeSegBtnActive{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent);font-weight:600}.cvtkAW_scopeInput{border:1px solid color-mix(in srgb, currentColor 20%, transparent);color:inherit;font:inherit;background:0 0;border-radius:8px;padding:4px 8px;font-size:12px}.cvtkAW_scopeInput:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_detailToolbar{flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;display:inline-flex}.cvtkAW_detailStats{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:12px;display:grid}.cvtkAW_detailStat{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 2.5%, transparent);border-radius:12px;min-width:0;padding:14px 16px}.cvtkAW_detailStatLabel,.cvtkAW_detailStatHint{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 55%, transparent);font-size:11px;display:block;overflow:hidden}.cvtkAW_detailStatValue{text-overflow:ellipsis;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:7px 0 4px;font-size:17px;font-weight:700;line-height:1.1;display:block;overflow:hidden}.cvtkAW_cacheMeter{border:1px solid color-mix(in srgb, currentColor 9%, transparent);background:color-mix(in srgb, currentColor 2%, transparent);border-radius:12px;grid-template-columns:auto 1fr;align-items:center;gap:14px;padding:10px 12px;display:grid}.cvtkAW_cacheLabel{min-width:132px;color:color-mix(in srgb, currentColor 66%, transparent);font-size:13px}.cvtkAW_cacheLabel strong{color:currentColor;font-variant-numeric:tabular-nums;margin-left:6px;font-size:15px}.cvtkAW_cacheTrack{background:color-mix(in srgb, currentColor 7%, transparent);border-radius:999px;height:10px;overflow:hidden}.cvtkAW_cacheFill{border-radius:inherit;background:linear-gradient(90deg,#34d399,#10b981);height:100%;transition:width .3s;display:block}.cvtkAW_modelTable{flex-direction:column;gap:12px;display:flex}.cvtkAW_modelRow{border:1px solid color-mix(in srgb, currentColor 10%, transparent);background:color-mix(in srgb, currentColor 1.8%, transparent);border-radius:12px;grid-template-columns:minmax(0,1.5fr) repeat(6,minmax(0,.62fr));align-items:center;gap:14px;padding:15px 18px;display:grid}.cvtkAW_modelRowCurrent{border-color:color-mix(in srgb, #3b82f6 26%, currentColor 8%);background:linear-gradient(90deg,#3b82f612,#0000 72%)}.cvtkAW_modelIdentity{flex-direction:column;gap:3px;min-width:0;display:flex}.cvtkAW_modelIdentity strong{text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em;font-size:13px;font-weight:700;line-height:1.2;overflow:hidden}.cvtkAW_modelIdentity span{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px;overflow:hidden}.cvtkAW_modelMetric{font-variant-numeric:tabular-nums;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;display:flex}.cvtkAW_modelMetric strong{text-overflow:ellipsis;max-width:100%;font-size:14px;font-weight:700;line-height:1.1;overflow:hidden}.cvtkAW_modelMetric span{color:color-mix(in srgb, currentColor 52%, transparent);font-size:11px}.cvtkAW_balanceRows{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;display:grid}@container cvtkAW_usageDash (width<=760px){.cvtkAW_modelMetric:nth-child(6){display:none}.cvtkAW_modelRow{grid-template-columns:minmax(0,1.4fr) repeat(5,minmax(0,.72fr))}}@container cvtkAW_usageDash (width<=560px){.cvtkAW_modelRow{grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,.8fr))}.cvtkAW_modelMetric:nth-child(n+5){display:none}.cvtkAW_cacheMeter{grid-template-columns:1fr;align-items:stretch;gap:8px}.cvtkAW_cacheLabel{min-width:0}}.cvtkAW_footCard{box-sizing:border-box;background:color-mix(in srgb, currentColor 4%, transparent);width:100%;color:inherit;border:none;border-radius:12px;margin:2px 0 4px;transition:background-color .12s;position:relative}.cvtkAW_footCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.cvtkAW_footCardCollapsed{background:0 0}.cvtkAW_footMain{appearance:none;box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:none;border-radius:12px;flex-direction:column;gap:4px;padding:8px;display:flex}.cvtkAW_footMain:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle{appearance:none;width:20px;height:20px;color:inherit;cursor:pointer;opacity:.55;background:0 0;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex;position:absolute;top:6px;right:6px}.cvtkAW_footCard:hover .cvtkAW_footToggle{opacity:.8}.cvtkAW_footToggle:hover{opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.cvtkAW_footToggle:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);outline:none}.cvtkAW_footToggle svg{display:block}.cvtkAW_footHead{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.cvtkAW_footTitle{opacity:.65;white-space:nowrap;align-items:center;gap:6px;min-width:0;font-size:12px;display:inline-flex}.cvtkAW_footTitle svg{flex:none;display:block}.cvtkAW_footValue{font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:18px;font-size:15px;font-weight:600}.cvtkAW_footLine{opacity:.7;font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.cvtkAW_footMeta{opacity:.5;font-variant-numeric:tabular-nums;font-size:10px}.cvtkAW_footCardCollapsed .cvtkAW_footMain{min-height:36px;padding:7px 8px}.cvtkAW_footStrip{white-space:nowrap;align-items:center;gap:6px;padding-right:20px;font-size:12px;display:flex;overflow:hidden}.cvtkAW_footStrip svg{opacity:.65;flex:none;display:block}.cvtkAW_footStripProvider{text-overflow:ellipsis;flex:none;max-width:45%;font-weight:500;overflow:hidden}.cvtkAW_footStripLabel{opacity:.65;text-overflow:ellipsis;overflow:hidden}.cvtkAW_footStripValue{font-variant-numeric:tabular-nums;margin-left:auto;font-weight:600}[data-dsh-frame][data-sidebar-collapsed] .cvtkAW_footCard,[data-sidebar-collapsed] .cvtkAW_footCard{display:none}.cvtkAW_footAction{appearance:none;box-sizing:border-box;width:26px;height:26px;color:inherit;cursor:pointer;font:inherit;border:1px solid color-mix(in srgb, currentColor 14%, transparent);background:0 0;border-radius:8px;justify-content:center;align-items:center;gap:4px;padding:0;transition:opacity .12s,background-color .12s;display:inline-flex}.cvtkAW_footAction:hover{opacity:1;background:color-mix(in srgb, currentColor 8%, transparent)}.cvtkAW_footAction:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.cvtkAW_footAction svg{display:block}";
 		const tagId$2 = "@linxin666/dsh-web-all/packages/dsh-usage/src/client/usage.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -37430,18 +37431,18 @@ window.__ModuleLoader__.load({
 		/** The section component; the slot merges the face into these props. */
 		function UsageSectionCard(props) {
 			const { store, poll, refresh, setScope, settings } = props;
-			const ui = (0, react.useSyncExternalStore)(store.subscribe, store.getSnapshot);
+			const ui = (0, react$1.useSyncExternalStore)(store.subscribe, store.getSnapshot);
 			const settingsSnapshot = settings.getSnapshot();
 			const settingsValue = settingsSnapshot.value ?? {};
-			const [refreshing, setRefreshing] = (0, react.useState)(false);
-			const [scope, setScopeState] = (0, react.useState)(() => ({
+			const [refreshing, setRefreshing] = (0, react$1.useState)(false);
+			const [scope, setScopeState] = (0, react$1.useState)(() => ({
 				kind: "day",
 				key: todayKey()
 			}));
-			const [, bumpSettings] = (0, react.useState)(0);
-			(0, react.useEffect)(() => settings.subscribe(() => bumpSettings((count) => count + 1)), [settings]);
+			const [, bumpSettings] = (0, react$1.useState)(0);
+			(0, react$1.useEffect)(() => settings.subscribe(() => bumpSettings((count) => count + 1)), [settings]);
 			const enabled = settingsValue.enabled ?? true;
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!enabled) return void 0;
 				poll();
 				let timer;
@@ -37685,11 +37686,6 @@ window.__ModuleLoader__.load({
 										hint: "所有模型调用"
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
-										value: selected.totals.cost > 0 ? formatCost(selected.totals.cost) : "未计费",
-										label: "总成本(估算)",
-										hint: "按公开单价估算"
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailStat, {
 										value: formatPercent(cacheHitPercent(selected.totals)),
 										label: "缓存命中",
 										hint: "cache read token"
@@ -37793,7 +37789,7 @@ window.__ModuleLoader__.load({
 		*/
 		function ActivityHeatmap(props) {
 			const { scope } = props;
-			const [hovered, setHovered] = (0, react.useState)(null);
+			const [hovered, setHovered] = (0, react$1.useState)(null);
 			const cells = scope.kind === "day" ? (scope.hours ?? Array.from({ length: 24 }, () => zeroTotals())).map((totals, hour) => ({
 				key: String(hour),
 				label: `${String(hour).padStart(2, "0")}时`,
@@ -37873,6 +37869,10 @@ window.__ModuleLoader__.load({
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
 							value: formatTokens(row.totals.reasoningTokens),
 							label: "推理"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelCell, {
+							value: row.totals.cost > 0 ? formatCost(row.totals.cost) : "—",
+							label: "成本消耗"
 						})
 					]
 				}, row.key))
@@ -37975,7 +37975,7 @@ window.__ModuleLoader__.load({
 		function SettingsRow(props) {
 			const { settings, snapshot, value } = props;
 			const disabled = snapshot === void 0 || !snapshot.writable;
-			const [failure, setFailure] = (0, react.useState)(void 0);
+			const [failure, setFailure] = (0, react$1.useState)(void 0);
 			const write = (field, next) => {
 				setFailure(void 0);
 				let answer;
@@ -38310,19 +38310,19 @@ window.__ModuleLoader__.load({
 		*/
 		function UsageFootCard(props) {
 			const { store, poll, onOpen, settings, locale } = props;
-			const ui = (0, react.useSyncExternalStore)(store.subscribe, store.getSnapshot);
-			const [, bump] = (0, react.useState)(0);
-			(0, react.useEffect)(() => settings.subscribe(() => bump((count) => count + 1)), [settings]);
-			(0, react.useEffect)(() => locale?.subscribe(() => bump((count) => count + 1)), [locale]);
+			const ui = (0, react$1.useSyncExternalStore)(store.subscribe, store.getSnapshot);
+			const [, bump] = (0, react$1.useState)(0);
+			(0, react$1.useEffect)(() => settings.subscribe(() => bump((count) => count + 1)), [settings]);
+			(0, react$1.useEffect)(() => locale?.subscribe(() => bump((count) => count + 1)), [locale]);
 			const enabled = settings.getSnapshot().value?.enabled ?? true;
-			const [collapsed, setCollapsed] = (0, react.useState)(readFootCardCollapsed);
+			const [collapsed, setCollapsed] = (0, react$1.useState)(readFootCardCollapsed);
 			const toggleCollapsed = () => {
 				setCollapsed((current) => {
 					writeFootCardCollapsed(!current);
 					return !current;
 				});
 			};
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!enabled) return void 0;
 				poll();
 				let timer;
@@ -38560,7 +38560,7 @@ window.__ModuleLoader__.load({
 			const container = document.createElement("div");
 			container.setAttribute("data-dsh-usage-foot-card", "");
 			const root = (0, react_dom_client.createRoot)(container);
-			root.render((0, react.createElement)(UsageFootCard, props));
+			root.render((0, react$1.createElement)(UsageFootCard, props));
 			/** Keep the container directly above the Settings seat inside the foot area. */
 			const place = () => {
 				const foot = footArea();
@@ -38594,7 +38594,7 @@ window.__ModuleLoader__.load({
 			const container = document.createElement("div");
 			container.setAttribute("data-dsh-usage-foot-action", "");
 			const root = (0, react_dom_client.createRoot)(container);
-			root.render((0, react.createElement)(UsageFootAction, props));
+			root.render((0, react$1.createElement)(UsageFootAction, props));
 			/** Keep the trigger in the download slot, left of the remote entry row. */
 			const place = () => {
 				const foot = footArea();
@@ -39768,8 +39768,8 @@ window.__ModuleLoader__.load({
 		}
 		/** Shared modal shell: focus on open, Esc to close, restore focus after. */
 		function Modal({ title, onClose, children, danger, wide }) {
-			const ref = (0, react.useRef)(null);
-			(0, react.useEffect)(() => {
+			const ref = (0, react$1.useRef)(null);
+			(0, react$1.useEffect)(() => {
 				const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 				ref.current?.focus();
 				const onKey = (event) => {
@@ -39808,7 +39808,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Delete confirmation with full cascade accounting. */
 		function DeleteConfirmDialog(props) {
-			const [acknowledged, setAcknowledged] = (0, react.useState)(false);
+			const [acknowledged, setAcknowledged] = (0, react$1.useState)(false);
 			const needCheck = props.state.strong;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Modal, {
 				title: t$2("arch.confirm.deleteTitle"),
@@ -40040,7 +40040,7 @@ window.__ModuleLoader__.load({
 		*/
 		/** One validated day-threshold input; invalid values are never saved. */
 		function DaysInput(props) {
-			const [text, setText] = (0, react.useState)(null);
+			const [text, setText] = (0, react$1.useState)(null);
 			const effective = text ?? (props.value === void 0 ? "" : String(props.value));
 			const parsed = Number(effective);
 			const valid = Number.isFinite(parsed) && Number.isInteger(parsed) && parsed >= props.min && parsed <= props.max;
@@ -40084,12 +40084,12 @@ window.__ModuleLoader__.load({
 		}
 		function AutoSettingsPanel(props) {
 			const settings = props.settings;
-			const value = (0, react.useSyncExternalStore)((0, react.useMemo)(() => settings.subscribe.bind(settings), [settings]), (0, react.useMemo)(() => settings.getSnapshot.bind(settings), [settings])).value ?? {};
-			const ui = (0, react.useSyncExternalStore)(props.controller.store.subscribe, props.controller.store.getSnapshot);
+			const value = (0, react$1.useSyncExternalStore)((0, react$1.useMemo)(() => settings.subscribe.bind(settings), [settings]), (0, react$1.useMemo)(() => settings.getSnapshot.bind(settings), [settings])).value ?? {};
+			const ui = (0, react$1.useSyncExternalStore)(props.controller.store.subscribe, props.controller.store.getSnapshot);
 			const autoPreview = ui.autoPreview;
 			const autoPreviewLoading = ui.autoPreviewLoading;
 			const cycleRunning = props.auto?.cycleRunning === true;
-			const [saveFailed, setSaveFailed] = (0, react.useState)(false);
+			const [saveFailed, setSaveFailed] = (0, react$1.useState)(false);
 			const write = (field, value) => {
 				props.settings.set(field, value).then((accepted) => {
 					setSaveFailed(!accepted);
@@ -40268,16 +40268,16 @@ window.__ModuleLoader__.load({
 			return groups;
 		}
 		function Select(props) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const [active, setActive] = (0, react.useState)(0);
-			const rootRef = (0, react.useRef)(null);
-			const listRef = (0, react.useRef)(null);
+			const [open, setOpen] = (0, react$1.useState)(false);
+			const [active, setActive] = (0, react$1.useState)(0);
+			const rootRef = (0, react$1.useRef)(null);
+			const listRef = (0, react$1.useRef)(null);
 			const activeIndex = (open) => {
 				if (!open) return 0;
 				const index = props.options.findIndex((option) => option.value === props.value);
 				return index === -1 ? 0 : index;
 			};
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				if (!open) return;
 				const onPointerDown = (event) => {
 					if (rootRef.current !== null && event.target instanceof Node && !rootRef.current.contains(event.target)) setOpen(false);
@@ -40287,7 +40287,7 @@ window.__ModuleLoader__.load({
 					document.removeEventListener("pointerdown", onPointerDown);
 				};
 			}, [open]);
-			(0, react.useLayoutEffect)(() => {
+			(0, react$1.useLayoutEffect)(() => {
 				if (!open) return;
 				listRef.current?.querySelector("[data-active=\"true\"]")?.scrollIntoView({ block: "nearest" });
 			}, [open, active]);
@@ -40455,21 +40455,21 @@ window.__ModuleLoader__.load({
 		}
 		function SessionArchiveCard(props) {
 			const { controller } = props;
-			const ui = (0, react.useSyncExternalStore)(controller.store.subscribe, controller.store.getSnapshot);
-			const [currentId, setCurrentId] = (0, react.useState)(void 0);
-			(0, react.useEffect)(() => {
+			const ui = (0, react$1.useSyncExternalStore)(controller.store.subscribe, controller.store.getSnapshot);
+			const [currentId, setCurrentId] = (0, react$1.useState)(void 0);
+			(0, react$1.useEffect)(() => {
 				controller.load();
 				setCurrentId(controller.getCurrentSessionId());
 			}, [controller]);
 			const rows = ui.inventory?.rows ?? [];
 			const workspaces = ui.inventory?.workspaces ?? [];
-			const filtered = (0, react.useMemo)(() => sortRows(filterRows(rows, ui.filter), ui.sortKey, ui.sortDir), [
+			const filtered = (0, react$1.useMemo)(() => sortRows(filterRows(rows, ui.filter), ui.sortKey, ui.sortDir), [
 				rows,
 				ui.filter,
 				ui.sortKey,
 				ui.sortDir
 			]);
-			const selection = (0, react.useMemo)(() => new Set(ui.selection), [ui.selection]);
+			const selection = (0, react$1.useMemo)(() => new Set(ui.selection), [ui.selection]);
 			const summary = selectionSummary(selection, filtered);
 			const totalPages = Math.max(1, Math.ceil(filtered.length / 20));
 			const page = Math.min(ui.page, totalPages - 1);
@@ -41338,12 +41338,12 @@ window.__ModuleLoader__.load({
 		*/
 		function DisabledProvidersFooter(props) {
 			const { settings, refresh } = props;
-			const [stash, setStash] = (0, react.useState)({});
-			const [llmView, setLlmView] = (0, react.useState)(void 0);
-			const [known, setKnown] = (0, react.useState)(false);
-			const [busyRoute, setBusyRoute] = (0, react.useState)(void 0);
-			const [failure, setFailure] = (0, react.useState)(void 0);
-			const load = (0, react.useCallback)(async (face) => {
+			const [stash, setStash] = (0, react$1.useState)({});
+			const [llmView, setLlmView] = (0, react$1.useState)(void 0);
+			const [known, setKnown] = (0, react$1.useState)(false);
+			const [busyRoute, setBusyRoute] = (0, react$1.useState)(void 0);
+			const [failure, setFailure] = (0, react$1.useState)(void 0);
+			const load = (0, react$1.useCallback)(async (face) => {
 				try {
 					const described = await face.describe();
 					if (!described.ok) return;
@@ -41354,10 +41354,10 @@ window.__ModuleLoader__.load({
 					setKnown(true);
 				} catch {}
 			}, []);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				load(settings);
 			}, [load, settings]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				return refresh.subscribe(() => {
 					load(settings);
 				});
@@ -41475,15 +41475,15 @@ window.__ModuleLoader__.load({
 		*/
 		function ModelNamePanel(props) {
 			const { provider, settings, refresh } = props;
-			const [phase, setPhase] = (0, react.useState)({ kind: "loading" });
-			const [snapshot, setSnapshot] = (0, react.useState)(void 0);
-			const [draft, setDraft] = (0, react.useState)(null);
-			const [save, setSave] = (0, react.useState)({ kind: "idle" });
+			const [phase, setPhase] = (0, react$1.useState)({ kind: "loading" });
+			const [snapshot, setSnapshot] = (0, react$1.useState)(void 0);
+			const [draft, setDraft] = (0, react$1.useState)(null);
+			const [save, setSave] = (0, react$1.useState)({ kind: "idle" });
 			/** Revision the open draft was read from (the write's fence while it is open). */
-			const draftBasis = (0, react.useRef)(void 0);
-			const modelsPath = (0, react.useMemo)(() => [...provider.settingsPath, "models"], [provider.settingsPath]);
+			const draftBasis = (0, react$1.useRef)(void 0);
+			const modelsPath = (0, react$1.useMemo)(() => [...provider.settingsPath, "models"], [provider.settingsPath]);
 			const entries = draft ?? snapshot?.entries ?? [];
-			const load = (0, react.useCallback)(async (face) => {
+			const load = (0, react$1.useCallback)(async (face) => {
 				setPhase({ kind: "loading" });
 				try {
 					const described = await face.describe();
@@ -41506,10 +41506,10 @@ window.__ModuleLoader__.load({
 					});
 				}
 			}, [modelsPath, provider.settingsNs]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				load(settings);
 			}, [load, settings]);
-			(0, react.useEffect)(() => {
+			(0, react$1.useEffect)(() => {
 				return refresh?.subscribe(() => {
 					load(settings);
 				});
@@ -41848,8 +41848,8 @@ window.__ModuleLoader__.load({
 		* the failure message when one occurs.
 		*/
 		function QuickRestartAction(props) {
-			const [busy, setBusy] = (0, react.useState)(false);
-			const [failed, setFailed] = (0, react.useState)("");
+			const [busy, setBusy] = (0, react$1.useState)(false);
+			const [failed, setFailed] = (0, react$1.useState)("");
 			const onRestart = async () => {
 				if (busy) return;
 				if (!window.confirm(t("quick.restart.confirm"))) return;
@@ -42593,6 +42593,10 @@ html:has([data-dsh-frame]) > body {
     animation: dsh-mario-brick-bump 620ms cubic-bezier(.2, .85, .2, 1) both;
   }
 }
+body[data-dsh-display-mode="default"] [data-dsh-mario-runner],
+body[data-dsh-display-mode="default"] [data-dsh-mario-mushroom] {
+  display: none !important;
+}
 [data-dsh-mario-runner] {
   width: 78px;
   height: 62px;
@@ -42637,6 +42641,22 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
 }
 [data-dsh-mario-runner][data-dsh-mario-interact="true"]::after {
   animation: dsh-mario-runner-hop 560ms cubic-bezier(.2, .9, .25, 1) both;
+}
+[data-dsh-mario-runner][data-dsh-mario-skateboard="true"]::before {
+  width: 56px;
+  height: 11px;
+  left: 7px;
+  bottom: 0;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 12px 9px, #2b211a 0 3px, transparent 3.4px),
+    radial-gradient(circle at 44px 9px, #2b211a 0 3px, transparent 3.4px),
+    linear-gradient(#f7d47a 0 0) 6px 2px / 44px 4px no-repeat,
+    linear-gradient(#9a4f22 0 0) 3px 5px / 50px 4px no-repeat;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 20%));
+}
+[data-dsh-mario-runner][data-dsh-mario-skateboard="true"]::after {
+  animation: dsh-mario-skateboard-glide 720ms ease-in-out infinite;
 }
 [data-dsh-mario-mushroom] {
   width: 38px;
@@ -42710,6 +42730,10 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   0%, 100% { transform: translateY(0) scale(1); }
   35% { transform: translateY(-18px) scale(1.04) rotate(-5deg); }
   62% { transform: translateY(-10px) scale(1.02) rotate(5deg); }
+}
+@keyframes dsh-mario-skateboard-glide {
+  0%, 100% { transform: translateY(-3px) rotate(-2deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
 }
 @keyframes dsh-mario-runner-mushroom-squash {
   0% { transform: translateY(0) scale(1); opacity: 1; }

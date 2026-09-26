@@ -753,7 +753,7 @@
    long model names and values ellipsize inside their cells instead. */
 .modelRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) repeat(5, minmax(0, 0.72fr));
+  grid-template-columns: minmax(0, 1.5fr) repeat(6, minmax(0, 0.62fr));
   align-items: center;
   gap: 14px;
   border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
@@ -824,18 +824,24 @@
 /* Panel-width fallbacks: container queries follow the settings panel, which
    viewport media queries cannot see. Narrow panels drop the low-signal
    metrics (output, then reasoning) instead of overflowing. */
-@container usageDash (max-width: 640px) {
-  .modelMetric:nth-child(n + 5) {
+/* Narrow panels drop the lowest-signal metrics first (reasoning, then
+   output) and always keep the cost column the user asked for. */
+@container usageDash (max-width: 760px) {
+  .modelMetric:nth-child(6) {
     display: none;
+  }
+
+  .modelRow {
+    grid-template-columns: minmax(0, 1.4fr) repeat(5, minmax(0, 0.72fr));
   }
 }
 
-@container usageDash (max-width: 520px) {
+@container usageDash (max-width: 560px) {
   .modelRow {
-    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 0.8fr));
+    grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 0.8fr));
   }
 
-  .modelMetric:nth-child(n + 4) {
+  .modelMetric:nth-child(n + 5) {
     display: none;
   }
 

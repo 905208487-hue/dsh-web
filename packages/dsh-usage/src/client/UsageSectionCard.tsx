@@ -346,7 +346,6 @@ function UsageDashboard(props: {
         <div className={styles.detailStats}>
           <DetailStat value={formatTokens(totalOf(selected.totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <DetailStat value={formatTokens(selected.totals.calls)} label="总请求数" hint="所有模型调用" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <DetailStat value={selected.totals.cost > 0 ? formatCost(selected.totals.cost) : '未计费'} label="总成本(估算)" hint="按公开单价估算" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <DetailStat value={formatPercent(cacheHitPercent(selected.totals))} label="缓存命中" hint="cache read token" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <DetailStat value={formatTokens(selected.totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
         </div>
@@ -488,6 +487,7 @@ function ModelUsageTable(props: { rows: ModelUsageRow[] }): ReactNode {
           <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <ModelCell value={row.totals.cost > 0 ? formatCost(row.totals.cost) : '—'} label="成本消耗" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
         </div>
       ))}
     </div>
