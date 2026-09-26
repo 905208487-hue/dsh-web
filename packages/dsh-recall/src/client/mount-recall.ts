@@ -56,7 +56,10 @@ export function mountRecallTrigger(props: RecallTriggerProps): () => void {
       if (container.parentElement !== null) container.remove()
       return
     }
-    if (container.parentElement !== flow) flow.append(container)
+    // Always re-seat at the flow tail: the shell's flow may insert children
+    // (the streaming tail, the next turn) after the container between
+    // mutations, so the trigger must stay below the LAST message.
+    flow.append(container)
     // The recall gate: only the latest turn's tail, and only when it finished.
     container.style.display = props.sessionId() !== null && !props.inFlight() ? 'flex' : 'none'
   }
