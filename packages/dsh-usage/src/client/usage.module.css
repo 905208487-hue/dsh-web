@@ -515,11 +515,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Hover tooltip: anchored above the hovered cell, flipped inward at the
-   strip's edges so the first and last cells never clip. */
+/* Hover tooltip: anchored under the hovered cell (upward pops collide with
+   the card head), flipped inward at the strip's edges so the first and last
+   cells never clip. */
 .heatTip {
   position: absolute;
-  bottom: calc(100% + 8px);
+  /* Pop DOWN: the strip sits right under the card head, so an upward popup
+     collides with the title; below there is only the axis row to cover. */
+  top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
