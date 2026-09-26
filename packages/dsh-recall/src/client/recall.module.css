@@ -1,0 +1,44 @@
+/**
+ * Recall trigger styles: a small subtle pill at the conversation flow tail.
+ * @module @linxin666/dsh-recall/client/recall.module.css
+ */
+
+.trigger {
+  appearance: none;
+  box-sizing: border-box;
+  align-self: flex-start;
+  color: inherit;
+  cursor: pointer;
+  font: 500 12px/18px inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 999px;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 12px 12px;
+  padding: 4px 10px;
+  display: inline-flex;
+  opacity: 0.85;
+  transition: opacity 0.12s, background-color 0.12s;
+}
+
+.trigger:hover:not(:disabled) {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.trigger:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, currentColor 45%, transparent);
+  outline-offset: -1px;
+}
+
+.trigger svg {
+  flex: none;
+  display: block;
+}

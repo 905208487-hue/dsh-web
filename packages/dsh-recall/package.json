@@ -15,11 +15,21 @@
       "default": "./lib/core/rollback.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    }
   },
   "dsh": {
     "engines": {
       "dsh": ">=0.1.7-rc.1"
+    },
+    "client": {
+      "inject": [
+        "locale"
+      ],
+      "platform": "web"
     }
   },
   "scripts": {

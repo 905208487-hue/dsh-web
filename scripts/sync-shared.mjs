@@ -203,6 +203,7 @@ const MANIFEST = [
     source: 'shared/client/body-mutations.ts',
     targets: [
       'packages/dsh-ssh/src/client/body-mutations.ts',
+      'packages/dsh-recall/src/client/body-mutations.ts',
       'packages/dsh-task-board/src/client/body-mutations.ts',
       'packages/dsh-skill-explorer/src/client/body-mutations.ts',
       'packages/dsh-web-all/src/client/body-mutations.ts',

@@ -233,7 +233,8 @@ function readBody(req) {
 /** Build the recall API routes. */
 function makeRecallRoutes() {
 	return [{
-		exactRoute: `${RECALL_API_PREFIX}/rollback`,
+		kind: "exact",
+		path: `${RECALL_API_PREFIX}/rollback`,
 		handler: async (req, res) => {
 			if (fenced(req, res)) return;
 			const body = await readBody(req);
