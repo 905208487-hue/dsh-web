@@ -23,7 +23,11 @@
   },
   "dsh": {
     "engines": {
-      "dsh": ">=0.1.7-rc.1"
+      "dsh": ">=0.1.7-rc.1",
+      "node": ">=>=24"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     },
     "client": {
       "inject": [

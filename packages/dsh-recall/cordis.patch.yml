@@ -1,0 +1,5 @@
+# bundle patch for the dsh-recall plugin: inserts its plugin row into the web
+# profile roster (the `dsh.bundle.patch` manifest field).
+- insert:
+    - id: ui-dsh-recall
+      name: '@linxin666/dsh-recall'
