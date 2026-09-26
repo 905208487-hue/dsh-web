@@ -91,7 +91,7 @@ const SKIN_CENTER_LIB = resolveFamilyAsset(
   path.join(ROOT, 'packages', 'skins', 'skin-center', 'lib', 'index.js'),
 )
 const PRESET_CATALOG = path.join(PRESETS_DIR, 'catalog.json')
-const INSTALLER_SOURCE = path.join(ROOT, 'packages', 'dsh-market', 'src', 'core', 'installer.ts')
+const INSTALLER_SOURCE = path.join(ROOT, 'market', 'src', 'core', 'installer-limits.ts')
 const EDITOR_PICKS_FILE = path.join(ROOT, 'market', 'editor-picks.json')
 const SRC_DIR = path.join(ROOT, 'market', 'src')
 const DIST_DIR = path.join(ROOT, 'market', 'dist')

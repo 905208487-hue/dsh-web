@@ -15,7 +15,6 @@
 patchFrom:
   - ../dsh-web-settings
   - ../dsh-plugin-manager
-  - ../dsh-market
   - ../dsh-task-board
   - ../dsh-git-graph
   - ../dsh-remote-web-ui
@@ -33,7 +32,6 @@ self:
   - web-ui-compat
 deps:
   - ../dsh-plugin-manager
-  - ../dsh-market
   - ../dsh-task-board
   - ../dsh-git-graph
   - ../dsh-remote-web-ui
@@ -47,20 +45,10 @@ deps:
   - ../dsh-web-settings
   - ../dsh-i18n
 
-# 独立仓库卫星（npm 外部行）：皮肤中心、宠物、社区插件索引迁出本单一仓库后由各自
-# 仓库独立发版，这里只按 registry 版本内置。行 id 与 patchFrom 时期逐字一致
-# （web-ui-* 命名空间不变），老 profile 无需迁移；remote-web-ui 仍排在 pet 之前
-# （patchFrom 行整体先于外部行渲染）。
-# 依赖版本由 packages/dsh-web-all/package.json 手写并随生成器保留。
-# 代价：外部行不带聚合包的 fault-isolation shell，且客户端不再内联进本包 lib
-# （改由卫星自带的 loader entry 挂载）。
-# preset-center 排在 patchFrom 行之后：创意工坊卡片（本仓 dsh-market 行）先声明
-# dsh-workshop.panel 子槽位，预设面板再注册进该槽位（见 dsh-presets 仓）。
-rows:
-  - {"id": "community-plugins", "name": "@linxin666/dsh-client-ui-community-plugins"}
-  - {"id": "pet", "name": "@linxin666/dsh-pet"}
-  - {"id": "preset-center", "name": "@linxin666/dsh-client-ui-preset-center"}
-  - {"id": "skin-center", "name": "@linxin666/dsh-client-ui-skin-center"}
+# 独立仓库卫星（npm 外部行）：2026-09-26 起家族不再内置皮肤/宠物/社区插件索引/
+# 预设中心与创意工坊商店插件（见 Agent Note 2026-09-26-remove-workshop-and-satellite-rows）。
+# 四个卫星仓仍以 git submodule 形式保留，仅作 dsh-market.com 站点构建的内容输入。
+rows: []rows: []
 
 # 外部 npm 插件段：alpha 分支（2026-09-17 决策）不内置 dsh-better-sidebar。
 # 该插件 0.19.1 的全部 @deepseek-ai/dsh-* peer 声明为 ^0.1.5-rc.1，按 semver
@@ -104,3 +92,4 @@ tombstones:
   - preset-center
   - skin-center
   - community-plugins
+  - market

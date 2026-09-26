@@ -31,8 +31,8 @@
   patch 行（bundle-only 包不能被 loader 直接 import）。
 - `tombstones:` 段保留已退役或已迁出子路径的 exports 空壳（指向
   `lib/shells/shell.js`），避免老 profile 残留旧行名时 Node 抛
-  ERR_PACKAGE_PATH_NOT_EXPORTED。迁出为独立仓库的 `pet` / `skin-center` /
-  `community-plugins` 三个子路径必须留在本清单里。
+  ERR_PACKAGE_PATH_NOT_EXPORTED。已移除的 `pet` / `skin-center` / `community-plugins` / `preset-center` 与
+  `market`（2026-09-26 从家族移除）子路径留在本清单里，旧 profile 的行仍可 import。
 - `patches:` 段（单行 JSON flow mapping）对本聚合自插入行做整对象 config 覆写：
   用于播种行级默认（如 enabled:false），渲染在全部 insert 之后；
   id 必须是本聚合已存在的行，settings 一经用户改动即优先于播种值。

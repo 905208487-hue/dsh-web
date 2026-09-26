@@ -10,11 +10,6 @@
     "source": "packages/dsh-plugin-manager/src/client/index.ts"
   },
   {
-    "name": "@linxin666/dsh-client-ui-market",
-    "specifier": "@linxin666/dsh-client-ui-market/client",
-    "source": "packages/dsh-market/src/client/index.ts"
-  },
-  {
     "name": "@linxin666/dsh-client-ui-task-board",
     "specifier": "@linxin666/dsh-client-ui-task-board/client",
     "source": "packages/dsh-task-board/src/client/index.ts"

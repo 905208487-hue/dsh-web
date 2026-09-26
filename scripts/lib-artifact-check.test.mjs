@@ -42,20 +42,20 @@ describe('parseAggregateInputs', () => {
   it('reads every ../ entry from the list sections', () => {
     const yaml = [
       'patchFrom:',
-      '  - ../dsh-market',
+      '  - ../dsh-web-settings',
       '  - ../dsh-usage',
       'self:',
       '  - ../dsh-web-all',
       'deps:',
-      '  - ../dsh-preset-center',
+      '  - ../dsh-quick-restart',
       'inactive:',
-      '  - web-ui-pet',
+      '  - web-ui-quick-restart',
     ].join('\n')
     assert.deepEqual(parseAggregateInputs(yaml), [
-      'packages/dsh-market',
+      'packages/dsh-web-settings',
       'packages/dsh-usage',
       'packages/dsh-web-all',
-      'packages/dsh-preset-center',
+      'packages/dsh-quick-restart',
     ].sort())
   })
 

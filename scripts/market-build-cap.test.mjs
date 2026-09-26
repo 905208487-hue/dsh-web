@@ -7,12 +7,13 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const INSTALLER = join(ROOT, 'packages', 'dsh-market', 'src', 'core', 'installer.ts')
+/** The site-owned installer-limits module, read exactly the way market-build reads it. */
+const INSTALLER = join(ROOT, 'market', 'src', 'core', 'installer-limits.ts')
 
-/** The installer's per-asset cap, read exactly the way market-build reads it. */
+/** The per-asset cap, read exactly the way market-build reads it. */
 function installerMaxFiles() {
   const m = /export const MAX_FILES_PER_ASSET = (\d+)/.exec(readFileSync(INSTALLER, 'utf8'))
-  assert.ok(m, 'installer.ts must export MAX_FILES_PER_ASSET')
+  assert.ok(m, 'installer-limits.ts must export MAX_FILES_PER_ASSET')
   return Number(m[1])
 }
 
@@ -29,9 +30,9 @@ function fixture(maxFiles, extraSkinFiles) {
   mkdirSync(scriptDir, { recursive: true })
   const script = join(scriptDir, 'market-build')
   writeFileSync(script, readFileSync(join(ROOT, 'scripts', 'market-build')))
-  const installerDir = join(dir, 'packages', 'dsh-market', 'src', 'core')
+  const installerDir = join(dir, 'market', 'src', 'core')
   mkdirSync(installerDir, { recursive: true })
-  writeFileSync(join(installerDir, 'installer.ts'), 'export const MAX_FILES_PER_ASSET = ' + maxFiles + '\n')
+  writeFileSync(join(installerDir, 'installer-limits.ts'), 'export const MAX_FILES_PER_ASSET = ' + maxFiles + '\n')
   const skinDir = join(dir, 'packages', 'skins', 'skin-center', 'skins', 'fixture-skin')
   mkdirSync(skinDir, { recursive: true })
   writeFileSync(join(skinDir, 'skin.json'), JSON.stringify({

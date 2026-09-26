@@ -245,9 +245,172 @@ html:has([data-dsh-frame]) > body {
     flex: none;
   }
 }
+[data-dsh-mario-hero] {
+  width: 42px;
+  height: 44px;
+  border-radius: 14px;
+  cursor: default;
+  position: relative;
+}
+[data-dsh-mario-hero] > svg {
+  opacity: 0;
+}
+[data-dsh-mario-hero]::before,
+[data-dsh-mario-runner]::after {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 36px;
+  image-rendering: pixelated;
+  background:
+    linear-gradient(#e33b32 0 0) 6px 0 / 21px 7px no-repeat,
+    linear-gradient(#e33b32 0 0) 2px 7px / 27px 5px no-repeat,
+    linear-gradient(#ffc58f 0 0) 6px 12px / 21px 10px no-repeat,
+    linear-gradient(#6b3a18 0 0) 6px 12px / 5px 7px no-repeat,
+    linear-gradient(#6b3a18 0 0) 20px 14px / 8px 3px no-repeat,
+    linear-gradient(#17110d 0 0) 21px 11px / 3px 3px no-repeat,
+    linear-gradient(#1f61b5 0 0) 8px 23px / 18px 10px no-repeat,
+    linear-gradient(#e33b32 0 0) 4px 22px / 8px 8px no-repeat,
+    linear-gradient(#e33b32 0 0) 20px 22px / 8px 8px no-repeat,
+    linear-gradient(#6b3a18 0 0) 7px 32px / 7px 4px no-repeat,
+    linear-gradient(#6b3a18 0 0) 19px 32px / 7px 4px no-repeat;
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 18%));
+  transform-origin: 50% 100%;
+}
+[data-dsh-mario-hero]::after {
+  content: "";
+  width: 30px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 16%);
+  filter: blur(1px);
+  position: absolute;
+  left: 6px;
+  bottom: 1px;
+}
+[data-dsh-mario-hero][data-dsh-mario-effect="mushroom"]::after {
+  width: 24px;
+  height: 18px;
+  border-radius: 12px 12px 8px 8px;
+  background:
+    radial-gradient(circle at 7px 6px, #fff6dc 0 3px, transparent 3.5px),
+    radial-gradient(circle at 17px 5px, #fff6dc 0 2.5px, transparent 3px),
+    linear-gradient(#df3b2f 0 0) 2px 0 / 20px 10px no-repeat,
+    linear-gradient(#ffe2a8 0 0) 7px 9px / 10px 8px no-repeat,
+    linear-gradient(#70401f 0 0) 8px 15px / 8px 3px no-repeat;
+  filter: drop-shadow(0 4px 5px rgb(0 0 0 / 18%));
+  left: 9px;
+  bottom: 0;
+}
+[data-dsh-mario-hero][data-dsh-mario-effect="brick"]::after {
+  width: 27px;
+  height: 18px;
+  border-radius: 2px;
+  background:
+    linear-gradient(90deg, transparent 0 8px, #8b431d 8px 10px, transparent 10px 18px, #8b431d 18px 20px, transparent 20px),
+    linear-gradient(#8b431d 0 0) 0 8px / 100% 2px no-repeat,
+    linear-gradient(#d77a2b 0 0);
+  box-shadow: -8px -4px 0 -5px #d77a2b, 35px -2px 0 -6px #f0a44f;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 14%));
+  left: 7px;
+  top: -9px;
+  bottom: auto;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  [data-dsh-mario-hero]:hover::before {
+    animation: dsh-mario-hero-jump 620ms cubic-bezier(.2, .85, .2, 1) both;
+  }
+  [data-dsh-mario-hero]:hover::after {
+    animation: dsh-mario-shadow-squash 620ms cubic-bezier(.2, .85, .2, 1) both;
+  }
+  [data-dsh-mario-hero][data-dsh-mario-effect="mushroom"]:hover::after {
+    animation: dsh-mario-mushroom-stomp 620ms cubic-bezier(.2, .85, .2, 1) both;
+  }
+  [data-dsh-mario-hero][data-dsh-mario-effect="brick"]:hover::after {
+    animation: dsh-mario-brick-bump 620ms cubic-bezier(.2, .85, .2, 1) both;
+  }
+}
+[data-dsh-mario-runner] {
+  width: 56px;
+  height: 44px;
+  pointer-events: none;
+  position: fixed;
+  z-index: 45;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  opacity: .82;
+  transform: translateX(0);
+  transform-origin: 50% 100%;
+}
+[data-dsh-mario-runner]::before {
+  content: "";
+  width: 38px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 14%);
+  filter: blur(1px);
+  position: absolute;
+  left: 8px;
+  bottom: 0;
+}
+[data-dsh-mario-runner]::after {
+  position: absolute;
+  left: 11px;
+  bottom: 3px;
+  transform: scale(.72);
+}
+body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
+  opacity: 1;
+  animation: dsh-mario-track-run 5.6s linear infinite;
+}
+body[data-dsh-mario-active="true"] [data-dsh-mario-runner]::after {
+  animation: dsh-mario-feet-run 320ms steps(2, end) infinite;
+}
+body:not([data-dsh-mario-active="true"]) [data-dsh-mario-runner]::after {
+  animation: dsh-mario-idle-bob 1.8s ease-in-out infinite;
+}
+@keyframes dsh-mario-hero-jump {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  16% { transform: translateY(2px) scaleY(.9) scaleX(1.06); }
+  48% { transform: translateY(-24px) scaleY(1.05) rotate(-4deg); }
+  72% { transform: translateY(-8px) rotate(3deg); }
+}
+@keyframes dsh-mario-shadow-squash {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  48% { transform: scaleX(.45); opacity: .35; }
+}
+@keyframes dsh-mario-mushroom-stomp {
+  0%, 100% { transform: translateY(0) scaleY(1); opacity: 1; }
+  46% { transform: translateY(1px) scaleY(.58) scaleX(1.18); opacity: .92; }
+  72% { transform: translateY(-2px) scaleY(1.08) scaleX(.96); }
+}
+@keyframes dsh-mario-brick-bump {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-10px) rotate(-2deg); }
+  62% { transform: translateY(-6px) rotate(2deg); }
+}
+@keyframes dsh-mario-idle-bob {
+  0%, 100% { transform: translateY(0) scale(.72); }
+  50% { transform: translateY(-2px) scale(.72); }
+}
+@keyframes dsh-mario-feet-run {
+  0% { transform: translateY(0) scale(.72) skewX(-3deg); }
+  100% { transform: translateY(-1px) scale(.72) skewX(3deg); }
+}
+@keyframes dsh-mario-track-run {
+  0% { transform: translateX(0) scaleX(1); }
+  48% { transform: translateX(calc(100vw - 88px)) scaleX(1); }
+  50% { transform: translateX(calc(100vw - 88px)) scaleX(-1); }
+  98% { transform: translateX(0) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(1); }
+}
 @media (prefers-reduced-motion: reduce) {
   [data-dsh-frame] [data-pane="sidebar"] { transition: none; }
-  [data-dsh-boot-splash] { transition: none; }
+  [data-dsh-boot-splash],
+  [data-dsh-mario-hero]::before,
+  [data-dsh-mario-hero]::after,
+  [data-dsh-mario-runner],
+  [data-dsh-mario-runner]::after { transition: none; animation: none !important; }
 }
 [data-dsh-boot-splash] {
   position: fixed;
@@ -284,6 +447,11 @@ function stampSemanticParts(frame: Element): boolean {
   frame.querySelectorAll<HTMLElement>('pre').forEach(element => mark(element, 'code'))
   frame.querySelectorAll<HTMLElement>('[role="menu"], [data-subagent-menu]').forEach(element => mark(element, 'menu'))
   frame.querySelectorAll<HTMLElement>('[role="treeitem"]:not([data-dsh-part])').forEach(element => mark(element, 'sidebar-entry'))
+  frame.querySelectorAll<HTMLElement>('[class*="_fishHitbox"]').forEach(element => {
+    if (element.hasAttribute('data-dsh-mario-hero')) return
+    element.setAttribute('data-dsh-mario-hero', '')
+    changed = true
+  })
   const conversation = frame.querySelector<HTMLElement>('[data-pane="conversation"]')
   const headerSlot = conversation?.querySelector<HTMLElement>('[data-slot="conversation.session.header"]')
   const slottedHeader = headerSlot?.querySelector<HTMLElement>(':scope > header') ?? null
@@ -396,6 +564,105 @@ function installBootShield(): { dismiss: () => void; remove: () => void } {
   }
 }
 
+const ACTIVE_TASK_SELECTOR = [
+  '[aria-busy="true"]',
+  '[data-streaming]',
+  '[data-state="running"]',
+  '[data-pending-steering="true"]',
+  '[data-dsh-plugin="task-board"] [data-status="running"]',
+].join(', ')
+
+const ACTIVE_TASK_TEXT = /\b(Running|Executing|Compacting context|Deep diving)\b|\u8fd0\u884c\u4e2d|\u6267\u884c\u4e2d|\u6b63\u5728\u538b\u7f29|\u6df1\u5ea6\u601d\u8003/ // i18n-allow: aggregate inline running-task text, zh alternatives match on purpose
+
+function hasActiveTaskSignal(): boolean {
+  if (document.querySelector(ACTIVE_TASK_SELECTOR) !== null) return true
+  return ACTIVE_TASK_TEXT.test(document.body.innerText)
+}
+
+const MARIO_HERO_EFFECTS = ['mushroom', 'brick'] as const
+
+function installMarioHeroEffects(): () => void {
+  if (typeof document === 'undefined') return () => {}
+  const timers = new WeakMap<HTMLElement, number>()
+  const heroes = new Set<HTMLElement>()
+
+  const clearHeroTimer = (hero: HTMLElement): void => {
+    const timer = timers.get(hero)
+    if (timer === undefined) return
+    window.clearTimeout(timer)
+    timers.delete(hero)
+  }
+
+  const onPointerOver = (event: PointerEvent): void => {
+    const target = event.target
+    if (!(target instanceof Element)) return
+    const hero = target.closest<HTMLElement>('[data-dsh-mario-hero]')
+    if (hero === null) return
+    if (event.relatedTarget instanceof Node && hero.contains(event.relatedTarget)) return
+
+    heroes.add(hero)
+    clearHeroTimer(hero)
+    hero.removeAttribute('data-dsh-mario-effect')
+    void hero.offsetWidth
+    const effect = MARIO_HERO_EFFECTS[Math.floor(Math.random() * MARIO_HERO_EFFECTS.length)]
+    hero.setAttribute('data-dsh-mario-effect', effect)
+    timers.set(hero, window.setTimeout(() => {
+      hero.removeAttribute('data-dsh-mario-effect')
+      timers.delete(hero)
+    }, 760))
+  }
+
+  document.body.addEventListener('pointerover', onPointerOver, true)
+  return () => {
+    document.body.removeEventListener('pointerover', onPointerOver, true)
+    for (const hero of heroes) {
+      clearHeroTimer(hero)
+      hero.removeAttribute('data-dsh-mario-effect')
+    }
+    heroes.clear()
+  }
+}
+
+function installMarioRunner(): () => void {
+  if (typeof document === 'undefined') return () => {}
+  let runner = document.querySelector<HTMLElement>('[data-dsh-mario-runner]')
+  if (runner === null) {
+    runner = document.createElement('div')
+    runner.setAttribute('data-dsh-mario-runner', '')
+    runner.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(runner)
+  }
+
+  let updateTimer = 0
+  const update = (): void => {
+    updateTimer = 0
+    document.body.toggleAttribute('data-dsh-mario-active', hasActiveTaskSignal())
+  }
+  const schedule = (): void => {
+    if (updateTimer !== 0) return
+    updateTimer = window.setTimeout(update, 80)
+  }
+
+  const observer = new MutationObserver(schedule)
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['aria-busy', 'data-state', 'data-status', 'data-streaming', 'data-pending-steering', 'class'],
+  })
+  const interval = window.setInterval(schedule, 1400)
+  schedule()
+
+  return () => {
+    observer.disconnect()
+    window.clearInterval(interval)
+    if (updateTimer !== 0) window.clearTimeout(updateTimer)
+    document.body.removeAttribute('data-dsh-mario-active')
+    runner?.remove()
+  }
+}
+
 /** Required services: none — the shim must run before any DOM mount waits. */
 export const inject = [] as const
 
@@ -415,6 +682,8 @@ export function apply(ctx: Context): void {
   ctx.effect(() => {
     const responsiveStyle = ensureResponsiveStyle()
     const bootShield = installBootShield()
+    const removeMarioRunner = installMarioRunner()
+    const removeMarioHeroEffects = installMarioHeroEffects()
     applyShims()
     let removeMobileDismiss = (): void => {}
     let dismissFrame: HTMLElement | null = null
@@ -448,6 +717,8 @@ export function apply(ctx: Context): void {
       bootShield.remove()
       responsiveStyle.remove()
       removeMobileDismiss()
+      removeMarioRunner()
+      removeMarioHeroEffects()
     }
   })
 }
