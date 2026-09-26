@@ -63,3 +63,8 @@ declare module '@linxin666/dsh-client-ui-model-capabilities/client' {
   export const apply: unknown
   export const inject: readonly string[] | undefined
 }
+
+declare module '@linxin666/dsh-quick-restart/client' {
+  export const apply: unknown
+  export const inject: readonly string[] | undefined
+}

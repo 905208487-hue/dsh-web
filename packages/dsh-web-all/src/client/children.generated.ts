@@ -23,6 +23,7 @@ import * as child8 from '@linxin666/dsh-client-ui-skill-explorer/client'
 import * as child9 from '@linxin666/dsh-usage/client'
 import * as child10 from '@linxin666/dsh-session-archive/client'
 import * as child11 from '@linxin666/dsh-client-ui-model-capabilities/client'
+import * as child12 from '@linxin666/dsh-quick-restart/client'
 
 /** The loose shape every child client module must expose at runtime. */
 export interface ClientChildModule {
@@ -51,4 +52,5 @@ export const clientChildren: readonly ClientChild[] = [
   { name: '@linxin666/dsh-usage', module: child9 },
   { name: '@linxin666/dsh-session-archive', module: child10 },
   { name: '@linxin666/dsh-client-ui-model-capabilities', module: child11 },
+  { name: '@linxin666/dsh-quick-restart', module: child12 },
 ]

@@ -1,0 +1,46 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 0.75;
+}
+
+.status {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-text-danger, #d64545);
+}
+
+.button {
+  align-self: flex-start;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--dsw-alias-button-primary-fill, #4d6bfe);
+  color: var(--dsw-alias-label-primary-foreground, #ffffff);
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover, #3f59d9);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

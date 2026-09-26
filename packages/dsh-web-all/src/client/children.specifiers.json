@@ -58,5 +58,10 @@
     "name": "@linxin666/dsh-client-ui-model-capabilities",
     "specifier": "@linxin666/dsh-client-ui-model-capabilities/client",
     "source": "packages/dsh-model-capabilities/src/client/index.ts"
+  },
+  {
+    "name": "@linxin666/dsh-quick-restart",
+    "specifier": "@linxin666/dsh-quick-restart/client",
+    "source": "packages/dsh-quick-restart/src/client/index.ts"
   }
 ]

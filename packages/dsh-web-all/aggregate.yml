@@ -25,6 +25,7 @@ patchFrom:
   - ../dsh-usage
   - ../dsh-session-archive
   - ../dsh-model-capabilities
+  - ../dsh-quick-restart
   # dsh-i18n 语言包无宿主行为、无时序依赖，放列表末尾：注册 ru 语言与全部
   # 家族插件命名空间的 ru 字典（见 packages/dsh-i18n）。
   - ../dsh-i18n
@@ -42,6 +43,7 @@ deps:
   - ../dsh-usage
   - ../dsh-session-archive
   - ../dsh-model-capabilities
+  - ../dsh-quick-restart
   - ../dsh-web-settings
   - ../dsh-i18n
 
