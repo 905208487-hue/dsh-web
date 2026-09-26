@@ -1,9 +1,9 @@
 /**
- * dsh-quick-restart browser half — seats the 「快速重启 DSH 服务」 first-level
- * settings section (late order, below the other family sections). The card
- * renders the live service status and the confirm-gated restart button; all
- * host interaction happens over the loopback-fenced routes, this bundle only
- * fetches the status document and POSTs the restart.
+ * dsh-quick-restart browser half — seats the 「重启 DSH 服务」button in the
+ * settings dialog header, beside the official 「打开配置文件」 action. The plugin
+ * deliberately adds no left-navigation entry. All host interaction happens over
+ * the loopback-fenced routes; this bundle only reads the status document,
+ * POSTs the restart and reloads the page once the replacement host answers.
  * @module @linxin666/dsh-quick-restart/client
  */
 
@@ -15,21 +15,15 @@ import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createElement } from 'react'
 import { QuickRestartAction } from './QuickRestartAction.tsx'
-import { QuickRestartCard, type QuickRestartFace, type QuickRestartStatusView } from './QuickRestartCard.tsx'
+import type { QuickRestartFace, QuickRestartStatusView } from './face.ts'
 import { NS, en, zh } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** The quick-restart settings card copy. */
+    /** The quick-restart button copy. */
     'dsh-quick-restart': keyof typeof zh
   }
 }
-
-/** Settings nav id and slot id for this section. */
-const SECTION_ID = 'dsh-quick-restart'
-
-/** Late first-level nav position: below the family sections (usage is 151). */
-const SECTION_ORDER = 9000
 
 /** Required services. */
 export const inject = ['slots', 'locale']
@@ -94,10 +88,10 @@ const quickRestartApi: QuickRestartFace = {
 }
 
 /**
- * Client plugin body: register dictionaries, seat the header action beside
- * 「打开配置文件」 and the settings section that carries the status document.
- * The status probe runs on mount (and during a restart only), so no background
- * traffic exists while the page is closed.
+ * Client plugin body: register dictionaries and seat the restart button in the
+ * settings header (`settings.action`, beside 「打开配置文件」). The plugin adds no
+ * left-navigation entry: the status probe runs only while a restart is in
+ * flight, so no background traffic exists otherwise.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => {
@@ -119,24 +113,6 @@ export function apply(ctx: ClientContext): void {
         locale: NS,
         inject: face,
       }, QuickRestartAction)
-      return () => {
-        unregister()
-      }
-    } catch {
-      return () => {}
-    }
-  })
-
-  ctx.slots.inject('settings.section', () => {
-    try {
-      const unregister = ctx.slots.register({
-        name: 'settings.section',
-        id: SECTION_ID,
-        order: SECTION_ORDER,
-        label: () => ctx.locale.bind(NS)('quick.title'),
-        locale: NS,
-        inject: face,
-      }, QuickRestartCard)
       return () => {
         unregister()
       }

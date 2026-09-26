@@ -12,10 +12,10 @@ Status: implemented
 ## Decision
 
 新增独立 bundle 包 `@linxin666/dsh-quick-restart`（`packages/dsh-quick-restart/`）。
-浏览器半区在同一份 `face` 上挂两处界面：设置头部的紧凑重启按钮
-（`settings.action`，id `quick-restart`，order 10，紧挨官方「打开配置文件」的
-order 0）与一级设置区（`settings.section`，id `dsh-quick-restart`，order 9000，
-承载提示与实时状态文档）。
+浏览器半区只挂一处界面：设置头部的紧凑重启按钮（`settings.action`，id
+`quick-restart`，order 10，紧挨官方「打开配置文件」的 order 0），外面套一层
+`data-dsh-plugin="quick-restart"` 容器。插件不注册 `settings.section`，因此设置
+侧边栏里不出现它；重启提示放在按钮 tooltip 上。
 
 DSH 没有重启接缝（`apps/cli/src/profile-boot.ts` 对 SIGTERM 做优雅退出但不负责
 重新拉起），所以重启由两步拼成：

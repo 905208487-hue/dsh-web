@@ -3,9 +3,8 @@
 English | [中文](README.zh.md)
 
 A DSH web GUI plugin that restarts the running `dsh web` service from the
-browser. It seats a first-level settings section (「快速重启 DSH 服务」 /
-"Quick restart DSH service") that shows the live service status and a
-confirm-gated restart button.
+browser. It seats a confirm-gated 「重启 DSH 服务」button in the settings header,
+beside 「打开配置文件」, and adds no left-navigation entry.
 
 ## Why
 
@@ -14,7 +13,7 @@ lifetime, so archived sessions can report "会话仍被 DSH 进程占用" ("sess
 still held by the DSH process") and refuse deletion until the service
 restarts or the session is closed. A restart also applies configuration and
 plugin changes that only load at boot. Instead of opening a terminal, the
-settings card triggers the restart directly.
+header button triggers the restart directly.
 
 ## How it works
 
@@ -41,9 +40,10 @@ reloads the page, so the GUI reconnects without a manual refresh.
 ## Where it appears
 
 - **Settings header action**: a compact 「重启 DSH 服务」button in the
-  `settings.action` slot, beside 「打开配置文件」.
-- **Settings section**: a first-level section with the hint, the live status
-  document (pid, port, start time) and the same restart button.
+  `settings.action` slot, beside 「打开配置文件」. Its tooltip carries the
+  restart hint, or the failure message when one occurs.
+- **No navigation entry**: the plugin registers no `settings.section`, so it
+  adds nothing to the settings sidebar.
 
 ## Known limitations
 

@@ -1,5 +1,5 @@
 # Bilingual-pair consistency record (docs/i18n.md): the git blob hash of each
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with git hash-object.
-2026-09-25-dsh-quick-restart-plugin.md: 15faf408e30741cfbb77b59fb01506780a82d658
-2026-09-25-dsh-quick-restart-plugin.zh.md: e8a717f626044245ec541ef0fcf50831d66617f7
+2026-09-25-dsh-quick-restart-plugin.md: 8f5b6b14cd8e27ed57290fcb917c7d6d63a81b62
+2026-09-25-dsh-quick-restart-plugin.zh.md: fc65081b9624bfb093fcc45d69543369b1087348

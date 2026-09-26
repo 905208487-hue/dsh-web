@@ -14,12 +14,12 @@ request: a web-side plugin button that restarts the service quickly.
 ## Decision
 
 Ship a standalone bundle package `@linxin666/dsh-quick-restart`
-(`packages/dsh-quick-restart/`). The browser half seats two surfaces over one
-shared face: a compact restart button in the settings header
-(`settings.action`, id `quick-restart`, order 10, beside the official
-「打开配置文件」 action at order 0) and a first-level settings section
-(`settings.section`, id `dsh-quick-restart`, order 9000) carrying the hint and
-the live status document.
+(`packages/dsh-quick-restart/`). The browser half seats exactly one surface: a
+compact restart button in the settings header (`settings.action`, id
+`quick-restart`, order 10, beside the official 「打开配置文件」 action at order
+0), wrapped in a `data-dsh-plugin="quick-restart"` container. The plugin
+registers no `settings.section`, so it adds nothing to the settings sidebar; the
+restart hint travels in the button tooltip.
 
 DSH has no restart seam (`apps/cli/src/profile-boot.ts` drains SIGTERM
 gracefully but nothing relaunches the service), so the restart is composed of
