@@ -491,21 +491,22 @@
 }
 
 
-/* Model-usage dashboard layout inspired by compact analytics panels. */
+/* Model-usage dashboard layout inspired by compact analytics panels.
+   Sized for the settings panel, not the viewport: .usageDashboard is a
+   size container, the grids shrink with minmax(0) tracks, and the narrow
+   fallbacks key off the container width instead of media queries. */
 .usageDashboard {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  container-type: inline-size;
+  container-name: usageDash;
 }
 
 .kpiStrip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
-  border-radius: 20px;
-  overflow: hidden;
-  background: color-mix(in srgb, canvas 92%, currentColor 2%);
-  box-shadow: 0 12px 30px color-mix(in srgb, currentColor 6%, transparent);
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
 }
 
 .kpiCard {
@@ -513,35 +514,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 86px;
-  padding: 12px 10px;
-  border-left: 1px solid color-mix(in srgb, currentColor 8%, transparent);
-}
-
-.kpiCard:first-child {
-  border-left: none;
+  gap: 5px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 9%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 2.5%, transparent);
 }
 
 .kpiValue {
-  font-size: clamp(20px, 3vw, 30px);
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 18px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .kpiLabel {
-  font-size: 12px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.25;
   color: color-mix(in srgb, currentColor 56%, transparent);
-  white-space: nowrap;
 }
 
 .activityCard,
 .detailCard,
 .balanceOverview {
-  border-radius: 20px;
-  padding: 22px 24px;
+  border-radius: 14px;
+  padding: 16px 18px;
   background: color-mix(in srgb, canvas 94%, currentColor 2%);
 }
 
@@ -549,27 +556,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .dashboardTitle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  font-size: 20px;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .dotBlue,
 .dotGreen {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 6%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);
 }
 
 .dotBlue {
@@ -585,13 +593,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   flex: none;
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-  border-radius: 12px;
-  padding: 7px 11px;
+  border-radius: 10px;
+  padding: 5px 9px;
   background: color-mix(in srgb, currentColor 3%, transparent);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -605,32 +613,32 @@
 .activityBody {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding-top: 6px;
+  gap: 12px;
+  padding-top: 4px;
 }
 
+/* One row of 30 equal day cells: flex-shrink keeps it inside the card and
+   the strip always spans the full card width, however narrow the panel. */
 .heatmapGrid {
-  display: grid;
-  grid-template-rows: repeat(5, 22px);
-  grid-auto-flow: column;
-  grid-auto-columns: 22px;
-  gap: 7px;
-  align-self: flex-start;
-  max-width: 100%;
-  overflow: hidden;
-  padding: 3px 0;
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  height: 18px;
 }
 
 .activityCell {
   display: block;
-  border-radius: 5px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  border-radius: 3px;
   background: color-mix(in srgb, currentColor 7%, transparent);
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
 .activityCell:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px color-mix(in srgb, currentColor 14%, transparent);
+  box-shadow: 0 4px 10px color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .activityCellEmpty {
@@ -660,8 +668,7 @@
 .activityAxis {
   display: flex;
   justify-content: space-between;
-  max-width: min(100%, 168px);
-  font-size: 12px;
+  font-size: 11px;
   color: color-mix(in srgb, currentColor 54%, transparent);
   font-variant-numeric: tabular-nums;
 }
@@ -670,21 +677,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .detailStats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 10px;
 }
 
 .detailStat {
   min-width: 0;
   border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
-  border-radius: 14px;
-  padding: 13px 14px;
+  border-radius: 12px;
+  padding: 11px 12px;
   background: color-mix(in srgb, currentColor 2.5%, transparent);
 }
 
@@ -694,7 +701,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 11px;
   color: color-mix(in srgb, currentColor 55%, transparent);
 }
 
@@ -702,11 +709,11 @@
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 7px 0 4px;
-  font-size: 21px;
-  line-height: 1.05;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  margin: 5px 0 3px;
+  font-size: 17px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -714,28 +721,28 @@
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   border: 1px solid color-mix(in srgb, currentColor 9%, transparent);
-  border-radius: 14px;
-  padding: 13px 16px;
+  border-radius: 12px;
+  padding: 10px 12px;
   background: color-mix(in srgb, currentColor 2%, transparent);
 }
 
 .cacheLabel {
-  min-width: 150px;
-  font-size: 14px;
+  min-width: 132px;
+  font-size: 13px;
   color: color-mix(in srgb, currentColor 66%, transparent);
 }
 
 .cacheLabel strong {
-  margin-left: 8px;
+  margin-left: 6px;
   color: currentColor;
-  font-size: 18px;
+  font-size: 15px;
   font-variant-numeric: tabular-nums;
 }
 
 .cacheTrack {
-  height: 12px;
+  height: 10px;
   overflow: hidden;
   border-radius: 999px;
   background: color-mix(in srgb, currentColor 7%, transparent);
@@ -752,17 +759,19 @@
 .modelTable {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
+/* Every track shrinks (minmax(0)): the row can never overflow the panel;
+   long model names and values ellipsize inside their cells instead. */
 .modelRow {
   display: grid;
-  grid-template-columns: minmax(150px, 1.45fr) repeat(5, minmax(66px, 0.72fr));
+  grid-template-columns: minmax(0, 1.6fr) repeat(5, minmax(0, 0.72fr));
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
-  border-radius: 16px;
-  padding: 15px 16px;
+  border-radius: 12px;
+  padding: 11px 12px;
   background: color-mix(in srgb, currentColor 1.8%, transparent);
 }
 
@@ -774,7 +783,7 @@
 .modelIdentity {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -782,17 +791,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 16px;
-  line-height: 1.15;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .modelIdentity span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 11px;
   color: color-mix(in srgb, currentColor 52%, transparent);
 }
 
@@ -800,7 +809,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -809,88 +818,50 @@
   overflow: hidden;
   max-width: 100%;
   text-overflow: ellipsis;
-  font-size: 17px;
-  line-height: 1;
-  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.1;
+  font-weight: 700;
 }
 
 .modelMetric span {
-  font-size: 12px;
+  font-size: 11px;
   color: color-mix(in srgb, currentColor 52%, transparent);
 }
 
 .balanceRows {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 8px;
 }
 
-@media (max-width: 860px) {
-  .kpiStrip,
-  .detailStats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .kpiCard:nth-child(odd) {
-    border-left: none;
-  }
-
-  .modelRow {
-    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(62px, auto));
-  }
-
-  .modelMetric:nth-child(n+4) {
+/* Panel-width fallbacks: container queries follow the settings panel, which
+   viewport media queries cannot see. Narrow panels drop the low-signal
+   metrics (output, then reasoning) instead of overflowing. */
+@container usageDash (max-width: 640px) {
+  .modelMetric:nth-child(n + 5) {
     display: none;
   }
 }
 
-@media (max-width: 560px) {
-  .activityCard,
-  .detailCard,
-  .balanceOverview {
-    padding: 16px;
+@container usageDash (max-width: 520px) {
+  .modelRow {
+    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 0.8fr));
   }
 
-  .dashboardCardHead,
+  .modelMetric:nth-child(n + 4) {
+    display: none;
+  }
+
   .cacheMeter {
     grid-template-columns: 1fr;
     align-items: stretch;
+    gap: 8px;
   }
 
-  .dashboardCardHead {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .detailToolbar {
-    justify-content: flex-start;
-  }
-
-  .kpiStrip,
-  .detailStats {
-    grid-template-columns: 1fr;
-  }
-
-  .kpiCard,
-  .kpiCard:first-child {
-    border-left: none;
-    border-top: 1px solid color-mix(in srgb, currentColor 8%, transparent);
-  }
-
-  .kpiCard:first-child {
-    border-top: none;
-  }
-
-  .modelRow {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-
-  .modelMetric {
-    align-items: flex-start;
+  .cacheLabel {
+    min-width: 0;
   }
 }
-
 
 /* ---------------------------------------------------------------------------
    Sidebar foot card: the compact usage glance the mount seats as the shell
