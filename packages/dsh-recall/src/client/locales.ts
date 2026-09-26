@@ -9,7 +9,7 @@ export const zh = {
   'recall.button': '撤回最新',
   'recall.hint': '撤回最新一条对话内容（仅最新；历史对话不可撤回）',
   'recall.confirm': '确定撤回最新一条对话内容？历史对话不受影响。',
-  'recall.done': '已撤回，重新打开会话或重启 dsh 后生效',
+  'recall.done': '已撤回并回填输入框（附件如需保留请重新选择；重启后自动带出）',
   'recall.failed': '撤回失败，请重试',
 }
 
@@ -17,7 +17,7 @@ export const en = {
   'recall.button': 'Recall latest',
   'recall.hint': 'Recall the latest conversation turn (latest only; history stays untouched)',
   'recall.confirm': 'Recall the latest conversation turn? History stays untouched.',
-  'recall.done': 'Recalled; reopen the conversation or restart dsh to apply',
+  'recall.done': 'Recalled and refilled into the composer (re-select attachments if needed; reopen/restart to apply)',
   'recall.failed': 'Recall failed, try again',
 }
 /** Dictionary keys of the recall namespace. */

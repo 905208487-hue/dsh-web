@@ -154,6 +154,38 @@ function sessionLogPath(root, sessionId) {
 	return null;
 }
 /**
+* Extract the last user message from a removed tail: joined text parts and
+* attachment metadata (name/media type; bytes live in the host attachment
+* store, so only the names are recoverable after the fact).
+*/
+function extractRecalledUserMessage(removedTail) {
+	for (let i = removedTail.length - 1; i >= 0; i--) {
+		let event = null;
+		try {
+			event = JSON.parse(removedTail[i]);
+		} catch {
+			continue;
+		}
+		if (event?.type !== "user/message" || !Array.isArray(event.data?.content)) continue;
+		let text = "";
+		const attachments = [];
+		for (const part of event.data.content) if (part?.type === "text" && typeof part.text === "string") text += (text ? "\n" : "") + part.text;
+		else if (part?.type && part.type !== "text" && part.attachment) {
+			const name = typeof part.attachment.name === "string" ? part.attachment.name : "attachment";
+			const mediaType = typeof part.attachment.mediaType === "string" ? part.attachment.mediaType : "application/octet-stream";
+			attachments.push({
+				name,
+				mediaType
+			});
+		}
+		return {
+			text,
+			attachments
+		};
+	}
+	return null;
+}
+/**
 * Apply the recall truncation to the latest turn of a session's event log.
 * @param sessionId - the session to roll back.
 * @param root - the sessions store root (defaults to the harness one).
@@ -181,6 +213,7 @@ function applyRollback(sessionId, root = sessionsRoot()) {
 		requiresRestart: true
 	};
 	const kept = lines.slice(0, cut.cut + 1).join("\n") + "\n";
+	const recalled = extractRecalledUserMessage(lines.slice(cut.cut + 1));
 	copyFileSync(path, `${path}.recall-bak-${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}`);
 	const compressed = zstdCompressSync(Buffer.from(kept, "utf8"));
 	const tmp = `${path}.recall-tmp`;
@@ -191,6 +224,7 @@ function applyRollback(sessionId, root = sessionsRoot()) {
 		sessionId,
 		removedLines: lines.length - kept.trim().split("\n").length,
 		inFlight: cut.inFlight,
+		recalled: recalled ?? void 0,
 		requiresRestart: true
 	};
 }

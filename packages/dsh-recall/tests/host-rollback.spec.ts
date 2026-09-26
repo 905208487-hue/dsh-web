@@ -11,7 +11,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { zstdCompressSync, zstdDecompressSync } from 'node:zlib'
-import { applyRollback, sessionLogPath } from '../src/host/rollback.ts'
+import { applyRollback, extractRecalledUserMessage, sessionLogPath } from '../src/host/rollback.ts'
 
 function encodeEvents(events: Array<string | Record<string, unknown>>): Uint8Array {
   const lines = events.map(e => (typeof e === 'string' ? e : JSON.stringify(e))).join('\n')
@@ -93,5 +93,33 @@ describe('conversation recall host rollback', () => {
     // When the store lookup runs
     // Then it refuses the id
     expect(found).toBeNull()
+  })
+})
+describe('conversation recall content extraction', () => {
+  it('user gets the recalled text and attachment names from the tail', () => {
+    // Given a removed tail carrying a user message with text and an image part
+    const tail = [
+      JSON.stringify({ type: 'turn/end', turn: 2 }),
+      JSON.stringify({ type: 'turn/start', turn: 3 }),
+      JSON.stringify({ type: 'user/message', data: { content: [
+        { type: 'text', text: '检查这个附件' },
+        { type: 'image', attachment: { name: '图像.png', mediaType: 'image/png' } },
+      ] } }),
+    ]
+    // When the recalled content is extracted
+    const recalled = extractRecalledUserMessage(tail)
+    // Then the text is joined and the attachment metadata carried over
+    expect(recalled!.text).toBe('检查这个附件')
+    expect(recalled!.attachments).toHaveLength(1)
+    expect(recalled!.attachments[0].name).toBe('图像.png')
+  })
+
+  it('user gets null when the tail has no user message', () => {
+    // Given a removed tail without a user message
+    const tail = [JSON.stringify({ type: 'assistant/message', data: {} })]
+    // When the recalled content is extracted
+    const recalled = extractRecalledUserMessage(tail)
+    // Then nothing is recovered
+    expect(recalled).toBeNull()
   })
 })

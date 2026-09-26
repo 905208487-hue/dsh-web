@@ -7,6 +7,8 @@
 
 import { useState } from 'react'
 import type { RecallKey } from './locales.ts'
+import { fillComposer } from './composer.ts'
+import { saveDraft } from './draft.ts'
 import css from './recall.module.css'
 
 export interface RecallTriggerProps {
@@ -35,11 +37,15 @@ export function RecallTrigger({ t, sessionId, inFlight }: RecallTriggerProps) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ sessionId: id }),
     })
-      .then(r => r.json() as Promise<{ ok: boolean; reason?: string; requiresRestart?: boolean }>)
+      .then(r => r.json() as Promise<{ ok: boolean; reason?: string; requiresRestart?: boolean; recalled?: { text: string; attachments: Array<{ name: string; mediaType: string }> } }>)
       .then((res) => {
         if (!res.ok) {
           setOutcome(res.reason === 'missing-session' ? 'missing' : res.reason === 'nothing-to-recall' ? 'none' : 'failed')
           return
+        }
+        if (res.recalled !== undefined && id !== null) {
+          saveDraft(id, { text: res.recalled.text, attachments: res.recalled.attachments ?? [] })
+          if (res.recalled.text.length > 0) fillComposer(res.recalled.text)
         }
         setOutcome('done')
       })

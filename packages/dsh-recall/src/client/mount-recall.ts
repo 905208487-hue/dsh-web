@@ -16,6 +16,8 @@ import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { subscribeBodyInvalidations } from './body-mutations.ts'
 import { RecallTrigger, type RecallTriggerProps } from './RecallTrigger.tsx'
+import { fillComposer } from './composer.ts'
+import { takeDraft } from './draft.ts'
 
 /** Stable data attribute identifying the injected recall trigger container. */
 export const RECALL_SELECTOR = '[data-dsh-recall-trigger]'
@@ -55,6 +57,13 @@ export function mountRecallTrigger(props: RecallTriggerProps): () => void {
     if (pane == null || flow == null) {
       if (container.parentElement !== null) container.remove()
       return
+    }
+    // Post-restart refill: a pending draft for the opened session fills the
+    // composer once (the draft key is consumed by takeDraft).
+    const sid = props.sessionId()
+    if (sid !== null) {
+      const draft = takeDraft(sid)
+      if (draft !== null && draft.text.length > 0) fillComposer(draft.text)
     }
     // Always re-seat at the flow tail: the shell's flow may insert children
     // (the streaming tail, the next turn) after the container between
