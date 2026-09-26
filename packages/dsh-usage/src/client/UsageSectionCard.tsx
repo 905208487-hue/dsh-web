@@ -458,6 +458,11 @@ function ActivityHeatmap(props: { scope: UsageScopeView }): ReactNode {
         <span>{cells[0]?.label ?? ''}</span>
         <span>{cells[cells.length - 1]?.label ?? ''}</span>
       </span>
+      {cells.every((cell) => totalOf(cell.totals) === 0) && (
+        <span className={styles.muted}>
+          {scope.kind === 'day' ? '本日暂无小时用量（小时数据自本版本启用起记录）' : '本月暂无用量记录'}{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        </span>
+      )}
     </div>
   )
 }
