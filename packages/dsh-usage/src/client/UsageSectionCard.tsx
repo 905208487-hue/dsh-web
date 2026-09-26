@@ -285,20 +285,20 @@ function UsageDashboard(props: {
   return (
     <div className={styles.usageDashboard}>
       <div className={styles.kpiStrip} data-dsh-part="usage-summary">
-        <MetricCard value={formatTokens(totalOf(totals))} label="累计 Token 数" /> // i18n-allow: usage dashboard labels (zh on purpose)
-        <MetricCard value={formatTokens(peak.tokens)} label="峰值 Token 数" /> // i18n-allow: usage dashboard labels (zh on purpose)
-        <MetricCard value={formatTokens(totals.calls)} label="总请求数" /> // i18n-allow: usage dashboard labels (zh on purpose)
-        <MetricCard value={`${streak.current} 天`} label="当前连续天数" /> // i18n-allow: usage dashboard labels (zh on purpose)
-        <MetricCard value={`${streak.longest} 天`} label="最长连续天数" /> // i18n-allow: usage dashboard labels (zh on purpose)
+        <MetricCard value={formatTokens(totalOf(totals))} label="累计 Token 数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        <MetricCard value={formatTokens(peak.tokens)} label="峰值 Token 数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        <MetricCard value={formatTokens(totals.calls)} label="总请求数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        <MetricCard value={`${streak.current} 天`} label="当前连续天数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        <MetricCard value={`${streak.longest} 天`} label="最长连续天数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
       </div>
 
       <div className={styles.scopeBar} data-dsh-part="scope-bar">
-        <div className={styles.scopeSeg} role="group" aria-label="统计维度"> // i18n-allow: usage dashboard labels (zh on purpose)
+        <div className={styles.scopeSeg} role="group" aria-label="统计维度">{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <button type="button" className={scope.kind === 'day' ? `${styles.scopeSegBtn} ${styles.scopeSegBtnActive}` : styles.scopeSegBtn} onClick={() => onScopeChange('day', today)}>
-            每日 // i18n-allow: usage dashboard labels (zh on purpose)
+            每日{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           </button>
           <button type="button" className={scope.kind === 'month' ? `${styles.scopeSegBtn} ${styles.scopeSegBtnActive}` : styles.scopeSegBtn} onClick={() => onScopeChange('month', scope.kind === 'day' ? scope.key.slice(0, 7) : scope.key)}>
-            每月 // i18n-allow: usage dashboard labels (zh on purpose)
+            每月{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           </button>
         </div>
         {scope.kind === 'day'
@@ -328,7 +328,7 @@ function UsageDashboard(props: {
 
       <section className={`${styles.card} ${styles.activityCard}`} data-dsh-part="activity-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />Token 活动</span> // i18n-allow: usage dashboard labels (zh on purpose)
+          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />Token 活动</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <span className={styles.rangePill}>{scope.kind === 'day' ? dayLabel(selected.key) : selected.key}</span>
         </div>
         <ActivityHeatmap scope={selected} />
@@ -336,23 +336,23 @@ function UsageDashboard(props: {
 
       <section className={`${styles.card} ${styles.detailCard}`} data-dsh-part="detail-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />用量明细</span> // i18n-allow: usage dashboard labels (zh on purpose)
+          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />用量明细</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <span className={styles.detailToolbar}>
-            <span className={styles.rangePill}>{scope.kind === 'day' ? '按日' : '按月'} · {selected.key}</span> // i18n-allow: usage dashboard labels (zh on purpose)
-            <span className={styles.autoRefreshPill}>{Math.max(10, Math.round(pollIntervalSec))}s 自动刷新</span> // i18n-allow: usage dashboard labels (zh on purpose)
+            <span className={styles.rangePill}>{scope.kind === 'day' ? '按日' : '按月'} · {selected.key}</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+            <span className={styles.autoRefreshPill}>{Math.max(10, Math.round(pollIntervalSec))}s 自动刷新</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           </span>
         </div>
 
         <div className={styles.detailStats}>
-          <DetailStat value={formatTokens(totalOf(selected.totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <DetailStat value={formatTokens(selected.totals.calls)} label="总请求数" hint="所有模型调用" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <DetailStat value={selected.totals.cost > 0 ? formatCost(selected.totals.cost) : '未计费'} label="总成本(估算)" hint="按公开单价估算" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <DetailStat value={formatPercent(cacheHitPercent(selected.totals))} label="缓存命中" hint="cache read token" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <DetailStat value={formatTokens(selected.totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <DetailStat value={formatTokens(totalOf(selected.totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <DetailStat value={formatTokens(selected.totals.calls)} label="总请求数" hint="所有模型调用" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <DetailStat value={selected.totals.cost > 0 ? formatCost(selected.totals.cost) : '未计费'} label="总成本(估算)" hint="按公开单价估算" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <DetailStat value={formatPercent(cacheHitPercent(selected.totals))} label="缓存命中" hint="cache read token" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <DetailStat value={formatTokens(selected.totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
         </div>
 
         <div className={styles.cacheMeter}>
-          <span className={styles.cacheLabel}>缓存命中率 <strong>{formatPercent(cacheHitPercent(selected.totals))}</strong></span> // i18n-allow: usage dashboard labels (zh on purpose)
+          <span className={styles.cacheLabel}>缓存命中率 <strong>{formatPercent(cacheHitPercent(selected.totals))}</strong></span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
           <span className={styles.cacheTrack}><span className={styles.cacheFill} style={{ width: `${Math.max(0, Math.min(100, cacheHitPercent(selected.totals)))}%` }} /></span>
         </div>
 
@@ -367,21 +367,23 @@ function UsageDashboard(props: {
           : <ModelUsageTable rows={modelUsageRows(selected.providers, snapshot.providers, currentProvider, currentModel)} />}
       </section>
 
-      {configuredBalanceRows.length > 0 && (
-        <section className={`${styles.card} ${styles.balanceOverview}`} data-dsh-part="balance-card">
-          <div className={styles.dashboardCardHead}>
-            <span className={styles.dashboardTitle}>余额概览</span> // i18n-allow: usage dashboard labels (zh on purpose)
-          </div>
+      <section className={`${styles.card} ${styles.balanceOverview}`} data-dsh-part="balance-card">
+        <div className={styles.dashboardCardHead}>
+          <span className={styles.dashboardTitle}>余额概览</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        </div>
+        {configuredBalanceRows.length === 0
+          ? <span className={styles.muted}>{t(snapshot.providers.some(isConfigured) ? 'usage.balance.unsupported' : 'usage.balance.noneConfigured')}</span>
+          : (
           <div className={styles.balanceRows}>
             {configuredBalanceRows.map((provider) => <ProviderRow key={provider.provider} provider={provider} current={currentProvider} />)}
           </div>
-          {snapshot.providers.some((provider) => isConfigured(provider) && provider.error !== undefined) && (
-            <span className={styles.errorLine}>
-              {snapshot.providers.filter((provider) => isConfigured(provider) && provider.error !== undefined).map((provider) => `${provider.displayName}: ${t('usage.provider.error', { error: provider.error ?? '' })}`).join(t('usage.errorListSeparator'))}
-            </span>
-          )}
-        </section>
-      )}
+        )}
+        {snapshot.providers.some((provider) => isConfigured(provider) && provider.error !== undefined) && (
+          <span className={styles.errorLine}>
+            {snapshot.providers.filter((provider) => isConfigured(provider) && provider.error !== undefined).map((provider) => `${provider.displayName}: ${t('usage.provider.error', { error: provider.error ?? '' })}`).join(t('usage.errorListSeparator'))}
+          </span>
+        )}
+      </section>
     </div>
   )
 }
@@ -431,7 +433,7 @@ function ActivityHeatmap(props: { scope: UsageScopeView }): ReactNode {
   const max = Math.max(1, ...cells.map((cell) => totalOf(cell.totals)))
   return (
     <div className={styles.activityBody}>
-      <div className={styles.heatmapGrid} aria-label="Token 活动热力图"> // i18n-allow: usage dashboard labels (zh on purpose)
+      <div className={styles.heatmapGrid} aria-label="Token 活动热力图">{/* i18n-allow: usage dashboard labels (zh on purpose) */}
         {cells.map((cell, index) => {
           const tokens = totalOf(cell.totals)
           const level = tokens <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil((tokens / max) * 5)))
@@ -446,7 +448,7 @@ function ActivityHeatmap(props: { scope: UsageScopeView }): ReactNode {
               {hovered === index && (
                 <span className={styles.heatTip} role="tooltip">
                   <strong>{cell.tipTitle}</strong>
-                  {formatTokens(tokens)} tokens · {cell.totals.calls} 次调用 // i18n-allow: usage dashboard labels (zh on purpose)
+                  {formatTokens(tokens)} tokens · {cell.totals.calls} 次调用{/* i18n-allow: usage dashboard labels (zh on purpose) */}
                 </span>
               )}
             </span>
@@ -481,11 +483,11 @@ function ModelUsageTable(props: { rows: ModelUsageRow[] }): ReactNode {
             <strong>{row.model}</strong>
             <span>{row.providerName}</span>
           </span>
-          <ModelCell value={formatTokens(totalOf(row.totals))} label="总 token" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <ModelCell value={formatTokens(row.totals.calls)} label="调用" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" /> // i18n-allow: usage dashboard labels (zh on purpose)
-          <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <ModelCell value={formatTokens(totalOf(row.totals))} label="总 token" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <ModelCell value={formatTokens(row.totals.calls)} label="调用" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
         </div>
       ))}
     </div>

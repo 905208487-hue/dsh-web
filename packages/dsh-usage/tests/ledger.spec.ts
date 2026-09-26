@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createLedgerDocument, deserializeLedger, foldUsage, ledgerDayKeys, localDateKey, pruneLedger, summarizeDays, totalTokens,
+  buildScopeView, createLedgerDocument, deserializeLedger, foldHours, foldUsage, ledgerDayKeys, localDateKey, pruneLedger, summarizeDays, totalTokens,
 } from '../src/core/ledger.ts'
 import { emptyTotals } from '../src/core/types.ts'
 
@@ -117,5 +117,92 @@ describe('summarizeDays', () => {
     const { totals, providers } = summarizeDays([hostile])
     expect(providers.map((row) => row.provider)).toEqual(['ok'])
     expect(totals.inputTokens).toBe(1)
+  })
+})
+
+describe('foldHours', () => {
+  it('accumulates per local hour regardless of provider or model', () => {
+    const doc = createLedgerDocument()
+    const at = new Date(2026, 7, 29, 10, 0, 0).getTime()
+    foldHours(doc, at, { ...emptyTotals(), inputTokens: 100, calls: 1 })
+    foldHours(doc, at, { ...emptyTotals(), outputTokens: 20, calls: 1 })
+    foldHours(doc, at + 3_600_000, { ...emptyTotals(), inputTokens: 5, calls: 1 })
+    expect(doc.hours?.['2026-08-29']?.['10']).toMatchObject({ inputTokens: 100, outputTokens: 20, calls: 2 })
+    expect(doc.hours?.['2026-08-29']?.['11']).toMatchObject({ inputTokens: 5, calls: 1 })
+    expect(doc.days).toEqual({})
+  })
+
+  it('ignores empty reports', () => {
+    const doc = createLedgerDocument()
+    foldHours(doc, Date.now(), emptyTotals())
+    expect(doc.hours).toBeUndefined()
+  })
+})
+
+describe('pruneLedger hours', () => {
+  it('drops the hour buckets of pruned days', () => {
+    const doc = createLedgerDocument()
+    const oldAt = new Date(2026, 0, 1, 9, 0, 0).getTime()
+    const newAt = new Date(2026, 0, 10, 9, 0, 0).getTime()
+    foldUsage(doc, oldAt, 'p', 'm', { ...emptyTotals(), inputTokens: 1, calls: 1 })
+    foldHours(doc, oldAt, { ...emptyTotals(), inputTokens: 1, calls: 1 })
+    foldHours(doc, newAt, { ...emptyTotals(), inputTokens: 2, calls: 1 })
+    pruneLedger(doc, '2026-01-10', 8)
+    expect(doc.days['2026-01-01']).toBeUndefined()
+    expect(doc.hours?.['2026-01-01']).toBeUndefined()
+    expect(doc.hours?.['2026-01-10']?.['9']).toMatchObject({ inputTokens: 2 })
+  })
+})
+
+describe('deserializeLedger hours', () => {
+  it('revives persisted hour buckets and drops malformed ones', () => {
+    const doc = deserializeLedger({
+      version: 1,
+      days: { '2026-01-02': { p: { m: { inputTokens: 5, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0, calls: 1, cost: 0 } } } },
+      hours: {
+        '2026-01-02': { '9': { inputTokens: 5, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0, calls: 1, cost: 0 }, '99': { inputTokens: 9, calls: 9 } },
+        'not-a-date': { '1': { inputTokens: 1, calls: 1 } },
+      },
+    })
+    expect(doc.hours?.['2026-01-02']?.['9']).toMatchObject({ inputTokens: 5 })
+    expect(doc.hours?.['2026-01-02']?.['99']).toBeUndefined()
+    expect(doc.hours?.['not-a-date']).toBeUndefined()
+  })
+
+  it('tolerates documents without hours', () => {
+    const doc = deserializeLedger({ version: 1, days: {} })
+    expect(doc.hours).toBeUndefined()
+  })
+})
+
+describe('buildScopeView', () => {
+  const ledger = createLedgerDocument()
+  const dayAt = new Date(2026, 0, 2, 9, 0, 0).getTime()
+  foldUsage(ledger, dayAt, 'p', 'm', { ...emptyTotals(), inputTokens: 100, outputTokens: 50, calls: 2 })
+  foldHours(ledger, dayAt, { ...emptyTotals(), inputTokens: 100, calls: 2 })
+  const nextDay = new Date(2026, 1, 1, 8, 0, 0).getTime()
+  foldUsage(ledger, nextDay, 'p2', 'm2', { ...emptyTotals(), inputTokens: 7, calls: 1 })
+
+  it('serves one local day with 24 zero-filled hourly buckets', () => {
+    const view = buildScopeView(ledger, 'day', '2026-01-02')
+    expect(view?.kind).toBe('day')
+    expect(view?.totals).toMatchObject({ inputTokens: 100, calls: 2 })
+    expect(view?.providers).toHaveLength(1)
+    expect(view?.hours).toHaveLength(24)
+    expect(view?.hours?.[9]).toMatchObject({ inputTokens: 100, calls: 2 })
+    expect(view?.hours?.[8]).toMatchObject({ inputTokens: 0, calls: 0 })
+  })
+
+  it('serves one natural month with per-day summaries', () => {
+    const view = buildScopeView(ledger, 'month', '2026-01')
+    expect(view?.kind).toBe('month')
+    expect(view?.totals).toMatchObject({ inputTokens: 100, calls: 2 })
+    expect(view?.days?.map((day) => day.date)).toEqual(['2026-01-02'])
+  })
+
+  it('returns undefined for malformed keys', () => {
+    expect(buildScopeView(ledger, 'day', '2026-13-99')).toBeUndefined()
+    expect(buildScopeView(ledger, 'month', '2026-1')).toBeUndefined()
+    expect(buildScopeView(ledger, 'week', '2026-01')).toBeUndefined()
   })
 })

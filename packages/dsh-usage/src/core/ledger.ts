@@ -216,6 +216,10 @@ export function deserializeLedger(value: unknown): UsageLedgerDocument {
 export function buildScopeView(ledger: Readonly<UsageLedgerDocument>, kind: 'day' | 'month', key: string): UsageScopeView | undefined {
   if (kind === 'day') {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return undefined
+    // Format alone accepts impossible dates (2026-13-99); round-trip the key
+    // so a bogus day serves no scope instead of an empty one.
+    const dayMs = new Date(key + 'T12:00:00').getTime()
+    if (!Number.isFinite(dayMs) || localDateKey(dayMs) !== key) return undefined
     const { totals, providers } = summarizeDays([ledger.days[key] ?? {}])
     const raw = ledger.hours?.[key] ?? {}
     const hours: UsageTokenTotals[] = []
@@ -226,6 +230,8 @@ export function buildScopeView(ledger: Readonly<UsageLedgerDocument>, kind: 'day
   }
   if (kind === 'month') {
     if (!/^\d{4}-\d{2}$/.test(key)) return undefined
+    const monthMs = new Date(key + '-01T12:00:00').getTime()
+    if (!Number.isFinite(monthMs) || localDateKey(monthMs) !== key + '-01') return undefined
     const dayKeys = ledgerDayKeys(ledger).filter((candidate) => candidate.startsWith(key + '-'))
     const { totals, providers } = summarizeDays(dayKeys.map((candidate) => ledger.days[candidate] ?? {}))
     const days: UsageDaySummary[] = dayKeys.map((candidate) => ({

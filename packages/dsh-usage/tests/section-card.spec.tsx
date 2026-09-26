@@ -1,11 +1,11 @@
 /** @vitest-environment jsdom */
 
 /**
- * The section card's configured-provider filter: the balance card and the
- * plans tab render only providers with a resolved credential
- * (credential !== 'none'); unconfigured catalog routes never render, stale
- * unconfigured error lines neither, and the balance card distinguishes
- * "nothing configured" from "configured but no balance endpoint".
+ * The section card's single-page dashboard: the balance card and the model
+ * usage details render only configured providers (credential !== 'none'),
+ * the scope bar replaces the deleted tab pages (plans and the token bank
+ * were removed from the section), and the dashboard renders the daily scope
+ * with its segmented control by default.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -17,6 +17,16 @@ import { type UsageStoreInstance, type UsageUiState } from '../src/client/usage-
 import { emptyTotals, type ProviderSnapshotView, type UsageOverviewView } from '../src/core/types.ts'
 
 afterEach(cleanup)
+
+/** Mirror the component's default scope keys (same local clock). */
+function todayKey(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+function monthKey(): string {
+  return todayKey().slice(0, 7)
+}
 
 /** A wire provider row with view defaults; callers override the credential. */
 function provider(row: Partial<ProviderSnapshotView> & Pick<ProviderSnapshotView, 'provider'>): ProviderSnapshotView {
@@ -90,13 +100,15 @@ function fakeForm(policy: {
   }
 }
 
-function cardProps(snapshot: UsageOverviewView): ComponentProps<typeof UsageSectionCard> {
+function cardProps(snapshot: UsageOverviewView, overrides: Partial<ComponentProps<typeof UsageSectionCard>> = {}): ComponentProps<typeof UsageSectionCard> {
   return {
     store: fakeStore({ snapshot, status: 'ready', error: null }),
     poll: () => {},
     refresh: () => {},
+    setScope: () => {},
     settings,
     close: () => {},
+    ...overrides,
   } as unknown as ComponentProps<typeof UsageSectionCard>
 }
 
@@ -124,18 +136,7 @@ describe('UsageSectionCard configured-provider filter', () => {
     expect(screen.queryByText(/HTTP 401/)).toBeNull()
   })
 
-  it('user sees only configured plan providers on the plans tab', () => {
-    // Given the same providers, one of which reports a plan window
-    render(<UsageSectionCard {...cardProps(overview(mixed))} />)
-    // When the user opens the plans tab
-    fireEvent.click(screen.getByRole('tab', { name: '个人套餐' }))
-    // Then only the provider that reported a plan is listed
-    expect(screen.getAllByText('Kimi For Coding')).toHaveLength(1)
-    expect(screen.queryByText('ZenMux')).toBeNull()
-    expect(screen.queryByText('Codex')).toBeNull()
-  })
-
-  it('user sees the none-configured empty states when no provider has a credential', () => {
+  it('user sees the none-configured empty state when no provider has a credential', () => {
     // Given a catalog in which no provider carries a credential
     const unconfigured = [
       provider({ provider: 'zenmux', displayName: 'ZenMux', balanceSupported: true }),
@@ -145,79 +146,84 @@ describe('UsageSectionCard configured-provider filter', () => {
     // When the balance card renders
     // Then the balance card reports nothing configured rather than an empty table
     expect(screen.getAllByText('没有已配置的提供方')).toHaveLength(1)
-    // And the plans tab reports the same for plan providers
-    fireEvent.click(screen.getByRole('tab', { name: '个人套餐' }))
-    expect(screen.getAllByText('没有已配置的套餐类 provider（如 Kimi、GLM、OpenCode Go、MiniMax、Codex 订阅）')).toHaveLength(1)
   })
 })
 
-describe('Token 银行 tab', () => {
-  it('user sees the empty state when the DeepSeek official family has no usage', () => {
-    // Given an overview whose DeepSeek official family has no usage
-    render(<UsageSectionCard {...cardProps(overview([]))} />)
-    // When the user opens the Token 银行 tab
-    fireEvent.click(screen.getByRole('tab', { name: 'Token 银行' }))
-    // Then the bank reports the missing official usage and offers no save button
-    expect(screen.getByText('暂无 DeepSeek 官方用量数据（统计自插件启用起）').textContent).toBe('暂无 DeepSeek 官方用量数据（统计自插件启用起）')
-    expect(screen.queryByRole('button', { name: '保存图片' })).toBeNull()
+/**
+ * The single-page dashboard: no tab list at all (the plans and token-bank
+ * pages were deleted), the scope bar defaults to the daily view, and the
+ * heatmap renders the selected scope's buckets with hover tooltips.
+ */
+describe('UsageSectionCard dashboard', () => {
+  it('user sees the KPI strip, the scope bar, and no tab list', () => {
+    render(<UsageSectionCard {...cardProps(overview(mixed))} />)
+    expect(screen.getByText('Token 活动')).toBeTruthy()
+    expect(screen.getByText('用量明细')).toBeTruthy()
+    expect(screen.getByRole('group', { name: '统计维度' })).toBeTruthy()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.queryByText('个人套餐')).toBeNull()
+    expect(screen.queryByText('Token 银行')).toBeNull()
   })
 
-  it('user gets the voucher minted from the whole-ledger rows with save offered and no share without canShare', () => {
-    // Given a whole-ledger aggregate of 1,234,567 tokens across the official family
-    const snapshot = overview([])
-    snapshot.usage.all = {
-      from: '2025-12-01',
-      to: '2026-01-01',
-      totals: emptyTotals(),
-      providers: [
-        { provider: 'deepseek', totals: { ...emptyTotals(), inputTokens: 1_000_000, outputTokens: 234_567, calls: 12, cost: 3.5 }, models: [] },
-        { provider: 'kimi-coding', totals: { ...emptyTotals(), inputTokens: 999_999, calls: 5 }, models: [] },
-      ],
-    }
-    render(<UsageSectionCard {...cardProps(snapshot)} />)
-    // When the user opens the Token 银行 tab
-    fireEvent.click(screen.getByRole('tab', { name: 'Token 银行' }))
-    // Then the voucher mints 1 whale yuan at the 1,000,000:1 exchange rate and reports the folded ledger
-    expect(screen.getByText('累计铸造 1 鲸元（1.23M tokens）').textContent).toBe('累计铸造 1 鲸元（1.23M tokens）')
-    expect(screen.getByText('消费估算：约 ¥3.50').textContent).toBe('消费估算：约 ¥3.50')
-    expect(screen.getByText('12 次调用').textContent).toBe('12 次调用')
-    expect(screen.getByText('统计窗口 2025-12-01 ~ 2026-01-01').textContent).toBe('统计窗口 2025-12-01 ~ 2026-01-01')
-    // And save is offered while share stays hidden without navigator.canShare
-    expect(screen.getByRole('button', { name: '保存图片' }).textContent).toBe('保存图片')
-    expect(screen.queryByRole('button', { name: '分享' })).toBeNull()
+  it('points the face scope at the picked month and re-polls through the face', () => {
+    const setScope = vi.fn()
+    render(<UsageSectionCard {...cardProps(overview(mixed), { setScope })} />)
+    fireEvent.click(screen.getByRole('button', { name: '每月' }))
+    expect(setScope).toHaveBeenCalledWith('month', expect.stringMatching(/^\d{4}-\d{2}$/))
   })
 
-  it('user sees the official balance watch preferred over the fold-time estimate for the spend line', () => {
-    // Given a 50k-token official row and an observed balance spend of ¥12.50
+  it('labels 24 hour cells for the day scope and tooltips date plus consumption on hover', () => {
+    // Given a scope document whose 9th hour consumed 1,000 tokens in 2 calls
     const snapshot = overview([])
-    snapshot.usage.all = {
-      from: '2026-01-01',
-      to: '2026-01-01',
+    snapshot.usage.today = { date: todayKey(), totals: emptyTotals(), providers: [] }
+    snapshot.usage.scope = {
+      kind: 'day',
+      key: todayKey(),
       totals: emptyTotals(),
-      providers: [{ provider: 'deepseek', totals: { ...emptyTotals(), inputTokens: 50_000, calls: 2, cost: 0.1 }, models: [] }],
+      providers: [],
+      hours: Array.from({ length: 24 }, (_, hour) => ({ ...emptyTotals(), inputTokens: hour === 9 ? 1_000 : 0, calls: hour === 9 ? 2 : 0 })),
     }
-    snapshot.usage.observedSpend = { cny: 12.5, since: new Date(2026, 0, 2, 12).getTime() }
     render(<UsageSectionCard {...cardProps(snapshot)} />)
-    // When the user opens the Token 银行 tab
-    fireEvent.click(screen.getByRole('tab', { name: 'Token 银行' }))
-    // Then the spend line reports the observed balance watch and drops the fold-time estimate
-    expect(screen.getByText('累计铸造 1 鲸元（50k tokens）').textContent).toBe('累计铸造 1 鲸元（50k tokens）')
-    expect(screen.getByText('官方余额实测花费 ¥12.50（自 2026-01-02 起）').textContent).toBe('官方余额实测花费 ¥12.50（自 2026-01-02 起）')
-    expect(screen.queryByText(/消费估算/)).toBeNull()
+    // Then the heatmap renders one cell per hour of the day
+    const cells = document.querySelectorAll('[aria-label="Token 活动热力图"] > span')
+    expect(cells).toHaveLength(24)
+    expect(screen.getByText('00时').textContent).toBe('00时')
+    expect(screen.getByText('23时').textContent).toBe('23时')
+    // And hovering a cell surfaces its hour with the consumption figures
+    fireEvent.mouseEnter(cells[9])
+    expect(screen.getByRole('tooltip').textContent).toContain('1k tokens')
+    expect(screen.getByRole('tooltip').textContent).toContain('2 次调用')
   })
 
-  it('falls back to the 30-day trend window when an older host serves no all aggregate', () => {
+  it('labels one cell per natural-month day for the month scope', () => {
+    // Given a month scope document holding three retained days of the picked
+    // month, and the user switched the selector to that month
     const snapshot = overview([])
-    snapshot.usage.range = {
-      from: '2026-01-01',
-      to: '2026-01-01',
+    snapshot.usage.scope = {
+      kind: 'month',
+      key: monthKey(),
       totals: emptyTotals(),
-      providers: [{ provider: 'deepseek-official', totals: { ...emptyTotals(), inputTokens: 5000, calls: 2, cost: 0.01 }, models: [] }],
+      providers: [],
+      days: [1, 2, 3].map((day) => ({ date: `${monthKey()}-${String(day).padStart(2, '0')}`, totals: emptyTotals() })),
     }
     render(<UsageSectionCard {...cardProps(snapshot)} />)
-    fireEvent.click(screen.getByRole('tab', { name: 'Token 银行' }))
-    expect(screen.getByText('统计窗口 2026-01-01 ~ 2026-01-01')).toBeTruthy()
-    expect(screen.getByRole('button', { name: '保存图片' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '每月' }))
+    // Then the heatmap renders one cell per day, not 24 hours
+    expect(document.querySelectorAll('[aria-label="Token 活动热力图"] > span')).toHaveLength(3)
+    expect(screen.queryByLabelText('选择日期')).toBeNull()
+  })
+
+  it('falls back to the overview today summary before the host answers the scope query', () => {
+    // Given an older host that serves no scope document, the day view still
+    // renders today's totals from the overview's today summary
+    const snapshot = overview([])
+    snapshot.usage.today = {
+      date: todayKey(),
+      totals: { ...emptyTotals(), inputTokens: 1_000, outputTokens: 500, calls: 3 },
+      providers: [{ provider: 'deepseek', totals: { ...emptyTotals(), inputTokens: 1_000, calls: 1 }, models: [] }],
+    }
+    render(<UsageSectionCard {...cardProps(snapshot)} />)
+    expect(screen.getAllByText('1.5k').length).toBeGreaterThan(0)
   })
 })
 

@@ -63,46 +63,6 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
 }
 
-.tabs {
-  display: inline-flex;
-  align-self: flex-start;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 4%, transparent);
-}
-
-.tab {
-  appearance: none;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 13px;
-  padding: 5px 14px;
-  cursor: pointer;
-  opacity: 0.62;
-  transition: opacity 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
-}
-
-.tab:hover {
-  opacity: 0.9;
-}
-
-.tab:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
-}
-
-.tabActive {
-  opacity: 1;
-  font-weight: 600;
-  background: color-mix(in srgb, currentColor 10%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 8%, transparent);
-}
-
 .card {
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
   border-radius: 16px;
@@ -367,82 +327,9 @@
   opacity: 0.6;
 }
 
-/* Token 银行：票面 canvas 按容器宽度缩放；按钮行沿用 ghost 按钮样式。 */
-.voucherPreview canvas {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.buttonRow {
-  display: flex;
-  gap: 8px;
-}
-
 .errorLine {
   font-size: 12px;
   opacity: 0.75;
-}
-
-.planCard {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.planHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.planName {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.windowRow {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.windowLabel {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  opacity: 0.8;
-  font-variant-numeric: tabular-nums;
-}
-
-.bar {
-  height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 10%, transparent);
-  overflow: hidden;
-}
-
-.barFill {
-  height: 100%;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 55%, transparent);
-  transition: width 300ms ease;
-}
-
-.barWarn {
-  background: #d97706;
-}
-
-.barLow {
-  background: #dc2626;
-}
-
-.resetLine {
-  font-size: 11px;
-  opacity: 0.55;
-  font-variant-numeric: tabular-nums;
 }
 
 .settingsGrid {
@@ -498,7 +385,7 @@
 .usageDashboard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   container-type: inline-size;
   container-name: usageDash;
 }
@@ -548,7 +435,7 @@
 .detailCard,
 .balanceOverview {
   border-radius: 14px;
-  padding: 16px 18px;
+  padding: 18px 20px;
   background: color-mix(in srgb, canvas 94%, currentColor 2%);
 }
 
@@ -627,6 +514,7 @@
 }
 
 .activityCell {
+  position: relative;
   display: block;
   flex: 1 1 0;
   min-width: 0;
@@ -673,6 +561,105 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Hover tooltip: anchored above the hovered cell, flipped inward at the
+   strip's edges so the first and last cells never clip. */
+.heatTip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  white-space: nowrap;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, currentColor 88%, canvas);
+  color: canvas;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 6px 18px color-mix(in srgb, currentColor 20%, transparent);
+  pointer-events: none;
+}
+
+.heatTip strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activityCell:nth-child(-n + 3) .heatTip {
+  left: 0;
+  transform: none;
+}
+
+.activityCell:nth-last-child(-n + 3) .heatTip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+/* Scope selector: the daily/monthly segmented control plus its date or
+   month input, shared by the activity heatmap and the usage details. */
+.scopeBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.scopeSeg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.scopeSegBtn {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.scopeSegBtn:hover {
+  opacity: 0.9;
+}
+
+.scopeSegBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.scopeSegBtnActive {
+  opacity: 1;
+  font-weight: 600;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.scopeInput {
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.scopeInput:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
+}
+
 .detailToolbar {
   display: inline-flex;
   align-items: center;
@@ -684,14 +671,14 @@
 .detailStats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .detailStat {
   min-width: 0;
   border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
   border-radius: 12px;
-  padding: 11px 12px;
+  padding: 14px 16px;
   background: color-mix(in srgb, currentColor 2.5%, transparent);
 }
 
@@ -709,7 +696,7 @@
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 5px 0 3px;
+  margin: 7px 0 4px;
   font-size: 17px;
   line-height: 1.1;
   font-weight: 700;
@@ -759,7 +746,7 @@
 .modelTable {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 /* Every track shrinks (minmax(0)): the row can never overflow the panel;
@@ -768,10 +755,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) repeat(5, minmax(0, 0.72fr));
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
   border-radius: 12px;
-  padding: 11px 12px;
+  padding: 15px 18px;
   background: color-mix(in srgb, currentColor 1.8%, transparent);
 }
 
