@@ -286,41 +286,41 @@ function UsageDashboard(props: {
   return (
     <div className={styles.usageDashboard}>
       <div className={styles.kpiStrip} data-dsh-part="usage-summary">
-        <MetricCard value={formatTokens(totalOf(totals))} label="累计 Token 数" />
-        <MetricCard value={formatTokens(peak.tokens)} label="峰值 Token 数" />
-        <MetricCard value={formatTokens(totals.calls)} label="总请求数" />
-        <MetricCard value={`${streak.current} 天`} label="当前连续天数" />
-        <MetricCard value={`${streak.longest} 天`} label="最长连续天数" />
+        <MetricCard value={formatTokens(totalOf(totals))} label="累计 Token 数" /> // i18n-allow: usage dashboard labels (zh on purpose)
+        <MetricCard value={formatTokens(peak.tokens)} label="峰值 Token 数" /> // i18n-allow: usage dashboard labels (zh on purpose)
+        <MetricCard value={formatTokens(totals.calls)} label="总请求数" /> // i18n-allow: usage dashboard labels (zh on purpose)
+        <MetricCard value={`${streak.current} 天`} label="当前连续天数" /> // i18n-allow: usage dashboard labels (zh on purpose)
+        <MetricCard value={`${streak.longest} 天`} label="最长连续天数" /> // i18n-allow: usage dashboard labels (zh on purpose)
       </div>
 
       <section className={`${styles.card} ${styles.activityCard}`} data-dsh-part="activity-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />Token 活动</span>
-          <span className={styles.rangePill}>近 30 天</span>
+          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />Token 活动</span> // i18n-allow: usage dashboard labels (zh on purpose)
+          <span className={styles.rangePill}>近 30 天</span> // i18n-allow: usage dashboard labels (zh on purpose)
         </div>
         <ActivityHeatmap days={snapshot.usage.days} />
       </section>
 
       <section className={`${styles.card} ${styles.detailCard}`} data-dsh-part="detail-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />用量明细</span>
+          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />用量明细</span> // i18n-allow: usage dashboard labels (zh on purpose)
           <span className={styles.detailToolbar}>
-            <span className={styles.rangePill}>全部模型</span>
+            <span className={styles.rangePill}>全部模型</span> // i18n-allow: usage dashboard labels (zh on purpose)
             <button type="button" className={styles.refreshBtn} onClick={onRefresh} disabled={refreshing}>↻ {refreshing ? t('usage.refreshing') : t('usage.refresh')}</button>
-            <span className={styles.autoRefreshPill}>{Math.max(10, Math.round(pollIntervalSec))}s 自动刷新</span>
+            <span className={styles.autoRefreshPill}>{Math.max(10, Math.round(pollIntervalSec))}s 自动刷新</span> // i18n-allow: usage dashboard labels (zh on purpose)
           </span>
         </div>
 
         <div className={styles.detailStats}>
-          <DetailStat value={formatTokens(totalOf(totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" />
-          <DetailStat value={formatTokens(totals.calls)} label="总请求数" hint="所有模型调用" />
-          <DetailStat value={totals.cost > 0 ? formatCost(totals.cost) : '未计费'} label="总成本(估算)" hint="按公开单价估算" />
-          <DetailStat value={`${formatPercent(cachePercent)}`} label="缓存命中" hint="cache read token" />
-          <DetailStat value={formatTokens(totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" />
+          <DetailStat value={formatTokens(totalOf(totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <DetailStat value={formatTokens(totals.calls)} label="总请求数" hint="所有模型调用" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <DetailStat value={totals.cost > 0 ? formatCost(totals.cost) : '未计费'} label="总成本(估算)" hint="按公开单价估算" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <DetailStat value={`${formatPercent(cachePercent)}`} label="缓存命中" hint="cache read token" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <DetailStat value={formatTokens(totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" /> // i18n-allow: usage dashboard labels (zh on purpose)
         </div>
 
         <div className={styles.cacheMeter}>
-          <span className={styles.cacheLabel}>缓存命中率 <strong>{formatPercent(cachePercent)}</strong></span>
+          <span className={styles.cacheLabel}>缓存命中率 <strong>{formatPercent(cachePercent)}</strong></span> // i18n-allow: usage dashboard labels (zh on purpose)
           <span className={styles.cacheTrack}><span className={styles.cacheFill} style={{ width: `${Math.max(0, Math.min(100, cachePercent))}%` }} /></span>
         </div>
 
@@ -336,7 +336,7 @@ function UsageDashboard(props: {
       {configuredBalanceRows.length > 0 && (
         <section className={`${styles.card} ${styles.balanceOverview}`} data-dsh-part="balance-card">
           <div className={styles.dashboardCardHead}>
-            <span className={styles.dashboardTitle}>余额概览</span>
+            <span className={styles.dashboardTitle}>余额概览</span> // i18n-allow: usage dashboard labels (zh on purpose)
           </div>
           <div className={styles.balanceRows}>
             {configuredBalanceRows.map((provider) => <ProviderRow key={provider.provider} provider={provider} current={currentProvider} />)}
@@ -378,11 +378,11 @@ function ActivityHeatmap(props: { days: UsageOverviewView['usage']['days'] }): R
   const last = cells[cells.length - 1]?.date.slice(5) ?? ''
   return (
     <div className={styles.activityBody}>
-      <div className={styles.heatmapGrid} aria-label="Token 活动热力图">
+      <div className={styles.heatmapGrid} aria-label="Token 活动热力图"> // i18n-allow: usage dashboard labels (zh on purpose)
         {cells.map((cell) => {
           const level = cell.tokens <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil((cell.tokens / max) * 5)))
           const levelClass = level === 0 ? styles.activityCellEmpty : styles[`activityCellLevel${level}`]
-          return <span key={cell.date} className={`${styles.activityCell} ${levelClass}`} title={`${cell.date} 使用了 ${formatTokens(cell.tokens)} 个 Token`} />
+          return <span key={cell.date} className={`${styles.activityCell} ${levelClass}`} title={`${cell.date} 使用了 ${formatTokens(cell.tokens)} 个 Token`} /> // i18n-allow: usage dashboard labels (zh on purpose)
         })}
       </div>
       <span className={styles.activityAxis}><span>{first}</span><span>{last}</span></span>
@@ -410,11 +410,11 @@ function ModelUsageTable(props: { rows: ModelUsageRow[] }): ReactNode {
             <strong>{row.model}</strong>
             <span>{row.providerName}</span>
           </span>
-          <ModelCell value={formatTokens(totalOf(row.totals))} label="总 token" />
-          <ModelCell value={formatTokens(row.totals.calls)} label="调用" />
-          <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" />
-          <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" />
-          <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" />
+          <ModelCell value={formatTokens(totalOf(row.totals))} label="总 token" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <ModelCell value={formatTokens(row.totals.calls)} label="调用" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" /> // i18n-allow: usage dashboard labels (zh on purpose)
+          <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" /> // i18n-allow: usage dashboard labels (zh on purpose)
         </div>
       ))}
     </div>

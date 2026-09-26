@@ -23,10 +23,22 @@ import { mountUsageFootCard, openUsageSettings } from './foot-card-mount.tsx'
 import { NS, en, zh, t } from './locales.ts'
 import type { UsageOverviewView } from '../core/types.ts'
 
+/** The dashboard's selected day/month scope, sent as the overview query. */
+export interface UsageScopeQuery {
+  scope: 'day' | 'month'
+  key: string
+}
+
+/** Local `YYYY-MM-DD` for an epoch ms (the dashboard's default scope key). */
+function localTodayKey(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
 /** The host usage API as the browser sees it (same-origin JSON endpoints). */
 interface UsageHttpApi {
-  overview(): Promise<UsageOverviewView>
-  refresh(): Promise<UsageOverviewView>
+  overview(scope: UsageScopeQuery): Promise<UsageOverviewView>
+  refresh(scope: UsageScopeQuery): Promise<UsageOverviewView>
 }
 
 /** Hard ceiling for one usage API call; a stalled host must not pile up requests. */
@@ -45,8 +57,8 @@ const usageApi: UsageHttpApi = {
   // DOCUMENT-RELATIVE routes (issue #1707): the GUI is served with
   // `<base href="./">`, so a sub-path deployment resolves these against its
   // entry directory instead of escaping to the origin root.
-  overview: () => usageFetch('api/dsh-usage/overview', 'GET'),
-  refresh: () => usageFetch('api/dsh-usage/refresh', 'POST'),
+  overview: (scope) => usageFetch(`api/dsh-usage/overview?scope=${scope.scope}&key=${encodeURIComponent(scope.key)}`, 'GET'),
+  refresh: (scope) => usageFetch(`api/dsh-usage/refresh?scope=${scope.scope}&key=${encodeURIComponent(scope.key)}`, 'POST'),
 }
 
 /** Settings namespace the section edits (dsh-web-settings maps it onto this row's profile entry id). */
@@ -116,11 +128,15 @@ export function apply(ctx: ClientContext): void {
   // overview renders instantly on reopen.
   const store: UsageStoreInstance = createUsageStore().create()
 
+  // The dashboard's selected scope (day/month + key). Defaults to today's
+  // day view; the section re-points it through setScope, which re-polls.
+  let scope: UsageScopeQuery = { scope: 'day', key: localTodayKey() }
+
   let pollSeq = 0
   const poll = (): void => {
     const seq = pollSeq + 1
     pollSeq = seq
-    usageApi.overview().then((snapshot) => {
+    usageApi.overview(scope).then((snapshot) => {
       if (seq !== pollSeq) return
       store.actions.setSnapshot(snapshot)
     }, (error: unknown) => {
@@ -137,7 +153,7 @@ export function apply(ctx: ClientContext): void {
   const refresh = (): void => {
     const seq = pollSeq + 1
     pollSeq = seq
-    usageApi.refresh().then((snapshot) => {
+    usageApi.refresh(scope).then((snapshot) => {
       pollSeq = seq
       store.actions.setSnapshot(snapshot)
     }, (error: unknown) => {
@@ -146,7 +162,16 @@ export function apply(ctx: ClientContext): void {
     })
   }
 
-  const face = (): UsageSectionFace => ({ store, poll, refresh, settings: settingsForm })
+  const face = (): UsageSectionFace => ({
+    store,
+    poll,
+    refresh,
+    setScope: (kind, key) => {
+      scope = { scope: kind, key }
+      poll()
+    },
+    settings: settingsForm,
+  })
 
   // Sidebar foot card: the compact usage glance seated below the shell's
   // Settings row. It shares the section's store and poll path (the sequence

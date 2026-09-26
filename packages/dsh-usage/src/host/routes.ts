@@ -8,6 +8,31 @@ import type { UsageService } from './usage-service.ts'
 export const USAGE_API_PREFIX = '/api/dsh-usage'
 
 /**
+ * Parsed `?scope=day|month&key=...` query: the dashboard's selected day or
+ * natural month. Anything malformed parses to an empty object so the route
+ * serves a scope-less overview instead of guessing.
+ */
+export interface UsageScopeQuery {
+  scope?: 'day' | 'month'
+  key?: string
+}
+
+/** Parse the scope query off one request URL (works for GET and POST alike). */
+export function parseScopeQuery(url: string | undefined): UsageScopeQuery {
+  try {
+    const query = new URL(url ?? '/', 'http://dsh.invalid').searchParams
+    const scope = query.get('scope')
+    const key = query.get('key') ?? undefined
+    if ((scope !== 'day' && scope !== 'month') || key === undefined) return {}
+    if (scope === 'day' && !/^\d{4}-\d{2}-\d{2}$/.test(key)) return {}
+    if (scope === 'month' && !/^\d{4}-\d{2}$/.test(key)) return {}
+    return { scope, key }
+  } catch {
+    return {}
+  }
+}
+
+/**
  * Overview route: provider balances, plan quotas, and token usage totals.
  * Personal account data behind the family trust fence — loopback always
  * passes, and a live paired-device cookie passes too when remote-web-ui is
@@ -26,7 +51,7 @@ export function makeUsageOverviewRoute(ctx: Context, service: UsageService): Web
         writeJson(res, 403, { ok: false, error: 'forbidden: loopback-only' })
         return
       }
-      writeJson(res, 200, service.overview(), { 'cache-control': 'no-store' })
+      writeJson(res, 200, service.overview(parseScopeQuery(req.url)), { 'cache-control': 'no-store' })
     },
   }
 }
@@ -57,7 +82,7 @@ export function makeUsageRefreshRoute(ctx: Context, service: UsageService): WebR
         writeJson(res, 500, { ok: false, error: error instanceof Error ? error.message : 'refresh failed' })
         return
       }
-      writeJson(res, 200, service.overview(), { 'cache-control': 'no-store' })
+      writeJson(res, 200, service.overview(parseScopeQuery(req.url)), { 'cache-control': 'no-store' })
     },
   }
 }

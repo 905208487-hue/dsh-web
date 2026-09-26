@@ -39274,6 +39274,11 @@ window.__ModuleLoader__.load({
 			apply: () => apply$4,
 			inject: () => inject$4
 		});
+		/** Local `YYYY-MM-DD` for an epoch ms (the dashboard's default scope key). */
+		function localTodayKey() {
+			const now = /* @__PURE__ */ new Date();
+			return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+		}
 		/** Hard ceiling for one usage API call; a stalled host must not pile up requests. */
 		const USAGE_FETCH_TIMEOUT_MS = 2e4;
 		async function usageFetch(path, method) {
@@ -39285,8 +39290,8 @@ window.__ModuleLoader__.load({
 			return await response.json();
 		}
 		const usageApi = {
-			overview: () => usageFetch("api/dsh-usage/overview", "GET"),
-			refresh: () => usageFetch("api/dsh-usage/refresh", "POST")
+			overview: (scope) => usageFetch(`api/dsh-usage/overview?scope=${scope.scope}&key=${encodeURIComponent(scope.key)}`, "GET"),
+			refresh: (scope) => usageFetch(`api/dsh-usage/refresh?scope=${scope.scope}&key=${encodeURIComponent(scope.key)}`, "POST")
 		};
 		/** Settings namespace the section edits (dsh-web-settings maps it onto this row's profile entry id). */
 		const USAGE_SETTINGS_NS = "dsh-usage";
@@ -39320,11 +39325,15 @@ window.__ModuleLoader__.load({
 			const binder = ctx.get("webUiSettings");
 			const settingsForm = binder !== void 0 ? binder.bind({ namespace: USAGE_SETTINGS_NS }) : ctx.configForms.get(USAGE_SETTINGS_NS);
 			const store = createUsageStore().create();
+			let scope = {
+				scope: "day",
+				key: localTodayKey()
+			};
 			let pollSeq = 0;
 			const poll = () => {
 				const seq = pollSeq + 1;
 				pollSeq = seq;
-				usageApi.overview().then((snapshot) => {
+				usageApi.overview(scope).then((snapshot) => {
 					if (seq !== pollSeq) return;
 					store.actions.setSnapshot(snapshot);
 				}, (error) => {
@@ -39335,7 +39344,7 @@ window.__ModuleLoader__.load({
 			const refresh = () => {
 				const seq = pollSeq + 1;
 				pollSeq = seq;
-				usageApi.refresh().then((snapshot) => {
+				usageApi.refresh(scope).then((snapshot) => {
 					pollSeq = seq;
 					store.actions.setSnapshot(snapshot);
 				}, (error) => {
@@ -39347,6 +39356,13 @@ window.__ModuleLoader__.load({
 				store,
 				poll,
 				refresh,
+				setScope: (kind, key) => {
+					scope = {
+						scope: kind,
+						key
+					};
+					poll();
+				},
 				settings: settingsForm
 			});
 			const disposeFootCard = mountUsageFootCard({
@@ -42723,15 +42739,16 @@ html:has([data-dsh-frame]) > body {
 }
 [data-dsh-mario-hero],
 [data-dsh-mario-brand] {
-  width: 42px;
-  height: 44px;
+  width: 54px;
+  height: 58px;
   border-radius: 14px;
   cursor: default;
   position: relative;
+  overflow: visible;
 }
 [data-dsh-mario-brand] {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -42746,26 +42763,39 @@ html:has([data-dsh-frame]) > body {
 [data-dsh-mario-runner]::after {
   content: "";
   display: block;
-  width: 32px;
-  height: 36px;
+  width: 40px;
+  height: 48px;
   image-rendering: pixelated;
   background:
-    linear-gradient(#e33b32 0 0) 6px 0 / 21px 7px no-repeat,
-    linear-gradient(#e33b32 0 0) 2px 7px / 27px 5px no-repeat,
-    linear-gradient(#ffc58f 0 0) 6px 12px / 21px 10px no-repeat,
-    linear-gradient(#6b3a18 0 0) 6px 12px / 5px 7px no-repeat,
-    linear-gradient(#6b3a18 0 0) 20px 14px / 8px 3px no-repeat,
-    linear-gradient(#17110d 0 0) 21px 11px / 3px 3px no-repeat,
-    linear-gradient(#1f61b5 0 0) 8px 23px / 18px 10px no-repeat,
-    linear-gradient(#e33b32 0 0) 4px 22px / 8px 8px no-repeat,
-    linear-gradient(#e33b32 0 0) 20px 22px / 8px 8px no-repeat,
-    linear-gradient(#6b3a18 0 0) 7px 32px / 7px 4px no-repeat,
-    linear-gradient(#6b3a18 0 0) 19px 32px / 7px 4px no-repeat;
+    linear-gradient(#d83a2e 0 0) 10px 0 / 24px 6px no-repeat,
+    linear-gradient(#d83a2e 0 0) 6px 6px / 31px 6px no-repeat,
+    linear-gradient(#744016 0 0) 7px 12px / 9px 13px no-repeat,
+    linear-gradient(#ffd19a 0 0) 14px 12px / 21px 14px no-repeat,
+    linear-gradient(#17110d 0 0) 29px 15px / 4px 4px no-repeat,
+    linear-gradient(#744016 0 0) 25px 20px / 12px 4px no-repeat,
+    linear-gradient(#ffd19a 0 0) 10px 22px / 25px 7px no-repeat,
+    linear-gradient(#d83a2e 0 0) 8px 28px / 24px 8px no-repeat,
+    linear-gradient(#d83a2e 0 0) 2px 30px / 9px 11px no-repeat,
+    linear-gradient(#d83a2e 0 0) 29px 30px / 9px 11px no-repeat,
+    linear-gradient(#fff5dc 0 0) 0 39px / 9px 6px no-repeat,
+    linear-gradient(#fff5dc 0 0) 31px 39px / 9px 6px no-repeat,
+    linear-gradient(#1f61b5 0 0) 12px 28px / 16px 17px no-repeat,
+    linear-gradient(#1f61b5 0 0) 8px 40px / 11px 5px no-repeat,
+    linear-gradient(#1f61b5 0 0) 22px 40px / 11px 5px no-repeat,
+    radial-gradient(circle at 16px 35px, #ffd75a 0 2px, transparent 2.5px),
+    radial-gradient(circle at 24px 35px, #ffd75a 0 2px, transparent 2.5px),
+    linear-gradient(#744016 0 0) 5px 45px / 13px 3px no-repeat,
+    linear-gradient(#744016 0 0) 23px 45px / 13px 3px no-repeat;
   filter: drop-shadow(0 8px 10px rgb(0 0 0 / 18%));
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%) scale(.94);
   transform-origin: 50% 100%;
 }
 [data-dsh-mario-brand]::before {
-  transform: scale(.74);
+  bottom: 2px;
+  transform: translateX(-50%) scale(.72);
 }
 [data-dsh-mario-hero]::after {
   content: "";
@@ -42779,31 +42809,60 @@ html:has([data-dsh-frame]) > body {
   bottom: 1px;
 }
 [data-dsh-mario-hero][data-dsh-mario-effect="mushroom"]::after {
-  width: 24px;
-  height: 18px;
-  border-radius: 12px 12px 8px 8px;
+  width: 30px;
+  height: 24px;
+  border-radius: 14px 14px 8px 8px;
   background:
-    radial-gradient(circle at 7px 6px, #fff6dc 0 3px, transparent 3.5px),
-    radial-gradient(circle at 17px 5px, #fff6dc 0 2.5px, transparent 3px),
-    linear-gradient(#df3b2f 0 0) 2px 0 / 20px 10px no-repeat,
-    linear-gradient(#ffe2a8 0 0) 7px 9px / 10px 8px no-repeat,
-    linear-gradient(#70401f 0 0) 8px 15px / 8px 3px no-repeat;
+    radial-gradient(circle at 7px 7px, #fff7dc 0 3px, transparent 3.5px),
+    radial-gradient(circle at 15px 4px, #fff7dc 0 2.5px, transparent 3px),
+    radial-gradient(circle at 23px 8px, #fff7dc 0 3px, transparent 3.5px),
+    linear-gradient(#cf3329 0 0) 3px 2px / 24px 11px no-repeat,
+    linear-gradient(#f2b85f 0 0) 8px 12px / 14px 10px no-repeat,
+    linear-gradient(#2a160f 0 0) 11px 16px / 2px 2px no-repeat,
+    linear-gradient(#2a160f 0 0) 18px 16px / 2px 2px no-repeat,
+    linear-gradient(#7a421c 0 0) 9px 21px / 12px 3px no-repeat;
+  box-shadow: inset 0 -3px 0 rgb(116 45 28 / 18%);
   filter: drop-shadow(0 4px 5px rgb(0 0 0 / 18%));
-  left: 9px;
+  left: 12px;
   bottom: 0;
 }
+[data-dsh-frame] [data-conversation-region="composer"]:has([data-dsh-mario-hero]) [data-composer-card] {
+  --dsw-elevation-stroke-color: #b86a5d;
+  border: 1px solid rgb(184 106 93 / 62%) !important;
+  box-shadow:
+    0 0 0 1px rgb(184 106 93 / 34%),
+    0 0 0 4px rgb(218 174 86 / 8%),
+    0 10px 26px rgb(55 83 130 / 7%),
+    var(--dsw-elevation-soft);
+}
+[data-dsh-frame] [data-conversation-region="composer"]:has([data-dsh-mario-hero]) [data-composer-card]:focus-within {
+  --dsw-elevation-stroke-color: #5875a7;
+  border-color: rgb(88 117 167 / 68%) !important;
+  box-shadow:
+    0 0 0 1px rgb(88 117 167 / 40%),
+    0 0 0 4px rgb(184 106 93 / 9%),
+    0 10px 26px rgb(55 83 130 / 10%),
+    var(--dsw-elevation-soft);
+}
 [data-dsh-mario-hero][data-dsh-mario-effect="brick"]::after {
-  width: 27px;
-  height: 18px;
-  border-radius: 2px;
+  width: 34px;
+  height: 22px;
+  border-radius: 3px;
   background:
-    linear-gradient(90deg, transparent 0 8px, #8b431d 8px 10px, transparent 10px 18px, #8b431d 18px 20px, transparent 20px),
-    linear-gradient(#8b431d 0 0) 0 8px / 100% 2px no-repeat,
-    linear-gradient(#d77a2b 0 0);
-  box-shadow: -8px -4px 0 -5px #d77a2b, 35px -2px 0 -6px #f0a44f;
+    linear-gradient(#f7b257 0 0) 0 0 / 100% 3px no-repeat,
+    linear-gradient(#8a3f19 0 0) 0 9px / 100% 2px no-repeat,
+    linear-gradient(#8a3f19 0 0) 0 18px / 100% 2px no-repeat,
+    linear-gradient(90deg, transparent 0 9px, #8a3f19 9px 11px, transparent 11px 22px, #8a3f19 22px 24px, transparent 24px) 0 0 / 100% 100% no-repeat,
+    linear-gradient(90deg, #8a3f19 0 2px, transparent 2px 15px, #8a3f19 15px 17px, transparent 17px 31px, #8a3f19 31px) 0 10px / 100% 10px no-repeat,
+    linear-gradient(#d6762b 0 0);
+  box-shadow:
+    -8px -5px 0 -5px #d6762b,
+    -4px 2px 0 -5px #f3a24d,
+    41px -4px 0 -6px #f3a24d,
+    36px 3px 0 -6px #8a3f19;
   filter: drop-shadow(0 4px 4px rgb(0 0 0 / 14%));
-  left: 7px;
-  top: -9px;
+  left: 10px;
+  top: -12px;
   bottom: auto;
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -42821,48 +42880,55 @@ html:has([data-dsh-frame]) > body {
   }
 }
 [data-dsh-mario-runner] {
-  width: 68px;
-  height: 54px;
-  pointer-events: none;
+  width: 78px;
+  height: 62px;
+  pointer-events: auto;
+  cursor: pointer;
   position: fixed;
   z-index: 45;
   left: max(18px, env(safe-area-inset-left));
   bottom: max(10px, env(safe-area-inset-bottom));
+  --dsh-mario-step-duration: 540ms;
+  --dsh-mario-x: 0px;
+  --dsh-mario-dir: 1;
   opacity: .9;
-  transform: translateX(0);
+  transform: translateX(var(--dsh-mario-x)) scaleX(var(--dsh-mario-dir));
   transform-origin: 50% 100%;
-  animation: dsh-mario-track-run 13s linear infinite;
+  overflow: visible;
 }
 [data-dsh-mario-runner]::before {
   content: "";
-  width: 44px;
-  height: 6px;
+  width: 50px;
+  height: 7px;
   border-radius: 999px;
   background: rgb(0 0 0 / 14%);
   filter: blur(1px);
   position: absolute;
-  left: 9px;
+  left: 10px;
   bottom: 0;
 }
 [data-dsh-mario-runner]::after {
   position: absolute;
-  left: 14px;
-  bottom: 5px;
-  transform: scale(.86);
-  animation: dsh-mario-feet-run 460ms steps(2, end) infinite;
+  left: 18px;
+  bottom: 8px;
+  transform: scale(1);
+  animation: dsh-mario-feet-run var(--dsh-mario-step-duration) steps(2, end) infinite;
 }
 body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   opacity: 1;
-  animation-duration: 7.5s;
 }
-body[data-dsh-mario-active="true"] [data-dsh-mario-runner]::after {
-  animation-duration: 360ms;
+[data-dsh-mario-runner]:hover::after,
+[data-dsh-mario-runner][data-dsh-mario-paused="true"]::after {
+  animation-play-state: paused;
+}
+[data-dsh-mario-runner][data-dsh-mario-interact="true"]::after {
+  animation: dsh-mario-runner-hop 560ms cubic-bezier(.2, .9, .25, 1) both;
 }
 @keyframes dsh-mario-hero-jump {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  16% { transform: translateY(2px) scaleY(.9) scaleX(1.06); }
-  48% { transform: translateY(-24px) scaleY(1.05) rotate(-4deg); }
-  72% { transform: translateY(-8px) rotate(3deg); }
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(.94); }
+  16% { transform: translateX(-50%) translateY(2px) scale(1, .88); }
+  48% { transform: translateX(-50%) translateY(-25px) scale(.96, 1.04) rotate(-4deg); }
+  72% { transform: translateX(-50%) translateY(-8px) scale(.94) rotate(3deg); }
 }
 @keyframes dsh-mario-shadow-squash {
   0%, 100% { transform: scaleX(1); opacity: 1; }
@@ -42879,17 +42945,22 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner]::after {
   62% { transform: translateY(-6px) rotate(2deg); }
 }
 @keyframes dsh-mario-idle-bob {
-  0%, 100% { transform: translateY(0) scale(.86); }
-  50% { transform: translateY(-2px) scale(.86); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1); }
 }
 @keyframes dsh-mario-feet-run {
-  0% { transform: translateY(0) scale(.86) skewX(-3deg); }
-  100% { transform: translateY(-1px) scale(.86) skewX(3deg); }
+  0% { transform: translateY(0) scale(1) skewX(-3deg); }
+  100% { transform: translateY(-1px) scale(1) skewX(3deg); }
+}
+@keyframes dsh-mario-runner-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-18px) scale(1.04) rotate(-5deg); }
+  62% { transform: translateY(-10px) scale(1.02) rotate(5deg); }
 }
 @keyframes dsh-mario-track-run {
   0% { transform: translateX(0) scaleX(1); }
-  48% { transform: translateX(calc(100vw - 104px)) scaleX(1); }
-  50% { transform: translateX(calc(100vw - 104px)) scaleX(-1); }
+  48% { transform: translateX(calc(100vw - 116px)) scaleX(1); }
+  50% { transform: translateX(calc(100vw - 116px)) scaleX(-1); }
   98% { transform: translateX(0) scaleX(-1); }
   100% { transform: translateX(0) scaleX(1); }
 }
@@ -43056,9 +43127,33 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner]::after {
 			"[data-dsh-plugin=\"task-board\"] [data-status=\"running\"]"
 		].join(", ");
 		const ACTIVE_TASK_TEXT = /\b(Running|Executing|Compacting context|Deep diving)\b|\u8fd0\u884c\u4e2d|\u6267\u884c\u4e2d|\u6b63\u5728\u538b\u7f29|\u6df1\u5ea6\u601d\u8003/;
-		function hasActiveTaskSignal() {
-			if (document.querySelector(ACTIVE_TASK_SELECTOR) !== null) return true;
-			return ACTIVE_TASK_TEXT.test(document.body.innerText);
+		function activeTaskCount() {
+			const matches = /* @__PURE__ */ new Set();
+			document.querySelectorAll(ACTIVE_TASK_SELECTOR).forEach((element) => matches.add(element));
+			if (matches.size > 0) return Math.min(matches.size, 8);
+			return ACTIVE_TASK_TEXT.test(document.body.innerText) ? 1 : 0;
+		}
+		function marioRunTempo(count) {
+			if (count <= 0) return {
+				speed: 22,
+				step: "540ms"
+			};
+			if (count === 1) return {
+				speed: 34,
+				step: "500ms"
+			};
+			if (count === 2) return {
+				speed: 48,
+				step: "420ms"
+			};
+			if (count === 3) return {
+				speed: 64,
+				step: "340ms"
+			};
+			return {
+				speed: 82,
+				step: "280ms"
+			};
 		}
 		const MARIO_HERO_EFFECTS = ["mushroom", "brick"];
 		function installMarioHeroEffects() {
@@ -43108,14 +43203,66 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner]::after {
 				document.body.appendChild(runner);
 			}
 			let updateTimer = 0;
+			let speed = marioRunTempo(0).speed;
+			let x = 0;
+			let dir = 1;
+			let lastMove = Date.now();
+			let paused = false;
+			let interactTimer = 0;
+			const maxX = () => Math.max(0, window.innerWidth - 116);
+			const paintPosition = () => {
+				runner.style.setProperty("--dsh-mario-x", `${Math.round(x)}px`);
+				runner.style.setProperty("--dsh-mario-dir", String(dir));
+			};
 			const update = () => {
 				updateTimer = 0;
-				document.body.toggleAttribute("data-dsh-mario-active", hasActiveTaskSignal());
+				const count = activeTaskCount();
+				const tempo = marioRunTempo(count);
+				speed = tempo.speed;
+				document.body.toggleAttribute("data-dsh-mario-active", count > 0);
+				document.body.dataset.dshMarioTaskCount = String(count);
+				runner.style.setProperty("--dsh-mario-step-duration", tempo.step);
 			};
 			const schedule = () => {
 				if (updateTimer !== 0) return;
 				updateTimer = window.setTimeout(update, 80);
 			};
+			const move = () => {
+				const now = Date.now();
+				const dt = Math.min(240, now - lastMove) / 1e3;
+				lastMove = now;
+				if (paused) return;
+				x += dir * speed * dt;
+				const right = maxX();
+				if (x >= right) {
+					x = right;
+					dir = -1;
+				} else if (x <= 0) {
+					x = 0;
+					dir = 1;
+				}
+				paintPosition();
+			};
+			const pause = () => {
+				paused = true;
+				runner.setAttribute("data-dsh-mario-paused", "true");
+			};
+			const resume = () => {
+				paused = false;
+				lastMove = Date.now();
+				runner.removeAttribute("data-dsh-mario-paused");
+			};
+			const interact = () => {
+				runner.setAttribute("data-dsh-mario-interact", "true");
+				if (interactTimer !== 0) window.clearTimeout(interactTimer);
+				interactTimer = window.setTimeout(() => {
+					interactTimer = 0;
+					runner.removeAttribute("data-dsh-mario-interact");
+				}, 620);
+			};
+			runner.addEventListener("pointerenter", pause);
+			runner.addEventListener("pointerleave", resume);
+			runner.addEventListener("click", interact);
 			const observer = new MutationObserver(schedule);
 			observer.observe(document.body, {
 				childList: true,
@@ -43132,12 +43279,20 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner]::after {
 				]
 			});
 			const interval = window.setInterval(schedule, 1400);
+			const moveInterval = window.setInterval(move, 50);
 			schedule();
+			paintPosition();
 			return () => {
 				observer.disconnect();
 				window.clearInterval(interval);
+				window.clearInterval(moveInterval);
 				if (updateTimer !== 0) window.clearTimeout(updateTimer);
+				if (interactTimer !== 0) window.clearTimeout(interactTimer);
+				runner.removeEventListener("pointerenter", pause);
+				runner.removeEventListener("pointerleave", resume);
+				runner.removeEventListener("click", interact);
 				document.body.removeAttribute("data-dsh-mario-active");
+				delete document.body.dataset.dshMarioTaskCount;
 				runner?.remove();
 			};
 		}

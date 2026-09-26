@@ -19,7 +19,7 @@ import { adapterFor, balanceAppliesToRoute, isDeepSeekProviderRoute, providerErr
 import type { BalanceParse, PlanParse } from '../core/adapters.ts'
 import { foldAliasRoutes } from '../core/provider-routes.ts'
 import { deepseekModelSpend } from '../core/pricing.ts'
-import { createLedgerDocument, deserializeLedger, foldUsage, ledgerDayKeys, localDateKey, pruneLedger, summarizeDays, totalTokens } from '../core/ledger.ts'
+import { buildScopeView, createLedgerDocument, deserializeLedger, foldHours, foldUsage, ledgerDayKeys, localDateKey, pruneLedger, summarizeDays, totalTokens } from '../core/ledger.ts'
 import type { BalanceView, CredentialKind, ObservedSpendView, PlanView, ProviderSnapshotState, ProviderSnapshotView, UsageLedgerDocument, UsageOverviewView, UsageTokenTotals } from '../core/types.ts'
 import { addTotals, emptyTotals } from '../core/types.ts'
 
@@ -188,8 +188,13 @@ export class UsageService {
     await this.pollNow()
   }
 
-  /** Assemble the overview document the browser section renders. */
-  overview(): UsageOverviewView {
+  /**
+   * Assemble the overview document the browser section renders. The optional
+   * query selects the dashboard scope (a local day or a natural month, from
+   * the route's parsed `?scope=&key=`); a malformed or absent query serves
+   * the overview without a `scope` and the section falls back to today.
+   */
+  overview(query?: { scope?: string; key?: string }): UsageOverviewView {
     const todayKey = localDateKey(Date.now())
     const routes = this.listProviderRoutes()
     const providers: ProviderSnapshotView[] = []
@@ -246,6 +251,9 @@ export class UsageService {
           totals: all.totals,
           providers: all.providers,
         },
+        ...(query !== undefined
+          ? { scope: buildScopeView(this.ledger, query.scope === 'month' ? 'month' : 'day', query.key ?? '') }
+          : {}),
         ...(this.spendWatch !== undefined && this.spendWatch.accruedCny > 0
           ? { observedSpend: { cny: this.spendWatch.accruedCny, since: this.spendWatch.since } satisfies ObservedSpendView }
           : {}),
@@ -366,7 +374,9 @@ export class UsageService {
         if (usage === undefined) return
         const route = this.sessionRoutes.get(session)
         if (route === undefined || route.provider === '') return
-        foldUsage(this.ledger, Date.now(), route.provider, route.model || 'unknown', this.totalsFrom(usage, route.provider, route.model || 'unknown', Date.now()))
+        const totals = this.totalsFrom(usage, route.provider, route.model || 'unknown', Date.now())
+        foldUsage(this.ledger, Date.now(), route.provider, route.model || 'unknown', totals)
+        foldHours(this.ledger, Date.now(), totals)
         this.scheduleFlush()
       }
     } catch {
@@ -412,6 +422,19 @@ export class UsageService {
               foldUsage(this.ledger, atMs, provider, model, totals)
             }
           }
+        }
+        // Hour buckets ride along: sum the persisted buckets into the live
+        // document (folds that landed during the read window are already in
+        // the live buckets, the same overlap rule the day merge follows).
+        for (const [dayKey, buckets] of Object.entries(loaded.hours ?? {})) {
+          const live = this.ledger.hours?.[dayKey] ?? {}
+          for (const [hourKey, totals] of Object.entries(buckets)) {
+            const bucket = live[hourKey] ?? emptyTotals()
+            addTotals(bucket, totals)
+            live[hourKey] = bucket
+          }
+          this.ledger.hours = this.ledger.hours ?? {}
+          this.ledger.hours[dayKey] = live
         }
         pruneLedger(this.ledger, localDateKey(Date.now()), this.options.retainDays)
         this.lastPrune = { dayKey: localDateKey(Date.now()), retainDays: this.options.retainDays }

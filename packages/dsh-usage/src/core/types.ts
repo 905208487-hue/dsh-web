@@ -51,6 +51,14 @@ export interface UsageLedgerDocument {
   version: 1
   /** Local-date key `YYYY-MM-DD` → per-provider per-model totals. */
   days: Record<string, Record<string, Record<string, UsageTokenTotals>>>
+  /**
+   * Optional per-hour aggregate (hour-of-day heatmap): local-date key →
+   * hour `"0"`..`"23"` → aggregated totals. Folded alongside the day buckets
+   * and persisted independently; documents written before the bucket existed
+   * lack the field, and the hourly view renders their hours as empty rather
+   * than wrong.
+   */
+  hours?: Record<string, Record<string, UsageTokenTotals>>
 }
 
 /** One provider row of the day summary the overview serves. */
@@ -136,6 +144,26 @@ export interface ProviderSnapshotView {
   updatedAt?: number
 }
 
+/**
+ * The dashboard's selected daily/monthly scope: one local day with its 24
+ * hourly buckets, or one natural month with its per-day summaries. Served
+ * from the ledger on request (overview `?scope=&key=`); absent when the host
+ * predates the query or the key is malformed.
+ */
+export interface UsageScopeView {
+  /** `day` — one local date; `month` — one natural month. */
+  kind: 'day' | 'month'
+  /** `YYYY-MM-DD` for the day scope, `YYYY-MM` for the month scope. */
+  key: string
+  totals: UsageTokenTotals
+  /** Per-provider/per-model rows of the scope, heaviest first. */
+  providers: UsageProviderSummary[]
+  /** Day scope only: the 24 hourly buckets, index = local hour, zeros filled. */
+  hours?: UsageTokenTotals[]
+  /** Month scope only: each retained day of the natural month, ascending. */
+  days?: UsageDaySummary[]
+}
+
 /** The overview the browser section renders. */
 export interface UsageOverviewView {
   updatedAt: number
@@ -162,6 +190,8 @@ export interface UsageOverviewView {
   }
   usage: {
     today: { date: string; totals: UsageTokenTotals; providers: UsageProviderSummary[] }
+    /** The selected day/month scope the dashboard renders; absent without the scope query. */
+    scope?: UsageScopeView
     /** Last N local days ascending, including today. */
     days: UsageDaySummary[]
     /**

@@ -5,7 +5,7 @@
  * @module @linxin666/dsh-usage/core/ledger
  */
 
-import { addTotals, emptyTotals, type UsageLedgerDocument, type UsageProviderSummary, type UsageTokenTotals } from './types.ts'
+import { addTotals, emptyTotals, type UsageDaySummary, type UsageLedgerDocument, type UsageProviderSummary, type UsageScopeView, type UsageTokenTotals } from './types.ts'
 
 /** Local-date key (`YYYY-MM-DD`) for an epoch ms timestamp. */
 export function localDateKey(ms: number): string {
@@ -52,6 +52,24 @@ export function foldUsage(
   models[model] = totals
   day[provider] = models
   doc.days[dayKey] = day
+}
+
+/**
+ * Fold one usage report into the per-hour buckets (hour-of-day heatmap) in
+ * place. Hours aggregate every provider and model of the hour: the bucket
+ * answers "how much did this hour cost in total", never "which model".
+ * Zero-token reports are dropped with the same guard as `foldUsage`.
+ */
+export function foldHours(doc: UsageLedgerDocument, atMs: number, usage: Readonly<UsageTokenTotals>): void {
+  if (usage.calls <= 0 && usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens <= 0) return
+  const dayKey = localDateKey(atMs)
+  const hourKey = String(new Date(atMs).getHours())
+  const day = doc.hours?.[dayKey] ?? {}
+  const bucket = day[hourKey] ?? emptyTotals()
+  addTotals(bucket, usage)
+  day[hourKey] = bucket
+  doc.hours = doc.hours ?? {}
+  doc.hours[dayKey] = day
 }
 
 /** Total tokens of a bucket (billed input + output; reasoning is inside output). */
@@ -120,6 +138,7 @@ export function pruneLedger(doc: UsageLedgerDocument, todayKey: string, retainDa
   for (const key of Object.keys(doc.days)) {
     if (key < cutoffKey) {
       delete doc.days[key]
+      if (doc.hours !== undefined) delete doc.hours[key]
       pruned += 1
     }
   }
@@ -166,5 +185,54 @@ export function deserializeLedger(value: unknown): UsageLedgerDocument {
       }
     }
   }
+  const rawHours = (value as Record<string, unknown>).hours
+  if (typeof rawHours === 'object' && rawHours !== null) {
+    for (const [dateKey, buckets] of Object.entries(rawHours as Record<string, unknown>)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || typeof buckets !== 'object' || buckets === null) continue
+      const atMs = new Date(dateKey + 'T12:00:00').getTime()
+      if (!Number.isFinite(atMs) || localDateKey(atMs) !== dateKey) continue
+      for (const [hourKey, totals] of Object.entries(buckets as Record<string, unknown>)) {
+        const hour = Number(hourKey)
+        if (!Number.isInteger(hour) || hour < 0 || hour > 23) continue
+        const revived = reviveTotals(totals)
+        if (revived === undefined) continue
+        const day = doc.hours?.[dateKey] ?? {}
+        day[String(hour)] = revived
+        doc.hours = doc.hours ?? {}
+        doc.hours[dateKey] = day
+      }
+    }
+  }
   return doc
+}
+
+/**
+ * Assemble the dashboard's selected scope from the ledger: one local day
+ * (totals, provider/model rows, 24 hourly buckets) or one natural month
+ * (totals, rows, per-day summaries). Returns undefined for a malformed key
+ * so the route can serve the overview without a scope instead of guessing.
+ * Pure: reads the ledger, allocates fresh buckets.
+ */
+export function buildScopeView(ledger: Readonly<UsageLedgerDocument>, kind: 'day' | 'month', key: string): UsageScopeView | undefined {
+  if (kind === 'day') {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return undefined
+    const { totals, providers } = summarizeDays([ledger.days[key] ?? {}])
+    const raw = ledger.hours?.[key] ?? {}
+    const hours: UsageTokenTotals[] = []
+    for (let hour = 0; hour < 24; hour += 1) {
+      hours.push(reviveTotals(raw[String(hour)]) ?? emptyTotals())
+    }
+    return { kind, key, totals, providers, hours }
+  }
+  if (kind === 'month') {
+    if (!/^\d{4}-\d{2}$/.test(key)) return undefined
+    const dayKeys = ledgerDayKeys(ledger).filter((candidate) => candidate.startsWith(key + '-'))
+    const { totals, providers } = summarizeDays(dayKeys.map((candidate) => ledger.days[candidate] ?? {}))
+    const days: UsageDaySummary[] = dayKeys.map((candidate) => ({
+      date: candidate,
+      totals: summarizeDays([ledger.days[candidate] ?? {}]).totals,
+    }))
+    return { kind, key, totals, providers, days }
+  }
+  return undefined
 }
