@@ -42944,11 +42944,7 @@ html:has([data-dsh-frame]) > body {
     linear-gradient(#8b3f18 0 0) 11px 17px / 2px 6px no-repeat,
     linear-gradient(#8b3f18 0 0) 24px 17px / 2px 6px no-repeat,
     linear-gradient(#c96b27 0 0) 2px 2px / 32px 20px no-repeat;
-  box-shadow:
-    -9px -7px 0 -6px #c96b27,
-    -4px -2px 0 -6px #ffd184,
-    43px -6px 0 -7px #ffd184,
-    39px 4px 0 -7px #8b3f18;
+  box-shadow: inset 0 -2px 0 rgb(139 63 24 / 16%);
   filter: drop-shadow(0 4px 4px rgb(0 0 0 / 14%));
   left: 9px;
   top: -18px;
