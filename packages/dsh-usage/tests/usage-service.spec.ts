@@ -546,3 +546,128 @@ describe('persistence', () => {
     await service.stop()
   })
 })
+describe('DSH 0.1.7 foreign settings resolution (#1739)', () => {
+  it('operator sees apiKeyEnv for pi-ai provider resolved from settings.describe() with volatile unwrap', async () => {
+    // Given an OpenCode Go endpoint and DSH 0.1.7 SettingsForms describe providing volatile profiles
+    stubFetch(() => jsonResponse({
+      usage: {
+        rolling: { percent: 10, resetsAt: '2026-09-27T12:00:00Z' },
+      },
+    }))
+    const llm = {
+      listProviders: () => [{ id: 'opencode-go', name: 'OpenCode Go' }],
+      listConfigurableProviders: () => [],
+    }
+    const credentials = {
+      readRecord: async () => undefined,
+      resolve: async (ref: unknown) => {
+        if (ref === 'OPENCODE_GO_API_KEY') return { value: 'sk-opencode-secret' }
+        return undefined
+      },
+    }
+    const settings = {
+      describe: () => [
+        {
+          ns: 'llm-pi-ai',
+          value: {
+            providers: {
+              get: () => ({
+                'opencode-go': {
+                  apiKeyEnv: 'OPENCODE_GO_API_KEY',
+                  baseURL: 'https://opencode.ai/v1',
+                },
+              }),
+            },
+          },
+        },
+      ],
+    }
+    const { ctx } = makeCtx({ llm, credentials, settings })
+    const service = new UsageService(ctx, OPTIONS)
+
+    // When the poll cycle runs
+    await service.refresh()
+
+    // Then the credential resolves as env and plan windows are populated
+    const snapshot = service.overview().providers.find((p) => p.provider === 'opencode-go')
+    expect(snapshot?.credential).toBe('env')
+    expect(snapshot?.plan?.windows).toHaveLength(1)
+    await service.stop()
+  })
+
+  it('operator sees apiKeyEnv for pi-ai provider resolved from configEditor fallback', async () => {
+    // Given an OpenCode Go endpoint and profile configuration under configEditor
+    stubFetch(() => jsonResponse({
+      usage: {
+        rolling: { percent: 20, resetsAt: '2026-09-27T12:00:00Z' },
+      },
+    }))
+    const llm = {
+      listProviders: () => [{ id: 'opencode-go', name: 'OpenCode Go' }],
+      listConfigurableProviders: () => [],
+    }
+    const credentials = {
+      readRecord: async () => undefined,
+      resolve: async (ref: unknown) => {
+        if (ref === 'OPENCODE_GO_API_KEY') return { value: 'sk-opencode-editor' }
+        return undefined
+      },
+    }
+    const configEditor = {
+      configuration: () => [
+        {
+          entry: { options: { id: 'llm-pi-ai', name: '@deepseek-ai/dsh-llm-pi-ai' } },
+          inherited: {},
+          override: {
+            providers: {
+              'opencode-go': {
+                apiKeyEnv: 'OPENCODE_GO_API_KEY',
+              },
+            },
+          },
+        },
+      ],
+    }
+    const { ctx } = makeCtx({ llm, credentials, configEditor })
+    const service = new UsageService(ctx, OPTIONS)
+
+    // When the poll cycle runs
+    await service.refresh()
+
+    // Then the credential resolves as env from configEditor
+    const snapshot = service.overview().providers.find((p) => p.provider === 'opencode-go')
+    expect(snapshot?.credential).toBe('env')
+    await service.stop()
+  })
+
+  it('operator sees official balance excluded when deepseek baseURL is customized in llm-deepseek', async () => {
+    // Given a custom gateway baseURL declared for deepseek
+    stubFetch(() => jsonResponse(BALANCE_BODY))
+    const llm = {
+      listProviders: () => [{ id: 'deepseek', name: 'DeepSeek' }],
+      listConfigurableProviders: () => [],
+    }
+    const settings = {
+      describe: () => [
+        {
+          ns: 'llm-deepseek',
+          value: {
+            baseURL: 'https://custom-gateway.example/v1',
+          },
+        },
+      ],
+    }
+    const { ctx } = makeCtx({ llm, credentials: CREDENTIALS_ENV, settings })
+    const service = new UsageService(ctx, OPTIONS)
+
+    // When the poll cycle runs
+    await service.refresh()
+
+    // Then the balance is marked unsupported and not probed
+    const snapshot = service.overview().providers.find((p) => p.provider === 'deepseek')
+    expect(snapshot?.balanceSupported).toBe(false)
+    expect(snapshot?.balance).toBeUndefined()
+    await service.stop()
+  })
+})
+

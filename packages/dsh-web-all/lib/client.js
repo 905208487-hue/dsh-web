@@ -5969,6 +5969,7 @@ window.__ModuleLoader__.load({
 			"board.hostError": "Host 操作失败：{error}",
 			"board.hostError.notMounted": "任务看板的后台接口没有挂载：宿主可能没有加载该插件，也可能后台数据正被另一个 DSH 实例占用。重启 DSH 服务后再试",
 			"board.hostError.unauthorized": "登录状态已失效，请刷新页面后重试",
+			"board.hostError.forbidden": "当前环境未通过同源校验：桌面外壳或反向代理可能未传递浏览器标记，也没有携带宿主认证凭据",
 			"board.hostError.locked": "任务看板的后台数据被占用：{detail}",
 			"board.hostError.timeout": "后台 {seconds} 秒内没有响应，请稍后重试",
 			"board.hostError.unreachable": "连接不上本机 DSH 服务，请确认它仍在运行",
@@ -6191,6 +6192,7 @@ window.__ModuleLoader__.load({
 			"board.hostError": "Host action failed: {error}",
 			"board.hostError.notMounted": "The task board Host API is not mounted: the Host may not have loaded the plugin, or another DSH instance holds the ledger. Restart the DSH service and try again",
 			"board.hostError.unauthorized": "This session is no longer signed in; reload the page and try again",
+			"board.hostError.forbidden": "The request did not pass the same-origin fence: the desktop shell or reverse proxy may not have forwarded browser credentials",
 			"board.hostError.locked": "The task board ledger is locked: {detail}",
 			"board.hostError.timeout": "The Host did not answer within {seconds}s; try again shortly",
 			"board.hostError.unreachable": "Cannot reach the local DSH service; make sure it is still running",
@@ -9914,12 +9916,13 @@ window.__ModuleLoader__.load({
 				return parsed;
 			}
 			if (hostError !== void 0) {
-				if (hostError === "forbidden") throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), response.status);
+				if (hostError === "forbidden") throw new HostApiError("forbidden", t$4("board.hostError.forbidden"), response.status);
 				if (response.status === 503 || /lock/i.test(hostError)) throw new HostApiError("locked", t$4("board.hostError.locked", { detail: hostError }), response.status);
 				throw new HostApiError("rejected", hostError, response.status);
 			}
 			if (response.status === 404) throw new HostApiError("not-mounted", t$4("board.hostError.notMounted"), 404);
-			if (response.status === 401 || response.status === 403) throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), response.status);
+			if (response.status === 403) throw new HostApiError("forbidden", t$4("board.hostError.forbidden"), 403);
+			if (response.status === 401) throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), 401);
 			throw new HostApiError("unexpected", t$4("board.hostError.unexpected", { status: String(response.status) }), response.status);
 		}
 		var HttpTaskBoardHostTransport = class {
@@ -10019,7 +10022,8 @@ window.__ModuleLoader__.load({
 					throw new HostApiError("unexpected", t$4("new.aiParseFailed", { error: t$4("board.hostError.unexpected", { status: String(response.status) }) }), response.status);
 				}
 				if (response.status === 404) throw new HostApiError("not-mounted", t$4("new.aiParseUnavailable"), 404);
-				if (response.status === 401 || response.status === 403) throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), response.status);
+				if (response.status === 403) throw new HostApiError("forbidden", t$4("board.hostError.forbidden"), 403);
+				if (response.status === 401) throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), 401);
 				const code = typeof record?.code === "string" ? record.code : void 0;
 				if (code === "no-model") throw new HostApiError("rejected", t$4("new.aiParseNoModel"), response.status);
 				if (code === "timeout") throw new HostApiError("timeout", t$4("new.aiParseTimeout", { seconds: String(TASK_PARSE_TIMEOUT_SECONDS) }), response.status);
@@ -35284,7 +35288,8 @@ window.__ModuleLoader__.load({
 		const inject$6 = [
 			"slots",
 			"locale",
-			"configForms"
+			"configForms",
+			"layout"
 		];
 		/**
 		* Mount the SSH panel.
@@ -35306,7 +35311,7 @@ window.__ModuleLoader__.load({
 				setRuntimeTranslate$1(ctx.locale.bind(NS$5));
 			} catch {}
 			const controller = new PanelController$1({ panel: { select: (panelId) => {
-				ctx.get("layout")?.selectPanel?.(panelId);
+				(ctx.get?.("layout"))?.selectPanel?.(panelId);
 			} } });
 			const api = new SshApi();
 			const settings = bindSettingsReader(ctx, SETTINGS_NS, TERMINAL_FONT_FIELD);
@@ -35323,7 +35328,7 @@ window.__ModuleLoader__.load({
 			const disposers = [];
 			try {
 				disposers.push(registerSshPanel(ctx, controller, api, terminalFont));
-				const layoutFace = ctx.get("layout");
+				const layoutFace = ctx.get?.("layout");
 				if (layoutFace?.panelInfo !== void 0) {
 					const sync = () => {
 						const active = layoutFace.panelInfo.getSnapshot().activePanelId;
@@ -38772,7 +38777,11 @@ window.__ModuleLoader__.load({
 		/** Locale namespace this plugin owns. */
 		const NS$3 = "dsh-skill-explorer";
 		/** Required services (fiber inject waiting — the runtime must be up first). */
-		const inject$4 = ["slots", "locale"];
+		const inject$4 = [
+			"slots",
+			"locale",
+			"layout"
+		];
 		/**
 		* Mount the skill center surfaces.
 		* @param ctx - client root context (locale service).
@@ -38794,12 +38803,12 @@ window.__ModuleLoader__.load({
 			} catch {}
 			const api = new SkillApi();
 			const controller = new PanelController({ panel: { select: (panelId) => {
-				ctx.get("layout")?.selectPanel?.(panelId);
+				(ctx.get?.("layout"))?.selectPanel?.(panelId);
 			} } });
 			const disposers = [];
 			try {
 				disposers.push(registerSkillExplorerPanel(ctx, controller, api));
-				const layoutFace = ctx.get("layout");
+				const layoutFace = ctx.get?.("layout");
 				if (layoutFace?.panelInfo !== void 0) {
 					const sync = () => {
 						const active = layoutFace.panelInfo.getSnapshot().activePanelId;

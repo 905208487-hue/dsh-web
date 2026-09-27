@@ -108,9 +108,22 @@ describe('HttpTaskBoardHostTransport Host failure classes (#1528)', () => {
     expect(failure.message).not.toContain('JSON')
   })
 
-  it('reports the authentication fence as a signed-out session', async () => {
+  it('operator sees the authentication fence reported as a forbidden fence rejection', async () => {
+    // Given a Host response rejected by the same-origin fence
+    // When reading the JSON failure envelope
+    // Then the failure is classified as forbidden with the fence message
     const failure = await failureOf(() => new Response(JSON.stringify({ ok: false, error: 'forbidden' }), { status: 403 }))
+    expect(failure.failure).toBe('forbidden')
+    expect(failure.message).toContain('同源')
+  })
+
+  it('operator sees a 401 response reported as an unauthorized session', async () => {
+    // Given an unauthorized 401 response
+    // When reading the plain text failure
+    // Then the failure is classified as unauthorized
+    const failure = await failureOf(() => new Response('unauthorized', { status: 401, headers: { 'content-type': 'text/plain' } }))
     expect(failure.failure).toBe('unauthorized')
+    expect(failure.message).toContain('登录状态')
   })
 
   it('surfaces a locked ledger with the Host reason attached', async () => {
@@ -143,7 +156,7 @@ describe('HttpTaskBoardHostTransport Host failure classes (#1528)', () => {
   })
 
   it('lists every failure class the panel can render', () => {
-    const classes: HostApiFailure[] = ['not-mounted', 'unauthorized', 'locked', 'rejected', 'timeout', 'unreachable', 'unexpected']
+    const classes: HostApiFailure[] = ['not-mounted', 'unauthorized', 'forbidden', 'locked', 'rejected', 'timeout', 'unreachable', 'unexpected']
     expect(new Set(classes).size).toBe(classes.length)
   })
 })

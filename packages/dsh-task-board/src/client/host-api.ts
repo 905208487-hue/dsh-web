@@ -37,7 +37,7 @@ const TASK_PARSE_TIMEOUT_SECONDS = 45
  * "Unexpected token 'o', \"not found\" is not valid JSON" is what a missing
  * Host half looks like today.
  */
-export type HostApiFailure = 'not-mounted' | 'unauthorized' | 'locked' | 'rejected' | 'timeout' | 'unreachable' | 'unexpected'
+export type HostApiFailure = 'not-mounted' | 'unauthorized' | 'forbidden' | 'locked' | 'rejected' | 'timeout' | 'unreachable' | 'unexpected'
 
 /** Transport failure carrying a stable class next to its user-facing message. */
 export class HostApiError extends Error {
@@ -79,14 +79,15 @@ async function readJson<T>(response: Response): Promise<T> {
     // The Host answered with a reason of its own. A ledger lock is the one
     // class worth naming in the panel's words; the authentication fence and
     // every other action rejection are reported as they arrive.
-    if (hostError === 'forbidden') throw new HostApiError('unauthorized', t('board.hostError.unauthorized'), response.status)
+    if (hostError === 'forbidden') throw new HostApiError('forbidden', t('board.hostError.forbidden'), response.status)
     if (response.status === 503 || /lock/i.test(hostError)) {
       throw new HostApiError('locked', t('board.hostError.locked', { detail: hostError }), response.status)
     }
     throw new HostApiError('rejected', hostError, response.status)
   }
   if (response.status === 404) throw new HostApiError('not-mounted', t('board.hostError.notMounted'), 404)
-  if (response.status === 401 || response.status === 403) throw new HostApiError('unauthorized', t('board.hostError.unauthorized'), response.status)
+  if (response.status === 403) throw new HostApiError('forbidden', t('board.hostError.forbidden'), 403)
+  if (response.status === 401) throw new HostApiError('unauthorized', t('board.hostError.unauthorized'), 401)
   throw new HostApiError('unexpected', t('board.hostError.unexpected', { status: String(response.status) }), response.status)
 }
 
@@ -194,7 +195,8 @@ export class HttpTaskBoardHostTransport implements TaskBoardHostTransport {
       throw new HostApiError('unexpected', t('new.aiParseFailed', { error: t('board.hostError.unexpected', { status: String(response.status) }) }), response.status)
     }
     if (response.status === 404) throw new HostApiError('not-mounted', t('new.aiParseUnavailable'), 404)
-    if (response.status === 401 || response.status === 403) throw new HostApiError('unauthorized', t('board.hostError.unauthorized'), response.status)
+    if (response.status === 403) throw new HostApiError('forbidden', t('board.hostError.forbidden'), 403)
+    if (response.status === 401) throw new HostApiError('unauthorized', t('board.hostError.unauthorized'), 401)
     const code = typeof record?.code === 'string' ? record.code : undefined
     if (code === 'no-model') throw new HostApiError('rejected', t('new.aiParseNoModel'), response.status)
     if (code === 'timeout') throw new HostApiError('timeout', t('new.aiParseTimeout', { seconds: String(TASK_PARSE_TIMEOUT_SECONDS) }), response.status)

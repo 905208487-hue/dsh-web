@@ -9,7 +9,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { copyFile, readFile, rename, writeFile } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, join, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, normalize, sep } from 'node:path'
 import { resolveDshHome } from './dsh-home.ts'
 
 /**
@@ -206,7 +206,7 @@ function launchedFacts(
   // land, so its SHAPE is validated here. The RAW segments are inspected
   // because `normalize` would silently collapse a `..` away, hiding an escape
   // instead of rejecting it.
-  if (!isAbsolute(profileDir) || profileDir.split(sep).includes('..')) {
+  if (!isAbsolute(profileDir) || profileDir.split(/[\/\\]/).includes('..')) {
     throw new Error(`plugin-manager: published profile directory is not a safe absolute path ${JSON.stringify(launched.dir ?? '')}`)
   }
   // The published name and directory must describe the SAME profile: the name
@@ -214,22 +214,24 @@ function launchedFacts(
   // files this gateway reads and writes, so a mismatch would split the two
   // write paths across different profiles. The official runtime publishes
   // exactly `basename(dir)` as the name, so this holds for every real host.
-  if (name !== '' && name !== basename(profileDir)) {
+  const dirBase = profileDir.split(/[\/\\]/).filter(Boolean).pop() ?? basename(profileDir)
+  if (name !== '' && name !== dirBase) {
     throw new Error(`plugin-manager: published profile name and directory disagree ${JSON.stringify(name)} vs ${JSON.stringify(profileDir)}`)
   }
-  const ownPatchPath = join(profileDir, 'cordis.patch.yml')
+  const isPosixLiteral = profileDir.includes('/') && !profileDir.includes('\\')
+  const ownPatchPath = isPosixLiteral ? `${profileDir}/cordis.patch.yml` : join(profileDir, 'cordis.patch.yml')
   const publishedPatchPath = typeof launched.patchPath === 'string' ? launched.patchPath.trim() : ''
   // The patch path is a WRITE target (row enablement). Accept only the
   // profile's own patch file; anything else would let the published value
   // redirect a write outside the profile this gateway mounts.
-  if (publishedPatchPath !== '' && publishedPatchPath !== ownPatchPath) {
+  if (publishedPatchPath !== '' && publishedPatchPath !== ownPatchPath && normalize(publishedPatchPath) !== normalize(ownPatchPath)) {
     throw new Error(`plugin-manager: published patch path is not the launched profile's own patch file ${JSON.stringify(launched.patchPath)}`)
   }
   return {
-    profileName: name !== '' ? name : basename(profileDir),
+    profileName: name !== '' ? name : dirBase,
     profileDir,
     patchPath: ownPatchPath,
-    packageJsonPath: join(profileDir, 'package.json'),
+    packageJsonPath: isPosixLiteral ? `${profileDir}/package.json` : join(profileDir, 'package.json'),
     // Strictly a launcher fact: only argv naming the packaged Desktop host (or
     // the persisted desktop selection, in the fallback branch below) marks the
     // run as desktop. A profile that merely happens to be *named* "desktop" is
