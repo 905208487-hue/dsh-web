@@ -66,21 +66,24 @@ export function RecallTrigger({ t, sessionId, inFlight }: RecallTriggerProps) {
     attempt()
   }
 
+  const status = outcome === 'done' ? t('recall.done') : outcome === 'failed' || outcome === 'missing' || outcome === 'none' ? t('recall.failed') : null
   return (
-    <button
-      type="button"
-      className={css.trigger}
-      data-dsh-plugin="recall"
-      disabled={busy}
-      title={t('recall.hint')}
-      aria-label={t('recall.button')}
-      onClick={recall}
-    >
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M11.2 2.8v5.2a4 4 0 0 1-4 4H2.8" />
-        <path d="M5.4 9.4l-2.8 2.8 2.8 2.8" />
-      </svg>
-      <span>{outcome === 'idle' || outcome === 'loading' ? t('recall.button') : outcome === 'done' ? t('recall.done') : t('recall.failed')}</span>
-    </button>
+    <span className={css.wrap}>
+      <button
+        type="button"
+        className={css.trigger}
+        data-dsh-plugin="recall"
+        disabled={busy}
+        title={t('recall.hint')}
+        aria-label={t('recall.button')}
+        onClick={recall}
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M11.2 2.8v5.2a4 4 0 0 1-4 4H2.8" />
+          <path d="M5.4 9.4l-2.8 2.8 2.8 2.8" />
+        </svg>
+      </button>
+      {status !== null ? <span className={css.status}>{status}</span> : null}
+    </span>
   )
 }

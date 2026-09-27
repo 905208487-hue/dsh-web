@@ -163,7 +163,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-recall/src/client/recall.module.css.mjs
-		const css = ".I6_ymW_trigger{appearance:none;box-sizing:border-box;color:inherit;cursor:pointer;background:color-mix(in srgb, currentColor 6%, transparent);border:1px solid color-mix(in srgb, currentColor 16%, transparent);opacity:.85;border-radius:999px;justify-content:center;align-self:flex-start;align-items:center;gap:5px;margin:6px 16px 14px;padding:4px 10px;font:500 12px/18px inherit;transition:opacity .12s,background-color .12s;display:inline-flex}.I6_ymW_trigger:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.I6_ymW_trigger:disabled{cursor:default;opacity:.5}.I6_ymW_trigger:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.I6_ymW_trigger svg{flex:none;display:block}";
+		const css = ".I6_ymW_trigger{appearance:none;box-sizing:border-box;color:inherit;cursor:pointer;background:color-mix(in srgb, currentColor 6%, transparent);border:1px solid color-mix(in srgb, currentColor 16%, transparent);opacity:.8;border-radius:8px;justify-content:center;align-self:flex-start;align-items:center;width:26px;height:26px;margin:6px 16px 14px;padding:5px;transition:opacity .12s,background-color .12s;display:inline-flex}.I6_ymW_wrap{align-items:center;gap:8px;margin:2px 16px 12px;display:inline-flex}.I6_ymW_status{opacity:.65;font:400 12px/16px inherit}.I6_ymW_trigger:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.I6_ymW_trigger:disabled{cursor:default;opacity:.5}.I6_ymW_trigger:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.I6_ymW_trigger svg{flex:none;display:block}";
 		const tagId = "@linxin666/dsh-recall/packages/dsh-recall/src/client/recall.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -172,7 +172,11 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		var recall_module_css_default = { "trigger": "I6_ymW_trigger" };
+		var recall_module_css_default = {
+			"status": "I6_ymW_status",
+			"trigger": "I6_ymW_trigger",
+			"wrap": "I6_ymW_wrap"
+		};
 		//#endregion
 		//#region src/client/RecallTrigger.tsx
 		/**
@@ -218,26 +222,33 @@ window.__ModuleLoader__.load({
 				};
 				attempt();
 			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-				type: "button",
-				className: recall_module_css_default.trigger,
-				"data-dsh-plugin": "recall",
-				disabled: busy,
-				title: t("recall.hint"),
-				"aria-label": t("recall.button"),
-				onClick: recall,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-					viewBox: "0 0 16 16",
-					width: "14",
-					height: "14",
-					fill: "none",
-					stroke: "currentColor",
-					strokeWidth: "1.5",
-					strokeLinecap: "round",
-					strokeLinejoin: "round",
-					"aria-hidden": "true",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M11.2 2.8v5.2a4 4 0 0 1-4 4H2.8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5.4 9.4l-2.8 2.8 2.8 2.8" })]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: outcome === "idle" || outcome === "loading" ? t("recall.button") : outcome === "done" ? t("recall.done") : t("recall.failed") })]
+			const status = outcome === "done" ? t("recall.done") : outcome === "failed" || outcome === "missing" || outcome === "none" ? t("recall.failed") : null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				className: recall_module_css_default.wrap,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+					type: "button",
+					className: recall_module_css_default.trigger,
+					"data-dsh-plugin": "recall",
+					disabled: busy,
+					title: t("recall.hint"),
+					"aria-label": t("recall.button"),
+					onClick: recall,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+						viewBox: "0 0 16 16",
+						width: "14",
+						height: "14",
+						fill: "none",
+						stroke: "currentColor",
+						strokeWidth: "1.5",
+						strokeLinecap: "round",
+						strokeLinejoin: "round",
+						"aria-hidden": "true",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M11.2 2.8v5.2a4 4 0 0 1-4 4H2.8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5.4 9.4l-2.8 2.8 2.8 2.8" })]
+					})
+				}), status !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: recall_module_css_default.status,
+					children: status
+				}) : null]
 			});
 		}
 		/** The active conversation's session id (null outside a chat view). */
