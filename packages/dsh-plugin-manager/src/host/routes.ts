@@ -47,7 +47,11 @@ const VERSION_PROBE_COOLDOWN_MS = 60_000
 export interface GatewayRouteDeps {
   facts: ProfileFacts
   gateway: CliGateway
-  /** Resolve the dsh binary presence (the CLI is the write path). */
+  /**
+   * Resolve the dsh binary presence. Only the CLI-backed writer needs it: an
+   * application-owned profile writes through the official in-process manager
+   * (`gateway.usesNativeWriter()`), so its routes must not demand a binary.
+   */
   cliAvailable: () => boolean
   /** Registry fetch seam for update checks (test seam); the default reads the
    * `/<name>/latest` manifest including the `dsh` / `engines` metadata. */
@@ -221,7 +225,7 @@ export function makeGatewayRoutes(deps: GatewayRouteDeps): WebRoute[] {
       writeJson(res, 400, { error: unsafeSpec })
       return
     }
-    if (!deps.cliAvailable()) {
+    if (!deps.cliAvailable() && !gateway.usesNativeWriter()) {
       writeJson(res, 500, { error: 'plugin-manager: dsh CLI not found on PATH' })
       return
     }
@@ -241,7 +245,7 @@ export function makeGatewayRoutes(deps: GatewayRouteDeps): WebRoute[] {
       writeJson(res, 400, { error: unsafe })
       return
     }
-    if (!deps.cliAvailable()) {
+    if (!deps.cliAvailable() && !gateway.usesNativeWriter()) {
       writeJson(res, 500, { error: 'plugin-manager: dsh CLI not found on PATH' })
       return
     }
@@ -318,7 +322,7 @@ export function makeGatewayRoutes(deps: GatewayRouteDeps): WebRoute[] {
       writeJson(res, 400, { error: unsafeId })
       return
     }
-    if (!deps.cliAvailable()) {
+    if (!deps.cliAvailable() && !gateway.usesNativeWriter()) {
       writeJson(res, 500, { error: 'plugin-manager: dsh CLI not found on PATH' })
       return
     }

@@ -117,6 +117,9 @@ page has when it calls the same service.
   for verification.
 - The change takes effect on the next host start (the host half is a built
   `lib/index.js` loaded at boot).
+- Installs and removals on the same profile later took the same native writer,
+  which is a separate decision with its own evidence: [the install-path
+  note](2026-09-27-plugin-manager-app-owned-install-path.md).
 
 ## Testing
 

@@ -6,6 +6,11 @@
  * CLI changed (the conflict ledger). The npm web runtime has no installer
  * service, so this gateway is its write path; on runtimes with official
  * channels the browser half never calls it.
+ *
+ * One exception: an application-owned profile (a packaged Desktop launch)
+ * cannot be written by the CLI at all — the official launcher refuses it — so
+ * installs, updates and removals there run through the official in-process
+ * plugin manager instead (see {@link NativePluginManager}).
  * @module @linxin666/dsh-client-ui-plugin-manager/host
  */
 
@@ -369,6 +374,12 @@ export interface NativePluginManager {
    * @returns the manager's own diagnostics (the caller re-reads the profile).
    */
   installBundle(spec: string, options?: { enabled?: boolean; requestId?: string }): Promise<unknown>
+  /**
+   * Remove one profile-owned bundle through the official manager.
+   * @param name - installed dependency (bundle) name.
+   * @returns the manager's own diagnostics (the caller re-reads the profile).
+   */
+  removeBundle(name: string): Promise<unknown>
 }
 
 /** One layer snapshot plus the profile patch text and dependency list. */
@@ -449,6 +460,17 @@ export class CliGateway {
   private nativeManager(): NativePluginManager | undefined {
     if (this.facts.desktop !== true) return undefined
     return this.deps.nativeManager?.()
+  }
+
+  /**
+   * Whether this gateway will write through the official in-process manager
+   * instead of the CLI (an application-owned profile, see
+   * {@link nativeManager}). The HTTP layer reads it so its CLI-availability
+   * guard never rejects a job the CLI is not going to run.
+   * @returns true when the native writer serves installs, updates and removals.
+   */
+  usesNativeWriter(): boolean {
+    return this.nativeManager() !== undefined
   }
 
   /** Run one CLI command to completion and return the bounded output. */
@@ -635,7 +657,12 @@ export class CliGateway {
     return (this.deps.spawnImpl ?? spawnDsh)(binary, args, this.env)
   }
 
-  /** Start an install; the caller polls {@link status}. */
+  /**
+   * Start an install; the caller polls {@link status}. An application-owned
+   * profile runs it through the official in-process manager instead of the CLI
+   * (see {@link nativeManager}), exactly like {@link update}; the job table,
+   * polling contract and profile verification are identical either way.
+   */
   install(spec: string): { jobId: string } {
     const job: GatewayJob = { id: `job-${++this.counter}`, action: 'install', spec, phase: 'running' }
     this.jobs.set(job.id, job)
@@ -644,6 +671,13 @@ export class CliGateway {
       job.phase = 'error'
       job.error = unsafe
       this.retainFinished(job.id)
+      return { jobId: job.id }
+    }
+    // An application-owned profile takes the official writer; everything else
+    // keeps the CLI, whose reconciliation guards this gateway compensates for.
+    const native = this.nativeManager()
+    if (native !== undefined) {
+      this.enqueueNativeInstall(job, native)
       return { jobId: job.id }
     }
     this.enqueue(() => this.run(job, ['plugin', '--profile', this.facts.profileName, 'add', spec], ADD_TIMEOUT_MS))
@@ -683,6 +717,53 @@ export class CliGateway {
     }
     this.enqueue(() => this.run(job, ['plugin', '--profile', this.facts.profileName, 'add', spec], ADD_TIMEOUT_MS))
     return { jobId: job.id }
+  }
+
+  /** Start an install through the official in-process manager. */
+  private enqueueNativeInstall(job: GatewayJob, native: NativePluginManager): void {
+    this.enqueue(async () => {
+      try {
+        await this.runNativeInstall(job, native)
+      } catch (error) {
+        job.phase = 'error'
+        job.error = `plugin-manager: 官方插件管理器安装失败：${error instanceof Error ? error.message : String(error)}`
+      }
+      this.retainFinished(job.id)
+    })
+  }
+
+  /**
+   * Run one install through the official in-process manager (an
+   * application-owned profile, where the CLI refuses to write). The manager
+   * resolves the registry, runs pnpm with the launcher's bundled toolchain and
+   * applies the bundle, then this reads the profile the same way the CLI path
+   * does: the install is only `done` once the profile carries a dependency it
+   * did not carry before, so a green manager call that added nothing is still
+   * reported as a failure. The CLI-specific guards are deliberately absent —
+   * the official manager validates and applies the bundle itself, exactly as it
+   * does for the official Plugins page.
+   * @param job - the install job being settled.
+   * @param native - the official manager.
+   */
+  private async runNativeInstall(job: GatewayJob, native: NativePluginManager): Promise<void> {
+    const before = await this.capture()
+    await native.installBundle(job.spec, { enabled: true, requestId: job.id })
+    const after = await this.capture()
+    const name = this.newDependency(before, after)
+    if (name === undefined) {
+      job.phase = 'error'
+      job.error = 'plugin-manager: 官方插件管理器报告成功，但 profile 未新增任何依赖（安装未生效）'
+      return
+    }
+    const manifest = await readProfileManifest(this.facts.packageJsonPath)
+    job.plugin = await buildPluginRow(this.facts, name, manifest.dependencies[name] ?? job.spec, after.layer.rows)
+    job.conflicts = significantChanges(diffLayer(before.layer, after.layer)).map(change => ({
+      id: change.id,
+      name: change.id,
+      from: change.from,
+      to: change.to,
+    }))
+    job.phase = 'done'
   }
 
   /** Start an in-place update through the official in-process manager. */
@@ -775,7 +856,11 @@ export class CliGateway {
     return { jobId: job.id }
   }
 
-  /** Start a removal; the caller polls {@link status}. */
+  /**
+   * Start a removal; the caller polls {@link status}. An application-owned
+   * profile removes through the official in-process manager, the same writer
+   * the install and update paths use there (the CLI refuses that profile).
+   */
   remove(id: string): { jobId: string } {
     const job: GatewayJob = { id: `job-${++this.counter}`, action: 'remove', spec: id, phase: 'running' }
     this.jobs.set(job.id, job)
@@ -786,8 +871,54 @@ export class CliGateway {
       this.retainFinished(job.id)
       return { jobId: job.id }
     }
+    const native = this.nativeManager()
+    if (native !== undefined) {
+      this.enqueueNativeRemove(job, native)
+      return { jobId: job.id }
+    }
     this.enqueue(() => this.run(job, ['plugin', '--profile', this.facts.profileName, 'remove', id], REMOVE_TIMEOUT_MS))
     return { jobId: job.id }
+  }
+
+  /** Start a removal through the official in-process manager. */
+  private enqueueNativeRemove(job: GatewayJob, native: NativePluginManager): void {
+    this.enqueue(async () => {
+      try {
+        await this.runNativeRemove(job, native)
+      } catch (error) {
+        job.phase = 'error'
+        job.error = `plugin-manager: 官方插件管理器卸载失败：${error instanceof Error ? error.message : String(error)}`
+      }
+      this.retainFinished(job.id)
+    })
+  }
+
+  /**
+   * Run one removal through the official in-process manager (an
+   * application-owned profile, where the CLI refuses to write). The removal is
+   * only `done` once a dependency the profile carried before is gone, exactly
+   * the verification the CLI path performs.
+   * @param job - the removal job being settled.
+   * @param native - the official manager.
+   */
+  private async runNativeRemove(job: GatewayJob, native: NativePluginManager): Promise<void> {
+    const before = await this.capture()
+    await native.removeBundle(job.spec)
+    const after = await this.capture()
+    const name = before.dependencies.find(candidate => !after.dependencies.includes(candidate))
+    if (name === undefined) {
+      job.phase = 'error'
+      job.error = 'plugin-manager: 官方插件管理器报告成功，但依赖仍在 profile 中（卸载未生效）'
+      return
+    }
+    job.plugin = await this.rowFor('remove', job.spec, before, after)
+    job.conflicts = significantChanges(diffLayer(before.layer, after.layer)).map(change => ({
+      id: change.id,
+      name: change.id,
+      from: change.from,
+      to: change.to,
+    }))
+    job.phase = 'done'
   }
 
   /**

@@ -85,6 +85,8 @@ Status: implemented
 - 原生更新路径不经过网关自身的保护；该处由官方管理器负责 registry 解析、pnpm 调用、profile
   锁与 bundle 激活，本网关在事后重读 profile 做核对。
 - 改动在下次宿主启动后生效（host 半区是启动时加载的构建产物 `lib/index.js`）。
+- 同一 profile 上的安装与卸载随后也改走了同一个原生写入器，那是一项独立决策、有独立证据：
+  [安装路径的决策记录](2026-09-27-plugin-manager-app-owned-install-path.md)。
 
 ## Testing
 
