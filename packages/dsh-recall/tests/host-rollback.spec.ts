@@ -76,16 +76,20 @@ describe('conversation recall host rollback', () => {
     expect(result.reason).toBe('missing-session')
   })
 
-  it('user refuses to roll back a log without completed turns', () => {
-    // Given a session with no completed turn
+  it('user rolls back an unclosed solo turn by keeping the header', () => {
+    // Given a session whose only turn never closed
     const dir2 = join(root, 'workspace', 'sess-0000-2222')
     mkdirSync(dir2, { recursive: true })
     writeFileSync(join(dir2, 'session.v4.jsonl.zstd'), encodeEvents([{ type: 'session', id: 'x' }, { type: 'turn/start', turn: 1 }]))
     // When the rollback is applied
     const result = applyRollback('sess-0000-2222', root)
-    // Then nothing to recall is reported
-    expect(result.ok).toBe(false)
-    expect(result.reason).toBe('nothing-to-recall')
+    // Then the open turn is dropped and the header stays
+    expect(result.ok).toBe(true)
+    expect(result.inFlight).toBe(true)
+    expect(result.removedLines).toBeGreaterThanOrEqual(1)
+    const keptText = decodeFile(join(dir2, 'session.v4.jsonl.zstd'))
+    expect(keptText).toContain('"session"')
+    expect(keptText).not.toContain('"turn/start"')
   })
 
   it('user never resolves paths outside the store for hostile ids', () => {

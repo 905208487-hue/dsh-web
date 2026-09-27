@@ -3,7 +3,8 @@
  * turn, never completed history. Given a decoded session event log, when the
  * log ends with an in-flight turn, then the cut drops that turn at the last
  * `turn/end`; when the latest turn is completed, then the cut drops it at the
- * second-to-last `turn/end`; and a log with no completed turn has nothing to
+ * second-to-last `turn/end`; and an unclosed solo turn is dropped at its start,
+ * with only a bare no-turn log having nothing to
  * recall.
  */
 
@@ -52,9 +53,19 @@ describe('conversation recall core', () => {
     expect(cut!.inFlight).toBe(true)
   })
 
-  it('user has nothing to recall in a session without completed turns', () => {
-    // Given a log with no completed turn
+  it('user recalls a session whose only turn never closed', () => {
+    // Given a log with an unclosed turn and no turn end at all
     const events = log(['start'])
+    // When asking for the recall cut
+    const cut = rollbackCut(events)
+    // Then the whole open turn is dropped at its start - 1 (the header stays)
+    expect(cut!.cut).toBe(0)
+    expect(cut!.inFlight).toBe(true)
+  })
+
+  it('user has nothing to recall in a bare session without turns', () => {
+    // Given a log with no turn events at all
+    const events = [JSON.stringify({ type: 'session', id: 'x' })]
     // When asking for the recall cut
     const cut = rollbackCut(events)
     // Then there is nothing to recall

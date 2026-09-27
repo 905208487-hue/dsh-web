@@ -189,6 +189,7 @@ window.__ModuleLoader__.load({
 				if (id === null || inFlight()) return;
 				if (!window.confirm(t("recall.confirm"))) return;
 				setOutcome("loading");
+				const MAX_ATTEMPTS = 5;
 				let attempts = 0;
 				const attempt = () => {
 					fetch("/api/dsh-recall/rollback", {
@@ -197,9 +198,9 @@ window.__ModuleLoader__.load({
 						body: JSON.stringify({ sessionId: id })
 					}).then((r) => r.json()).then((res) => {
 						if (!res.ok) {
-							if (res.reason === "missing-session" && attempts === 0) {
-								attempts = 1;
-								window.setTimeout(attempt, 2500);
+							if (res.reason === "missing-session" && attempts < MAX_ATTEMPTS) {
+								attempts += 1;
+								window.setTimeout(attempt, 2e3 * attempts);
 								return;
 							}
 							setOutcome(res.reason === "missing-session" ? "missing" : res.reason === "nothing-to-recall" ? "none" : "failed");

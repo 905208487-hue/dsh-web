@@ -33,7 +33,10 @@ export function RecallTrigger({ t, sessionId, inFlight }: RecallTriggerProps) {
     if (!window.confirm(t('recall.confirm'))) return
     setOutcome('loading')
     // The host persists a brand-new session on a flush cycle that can lag the
-    // first click; one retry after a short window covers that race.
+    // first click by seconds; back off and retry so a just-created session
+    // still recalls on the first click (capped, then the operator can click
+    // again once the file is on disk).
+    const MAX_ATTEMPTS = 5
     let attempts = 0
     const attempt = (): void => {
       void fetch('/api/dsh-recall/rollback', {
@@ -44,9 +47,9 @@ export function RecallTrigger({ t, sessionId, inFlight }: RecallTriggerProps) {
       .then(r => r.json() as Promise<{ ok: boolean; reason?: string; requiresRestart?: boolean; recalled?: { text: string; attachments: Array<{ name: string; mediaType: string }> } }>)
       .then((res) => {
         if (!res.ok) {
-          if (res.reason === 'missing-session' && attempts === 0) {
-            attempts = 1
-            window.setTimeout(attempt, 2500)
+          if (res.reason === 'missing-session' && attempts < MAX_ATTEMPTS) {
+            attempts += 1
+            window.setTimeout(attempt, 2000 * attempts)
             return
           }
           setOutcome(res.reason === 'missing-session' ? 'missing' : res.reason === 'nothing-to-recall' ? 'none' : 'failed')

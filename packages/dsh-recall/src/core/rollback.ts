@@ -11,11 +11,13 @@
  * Recall policy (per the operator): only the latest conversation content may
  * be recalled; completed history must be left untouched. The rule is purely
  * positional:
- * - if the log ends with an in-flight turn (no closing `turn/end`), drop
- *   that turn: cut after the last `turn/end`;
+ * - if the log ends with an in-flight turn (no closing `turn/end` for the
+ *   latest turn), drop that turn: cut after the last `turn/end` (or, when no
+ *   turn ever closed, after the last `turn/start`'s predecessor — the host
+ *   frequently leaves the final turn unclosed, e.g. when a reply is cut off);
  * - otherwise the latest turn is already completed — drop it: cut after the
  *   second-to-last `turn/end`;
- * - a log without any completed turn has nothing to recall.
+ * - a log with no turn at all (bare header/seed events) has nothing to recall.
  *
  * The function is pure (operates on decoded lines) so it can be tested
  * without touching real session files; the zstd read/write and the host
@@ -62,7 +64,12 @@ export function rollbackCut(events: readonly string[]): RollbackCut | null {
       lastEnd = i
     }
   }
-  if (ends === 0) return null
+  if (starts === 0) return null
+  if (ends === 0) {
+    // Only an unclosed turn exists (the host may never emit its turn/end):
+    // recall it wholesale, keeping everything through the turn's start.
+    return { cut: Math.max(lastStart - 1, 0), inFlight: true }
+  }
   const inFlight = starts > ends
   // The cut keeps everything through the turn boundary before the latest
   // turn; never cut below the session header line.
