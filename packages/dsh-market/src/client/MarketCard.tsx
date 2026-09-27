@@ -2,8 +2,11 @@
  * The market card: a first-level settings section that browses
  * dsh-market.com (skins / pets / community plugins), ranks entries by
  * device-backed likes, and offers one-click install — assets land in the
- * DSH home directories through the host gateway, plugins go through the
- * optional pluginManager service (with the copy-command degradation).
+ * DSH home directories through the host gateway, while plugins go through the
+ * official in-process plugin manager's remote face when the host publishes it
+ * (the same call the official Plugins page makes), fall back to the family
+ * pluginManager service otherwise, and hand management of an installed plugin
+ * over to the official Plugins page instead of re-implementing it.
  */
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from 'react'
@@ -20,7 +23,20 @@ import {
   type InstalledPluginItem,
   type PluginManagerService,
 } from './plugin-manager-bridge.ts'
-import { entryInstalled, installCommand, installSpec, isInstallSpecValid } from './install-source.ts'
+import {
+  entryInstalled,
+  installCommand,
+  installSpec,
+  isInstallSpecValid,
+  managePackageName,
+} from './install-source.ts'
+import {
+  getNativePluginFaces,
+  installViaOfficialManager,
+  subscribeNativePluginFaces,
+  type NativePluginManagerService,
+  type PluginNavigationService,
+} from './native-plugin-faces.ts'
 import { byCategory, bySubcategory, categoryCounts, subcategoryCounts } from './filter.ts'
 import {
   CATEGORY_LABEL_KEY,
@@ -248,6 +264,10 @@ export type MarketCardProps =
     } | null
     /** Plugin-manager face override; undefined reads the bridged cordis service. */
     pluginManager?: PluginManagerService | null
+    /** Official remote plugin manager override; undefined reads the bridged remote face. */
+    nativePluginManager?: NativePluginManagerService | null
+    /** Official Plugins page navigation override; undefined reads the bridged service. */
+    pluginNavigation?: PluginNavigationService | null
     /** Turnstile token override (injected for tests). */
     turnstileToken?: () => Promise<string>
     /** Npm-downloads data override: a data object (injected for tests) or a loader. */
@@ -394,6 +414,11 @@ export function MarketCard(props: MarketCardProps): ReactNode {
   const bridge = useSyncExternalStore(subscribePluginManager, getPluginManagerSnapshot)
   const face = props.pluginManager !== undefined ? props.pluginManager : bridge.face
   const faceLoopback = face !== null && face.isLoopback
+  // Official surfaces: the in-process manager's remote face (the install writer)
+  // and the Plugins page's navigation face (where management stays).
+  const nativeFaces = useSyncExternalStore(subscribeNativePluginFaces, getNativePluginFaces)
+  const nativeManager = props.nativePluginManager !== undefined ? props.nativePluginManager : nativeFaces.manager
+  const pluginNavigation = props.pluginNavigation !== undefined ? props.pluginNavigation : nativeFaces.navigation
   useEffect(() => {
     if (face === null || !face.isLoopback) {
       setPluginList(null)
@@ -549,7 +574,17 @@ export function MarketCard(props: MarketCardProps): ReactNode {
       return
     }
     setInstalling('plugin:' + id)
-    face.install(spec).then(() => face.list()).then((list) => {
+    // The official in-process manager is the native writer whenever the host
+    // publishes its remote face: the same call the official Plugins page makes,
+    // and the only writer on the packaged Desktop client, where the CLI refuses
+    // the application-owned profile. The family face stays the fallback for
+    // hosts that publish no remote.
+    const manager = nativeManager
+    const requestId = window.crypto.randomUUID ? window.crypto.randomUUID() : 'market-' + id + '-' + Date.now().toString(36)
+    const install = manager != null
+      ? installViaOfficialManager(manager, spec, requestId)
+      : face.install(spec)
+    install.then(() => face.list()).then((list) => {
       setPluginList(list)
       callout(id, t('installed', {}))
       void reportInstall('plugin', id).then((count) => {
@@ -564,6 +599,14 @@ export function MarketCard(props: MarketCardProps): ReactNode {
     }).catch((reason: unknown) => {
       setPluginErrors((prev) => ({ ...prev, [id]: t('installFailed', { reason: messageOf(reason) }) }))
     }).finally(() => setInstalling(null))
+  }
+
+  // Hand an installed plugin over to the official Plugins page instead of
+  // re-implementing management here: that page owns enablement, uninstall and
+  // the install diagnostics stream.
+  const onManagePlugin = (item: MarketRecord): void => {
+    if (pluginNavigation == null) return
+    pluginNavigation.openBundle(managePackageName(item, pluginList ?? []))
   }
 
   const onLike = async (kind: Kind, id: string): Promise<void> => {
@@ -861,6 +904,15 @@ export function MarketCard(props: MarketCardProps): ReactNode {
                                 onClick={() => { onInstallPlugin(item) }}
                               >
                                 {isInstalling ? t('installing') : t('installNow')}
+                              </button>
+                            ) : null}
+                            {kind === 'plugin' && installedHere && pluginNavigation != null ? (
+                              <button
+                                type="button"
+                                className={css.install}
+                                onClick={() => { onManagePlugin(item) }}
+                              >
+                                {t('manageInPluginPage')}
                               </button>
                             ) : null}
                             {(kind === 'skin' || kind === 'pet') && gateway !== null ? (

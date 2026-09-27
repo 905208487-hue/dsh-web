@@ -24,8 +24,15 @@ selection of skins, pets and community plugins.
   inert library `$DSH_HOME/agent-presets/<id>/`, which no discovery root scans; enabling one moves it
   into the roster's user root through the Presets panel. Reinstalling an existing directory asks for
   confirmation and replaces it atomically.
-- One-click plugin install through the optional `pluginManager` service (provided by
-  `@linxin666/dsh-client-ui-plugin-manager`); without it the card degrades to the copy-command index.
+- One-click plugin install reuses the official writer: it goes through the official in-process
+  plugin manager's remote face (`ctx.remote.pluginManager.installBundle`, the very call the official
+  Plugins page makes) whenever the host publishes it — on the packaged Desktop client that manager is
+  the only writer, because the CLI refuses the application-owned profile — and falls back to the
+  family `pluginManager` service (`@linxin666/dsh-client-ui-plugin-manager`) otherwise. Without
+  either the card degrades to the copy-command index.
+- An installed plugin is managed in the official container, not here: the card's manage action calls
+  that page's `pluginNavigation.openBundle(packageName)`, which opens the bundle's page in the
+  official Plugins panel, where enablement, uninstall and the install diagnostics stream already live.
 - Remote browsers see the read-only catalog: install buttons are hidden, the Workshop site link and
   copy-command fallbacks stay available.
 - External links — the Workshop site, a card name, a repository, a skin preview — open in the

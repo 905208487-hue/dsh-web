@@ -774,28 +774,28 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region src/client/plugin-manager-bridge.ts
-		let snapshot = {
+		let snapshot$1 = {
 			face: null,
 			version: 0
 		};
-		const listeners = /* @__PURE__ */ new Set();
+		const listeners$1 = /* @__PURE__ */ new Set();
 		/** Replace the held face and notify subscribers. */
 		function setFace(face) {
-			snapshot = {
+			snapshot$1 = {
 				face,
-				version: snapshot.version + 1
+				version: snapshot$1.version + 1
 			};
-			for (const listener of listeners) listener();
+			for (const listener of listeners$1) listener();
 		}
 		/** Current bridge snapshot (cached reference, safe for useSyncExternalStore). */
 		function getPluginManagerSnapshot() {
-			return snapshot;
+			return snapshot$1;
 		}
 		/** Subscribe to face changes; returns the unsubscribe function. */
 		function subscribePluginManager(listener) {
-			listeners.add(listener);
+			listeners$1.add(listener);
 			return () => {
-				listeners.delete(listener);
+				listeners$1.delete(listener);
 			};
 		}
 		/**
@@ -901,6 +901,90 @@ window.__ModuleLoader__.load({
 		/** Find the installed row for an entry (null when not installed or no snapshot). */
 		function entryInstalled(entry, installed) {
 			return installed.find((item) => isRowMatch(entry, item)) ?? null;
+		}
+		/**
+		* The installed dependency name the official Plugins page addresses for one
+		* entry: the installed row's own id when the entry is installed, else the
+		* entry's npm package name without its version/tag suffix, else its id.
+		* @param entry - one store plugin entry.
+		* @param installed - the installed-row snapshot (may be empty).
+		* @returns the package name to hand to `pluginNavigation.openBundle`.
+		*/
+		function managePackageName(entry, installed) {
+			const row = entryInstalled(entry, installed);
+			if (row !== null) return row.id;
+			return entry.npm === void 0 ? entry.id : stripVersion(entry.npm);
+		}
+		//#endregion
+		//#region src/client/native-plugin-faces.ts
+		let snapshot = {
+			manager: null,
+			navigation: null,
+			version: 0
+		};
+		const listeners = /* @__PURE__ */ new Set();
+		/** Merge one face change into the snapshot and notify subscribers. */
+		function patchFaces(patch) {
+			snapshot = {
+				manager: patch.manager === void 0 ? snapshot.manager : patch.manager,
+				navigation: patch.navigation === void 0 ? snapshot.navigation : patch.navigation,
+				version: snapshot.version + 1
+			};
+			for (const listener of listeners) listener();
+		}
+		/** Current native-faces snapshot (cached reference, safe for useSyncExternalStore). */
+		function getNativePluginFaces() {
+			return snapshot;
+		}
+		/** Subscribe to face changes; returns the unsubscribe function. */
+		function subscribeNativePluginFaces(listener) {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		}
+		/**
+		* Bridge both official faces into the module store. Uses ctx.inject (NOT the
+		* plugin's module-level inject array) so each face stays optional: the inner
+		* callback runs when the official plugin provides it and is disposed when it
+		* goes away, which clears the store.
+		* @param ctx - the client root context.
+		*/
+		function bridgeNativePluginFaces(ctx) {
+			ctx.inject(["remote.pluginManager"], (inner) => {
+				inner.effect(() => {
+					patchFaces({ manager: inner.get("remote.pluginManager") ?? null });
+					return () => {
+						patchFaces({ manager: null });
+					};
+				}, "dsh-web-ui-market: official pluginManager bridge");
+			});
+			ctx.inject(["pluginNavigation"], (inner) => {
+				inner.effect(() => {
+					patchFaces({ navigation: inner.get("pluginNavigation") ?? null });
+					return () => {
+						patchFaces({ navigation: null });
+					};
+				}, "dsh-web-ui-market: official pluginNavigation bridge");
+			});
+		}
+		/**
+		* Install one spec through the official manager, surfacing a refusal as a
+		* thrown error. The manager owns registry resolution, the profile lock and
+		* bundle activation; this store only reports what it answered.
+		* @param manager - the official remote face.
+		* @param spec - validated install spec.
+		* @param requestId - id the run is tracked under (also the UI's install key).
+		*/
+		async function installViaOfficialManager(manager, spec, requestId) {
+			const result = await manager.installBundle(spec, {
+				enabled: true,
+				requestId
+			});
+			if (result !== null && typeof result === "object" && result.ok === false) {
+				const error = result.error;
+				throw new Error(error?.message ?? error?.code ?? "plugin-manager: official install failed");
+			}
 		}
 		//#endregion
 		//#region src/client/filter.ts
@@ -1084,8 +1168,11 @@ window.__ModuleLoader__.load({
 		* The market card: a first-level settings section that browses
 		* dsh-market.com (skins / pets / community plugins), ranks entries by
 		* device-backed likes, and offers one-click install — assets land in the
-		* DSH home directories through the host gateway, plugins go through the
-		* optional pluginManager service (with the copy-command degradation).
+		* DSH home directories through the host gateway, while plugins go through the
+		* official in-process plugin manager's remote face when the host publishes it
+		* (the same call the official Plugins page makes), fall back to the family
+		* pluginManager service otherwise, and hand management of an installed plugin
+		* over to the official Plugins page instead of re-implementing it.
 		*/
 		const MARKET_ORIGIN = "https://dsh-market.com";
 		/** Bridges the market config form onto the card's staged form. */
@@ -1322,6 +1409,9 @@ window.__ModuleLoader__.load({
 			const bridge = (0, react.useSyncExternalStore)(subscribePluginManager, getPluginManagerSnapshot);
 			const face = props.pluginManager !== void 0 ? props.pluginManager : bridge.face;
 			const faceLoopback = face !== null && face.isLoopback;
+			const nativeFaces = (0, react.useSyncExternalStore)(subscribeNativePluginFaces, getNativePluginFaces);
+			const nativeManager = props.nativePluginManager !== void 0 ? props.nativePluginManager : nativeFaces.manager;
+			const pluginNavigation = props.pluginNavigation !== void 0 ? props.pluginNavigation : nativeFaces.navigation;
 			(0, react.useEffect)(() => {
 				if (face === null || !face.isLoopback) {
 					setPluginList(null);
@@ -1497,7 +1587,9 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				setInstalling("plugin:" + id);
-				face.install(spec).then(() => face.list()).then((list) => {
+				const manager = nativeManager;
+				const requestId = window.crypto.randomUUID ? window.crypto.randomUUID() : "market-" + id + "-" + Date.now().toString(36);
+				(manager != null ? installViaOfficialManager(manager, spec, requestId) : face.install(spec)).then(() => face.list()).then((list) => {
 					setPluginList(list);
 					callout(id, t("installed", {}));
 					reportInstall("plugin", id).then((count) => {
@@ -1526,6 +1618,10 @@ window.__ModuleLoader__.load({
 						[id]: t("installFailed", { reason: messageOf(reason) })
 					}));
 				}).finally(() => setInstalling(null));
+			};
+			const onManagePlugin = (item) => {
+				if (pluginNavigation == null) return;
+				pluginNavigation.openBundle(managePackageName(item, pluginList ?? []));
 			};
 			const onLike = async (kind, id) => {
 				const key = kind + ":" + id;
@@ -1942,6 +2038,14 @@ window.__ModuleLoader__.load({
 																},
 																children: isInstalling ? t("installing") : t("installNow")
 															}) : null,
+															kind === "plugin" && installedHere && pluginNavigation != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+																type: "button",
+																className: market_module_css_default.install,
+																onClick: () => {
+																	onManagePlugin(item);
+																},
+																children: t("manageInPluginPage")
+															}) : null,
 															(kind === "skin" || kind === "pet") && gateway !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 																type: "button",
 																className: market_module_css_default.install + " " + market_module_css_default.installPrimary,
@@ -2221,6 +2325,7 @@ window.__ModuleLoader__.load({
 			"installNow": "一键安装",
 			"installing": "安装中…",
 			"installed": "已安装",
+			"manageInPluginPage": "在插件页管理",
 			"installFailed": "安装失败：{reason}",
 			"installSpecInvalid": "安装来源无效，仅支持 npm 包名或 https:// git 地址",
 			"copied": "已复制",
@@ -2320,6 +2425,7 @@ window.__ModuleLoader__.load({
 			"installNow": "Install now",
 			"installing": "Installing…",
 			"installed": "Installed",
+			"manageInPluginPage": "Manage in Plugins",
 			"installFailed": "Install failed: {reason}",
 			"installSpecInvalid": "Invalid install source; only npm package names and https:// git URLs are supported",
 			"copied": "Copied",
@@ -2449,6 +2555,7 @@ window.__ModuleLoader__.load({
 				}
 			}, "dsh-web-ui-market: dictionaries");
 			bridgePluginManager(ctx);
+			bridgeNativePluginFaces(ctx);
 			const binder = ctx.get("webUiSettings");
 			const controller = new MarketCardController(binder !== void 0 ? binder.bind({ namespace: MARKET_NS }) : createServedEntryForm({
 				forms: ctx.configForms,

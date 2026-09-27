@@ -32,6 +32,7 @@ export const ru: Record<string, string> = {
   'installNow': 'Установить в один клик',
   'installSpecInvalid': 'Недопустимый источник установки; поддерживаются только имена npm-пакетов и git-URL вида https://.',
   'installed': 'Установлено',
+  'manageInPluginPage': 'Управление в «Плагинах»',
   'installedAt': 'Установлено в {path}',
   'installing': 'Установка…',
   'installs': 'Установок: {count}',
