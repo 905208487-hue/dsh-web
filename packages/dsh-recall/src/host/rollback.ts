@@ -21,7 +21,7 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { zstdCompressSync } from 'node:zlib'
 import { decompress as zstdDecompress } from 'fzstd'
-import { rollbackCut } from '../core/rollback.ts'
+import { isRealUserMessage, rollbackCut } from '../core/rollback.ts'
 
 /** Default session store root (the dsh CLI's `~/.dsh/sessions`). */
 export function sessionsRoot(): string {
@@ -100,6 +100,7 @@ export function extractRecalledUserMessage(removedTail: readonly string[]): Reca
       continue
     }
     if (event?.type !== 'user/message' || !Array.isArray(event.data?.content)) continue
+    if (!isRealUserMessage(removedTail[i])) continue
     let text = ''
     const attachments: RecalledAttachment[] = []
     for (const part of event.data.content as Array<{ type?: string; text?: unknown; attachment?: { name?: unknown; mediaType?: unknown } }>) {

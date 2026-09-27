@@ -80,7 +80,11 @@ describe('conversation recall host rollback', () => {
     // Given a session whose only turn never closed
     const dir2 = join(root, 'workspace', 'sess-0000-2222')
     mkdirSync(dir2, { recursive: true })
-    writeFileSync(join(dir2, 'session.v4.jsonl.zstd'), encodeEvents([{ type: 'session', id: 'x' }, { type: 'turn/start', turn: 1 }]))
+    writeFileSync(join(dir2, 'session.v4.jsonl.zstd'), encodeEvents([
+      { type: 'session', id: 'x' },
+      { type: 'turn/start', turn: 1 },
+      { type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: '我的问题' }] } },
+    ]))
     // When the rollback is applied
     const result = applyRollback('sess-0000-2222', root)
     // Then the open turn is dropped and the header stays

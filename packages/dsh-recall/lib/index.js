@@ -634,32 +634,58 @@ function decompress(dat, buf) {
 * no completed turn to recall.
 */
 function rollbackCut(events) {
-	let starts = 0;
-	let ends = 0;
-	let lastStart = -1;
-	let lastEnd = -1;
-	let prevEnd = -1;
+	const turnStarts = [];
+	const turnEnds = [];
+	let realMsg = -1;
 	for (let i = 0; i < events.length; i++) {
 		const type = eventType(events[i]);
-		if (type === "turn/start") {
-			starts += 1;
-			lastStart = i;
-		} else if (type === "turn/end") {
-			ends += 1;
-			prevEnd = lastEnd;
-			lastEnd = i;
-		}
+		if (type === "turn/start") turnStarts.push(i);
+		else if (type === "turn/end") turnEnds.push(i);
+		else if (type === "user/message" && isRealUserMessage(events[i])) realMsg = i;
 	}
-	if (starts === 0) return null;
-	if (ends === 0) return {
-		cut: Math.max(lastStart - 1, 0),
-		inFlight: true
-	};
-	const inFlight = starts > ends;
+	if (realMsg < 0) return null;
+	const turnStart = lastBefore(turnStarts, realMsg);
+	const turnEnd = firstAfter(turnEnds, realMsg);
+	let cut;
+	if (turnEnd >= 0) {
+		const priorEnds = turnEnds.filter((e) => turnStart >= 0 && e < turnStart);
+		cut = priorEnds.length > 0 ? priorEnds[priorEnds.length - 1] : Math.max((turnStart >= 0 ? turnStart : realMsg) - 1, 0);
+	} else cut = turnStart >= 0 ? turnStart - 1 : Math.max(realMsg - 1, 0);
 	return {
-		cut: inFlight ? lastEnd : ends > 1 ? prevEnd : Math.max(lastStart - 1, 0),
-		inFlight
+		cut: Math.max(cut, 0),
+		inFlight: turnEnd < 0 || turnStarts.length > turnEnds.length
 	};
+}
+/** Whether a raw line is a user/message the OPERATOR typed (not injected). */
+function isRealUserMessage(raw) {
+	try {
+		const parsed = JSON.parse(raw);
+		const source = parsed?.data?.source;
+		if (source !== null && typeof source === "object" && typeof source.kind === "string") {
+			if (source.kind !== "user") return false;
+		}
+		const content = parsed?.data?.content;
+		if (Array.isArray(content)) {
+			let text = "";
+			for (const part of content) if (part?.type === "text" && typeof part.text === "string") text += part.text;
+			if (text.startsWith("<system-reminder>")) return false;
+		}
+		return true;
+	} catch {
+		return false;
+	}
+}
+/** The last element strictly before the bound (-1 when none). */
+function lastBefore(indices, bound) {
+	let found = -1;
+	for (const i of indices) if (i < bound) found = i;
+	else break;
+	return found;
+}
+/** The first element strictly after the bound (-1 when none). */
+function firstAfter(indices, bound) {
+	for (const i of indices) if (i > bound) return i;
+	return -1;
 }
 /** Read the `type` field of a raw event line (null when unparsable). */
 function eventType(raw) {
@@ -730,6 +756,7 @@ function extractRecalledUserMessage(removedTail) {
 			continue;
 		}
 		if (event?.type !== "user/message" || !Array.isArray(event.data?.content)) continue;
+		if (!isRealUserMessage(removedTail[i])) continue;
 		let text = "";
 		const attachments = [];
 		for (const part of event.data.content) if (part?.type === "text" && typeof part.text === "string") text += (text ? "\n" : "") + part.text;

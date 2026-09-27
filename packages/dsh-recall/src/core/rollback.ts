@@ -9,15 +9,15 @@
  * content always sits at the log's tail.
  *
  * Recall policy (per the operator): only the latest conversation content may
- * be recalled; completed history must be left untouched. The rule is purely
- * positional:
- * - if the log ends with an in-flight turn (no closing `turn/end` for the
- *   latest turn), drop that turn: cut after the last `turn/end` (or, when no
- *   turn ever closed, after the last `turn/start`'s predecessor — the host
- *   frequently leaves the final turn unclosed, e.g. when a reply is cut off);
- * - otherwise the latest turn is already completed — drop it: cut after the
- *   second-to-last `turn/end`;
- * - a log with no turn at all (bare header/seed events) has nothing to recall.
+ * be recalled; completed history must be left untouched. The cut anchors on
+ * the user's OWN latest message — platform-injected `user/message` events
+ * (`source.kind` other than `user`: runtime-context snapshots, skill-catalog
+ * reminders, job notifications) never anchor a recall, so recalling this
+ * conversation never pulls in or removes other conversations' content:
+ * - the turn containing the last real user message is dropped: cut after the
+ *   previous turn's `turn/end` (or before the turn start / message when no
+ *   prior turn closed — the host often leaves the final turn unclosed);
+ * - a log without any real user message has nothing to recall.
  *
  * The function is pure (operates on decoded lines) so it can be tested
  * without touching real session files; the zstd read/write and the host
@@ -48,33 +48,71 @@ export interface RollbackCut {
  * no completed turn to recall.
  */
 export function rollbackCut(events: readonly string[]): RollbackCut | null {
-  let starts = 0
-  let ends = 0
-  let lastStart = -1
-  let lastEnd = -1
-  let prevEnd = -1
+  const turnStarts: number[] = []
+  const turnEnds: number[] = []
+  let realMsg = -1
   for (let i = 0; i < events.length; i++) {
     const type = eventType(events[i])
-    if (type === 'turn/start') {
-      starts += 1
-      lastStart = i
-    } else if (type === 'turn/end') {
-      ends += 1
-      prevEnd = lastEnd
-      lastEnd = i
+    if (type === 'turn/start') turnStarts.push(i)
+    else if (type === 'turn/end') turnEnds.push(i)
+    else if (type === 'user/message' && isRealUserMessage(events[i])) realMsg = i
+  }
+  // No message the user typed themselves: nothing of theirs to recall.
+  if (realMsg < 0) return null
+  // The turn containing that message.
+  const turnStart = lastBefore(turnStarts, realMsg)
+  const turnEnd = firstAfter(turnEnds, realMsg)
+  let cut: number
+  if (turnEnd >= 0) {
+    // Completed turn: keep everything through the previous turn's close.
+    const priorEnds = turnEnds.filter((e) => turnStart >= 0 && e < turnStart)
+    cut = priorEnds.length > 0 ? priorEnds[priorEnds.length - 1] : Math.max((turnStart >= 0 ? turnStart : realMsg) - 1, 0)
+  } else {
+    // Unclosed turn (the host often never emits its turn/end): drop the whole
+    // open turn, keeping everything through its start.
+    cut = turnStart >= 0 ? turnStart - 1 : Math.max(realMsg - 1, 0)
+  }
+  return { cut: Math.max(cut, 0), inFlight: turnEnd < 0 || turnStarts.length > turnEnds.length }
+}
+
+/** Whether a raw line is a user/message the OPERATOR typed (not injected). */
+export function isRealUserMessage(raw: string): boolean {
+  try {
+    const parsed = JSON.parse(raw) as { data?: { source?: { kind?: unknown }; content?: unknown } }
+    const source = parsed?.data?.source
+    if (source !== null && typeof source === 'object' && typeof (source as { kind?: unknown }).kind === 'string') {
+      if ((source as { kind: string }).kind !== 'user') return false
     }
+    const content = parsed?.data?.content
+    if (Array.isArray(content)) {
+      let text = ''
+      for (const part of content as Array<{ type?: unknown; text?: unknown }>) {
+        if (part?.type === 'text' && typeof part.text === 'string') text += part.text
+      }
+      if (text.startsWith('<system-reminder>')) return false
+    }
+    return true
+  } catch {
+    return false
   }
-  if (starts === 0) return null
-  if (ends === 0) {
-    // Only an unclosed turn exists (the host may never emit its turn/end):
-    // recall it wholesale, keeping everything through the turn's start.
-    return { cut: Math.max(lastStart - 1, 0), inFlight: true }
+}
+
+/** The last element strictly before the bound (-1 when none). */
+function lastBefore(indices: readonly number[], bound: number): number {
+  let found = -1
+  for (const i of indices) {
+    if (i < bound) found = i
+    else break
   }
-  const inFlight = starts > ends
-  // The cut keeps everything through the turn boundary before the latest
-  // turn; never cut below the session header line.
-  const cut = inFlight ? lastEnd : (ends > 1 ? prevEnd : Math.max(lastStart - 1, 0))
-  return { cut, inFlight }
+  return found
+}
+
+/** The first element strictly after the bound (-1 when none). */
+function firstAfter(indices: readonly number[], bound: number): number {
+  for (const i of indices) {
+    if (i > bound) return i
+  }
+  return -1
 }
 
 /** Read the `type` field of a raw event line (null when unparsable). */

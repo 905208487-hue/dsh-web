@@ -3,20 +3,23 @@
  * turn, never completed history. Given a decoded session event log, when the
  * log ends with an in-flight turn, then the cut drops that turn at the last
  * `turn/end`; when the latest turn is completed, then the cut drops it at the
- * second-to-last `turn/end`; and an unclosed solo turn is dropped at its start,
- * with only a bare no-turn log having nothing to
- * recall.
+ * second-to-last `turn/end`; an unclosed turn is dropped at its start; and only
+ * a log without any real user message has nothing to recall (platform-injected
+ * user-role events never anchor a recall).
  */
 
 import { describe, expect, it } from 'vitest'
 import { rollbackCut } from '../src/core/rollback.ts'
 
-/** Build a small session event log with turns of given sizes (0 = no turn event). */
+/** Build a small session event log; each turn opens, carries a real user message, then closes. */
 function log(turnEvents: Array<'start' | 'end' | 'other'>): string[] {
   const lines: string[] = [JSON.stringify({ type: 'session', id: 's' })]
   turnEvents.forEach((e, i) => {
     if (e === 'other') lines.push(JSON.stringify({ type: `note/${i}` }))
-    else lines.push(JSON.stringify({ type: e === 'start' ? 'turn/start' : 'turn/end', turn: i }))
+    else if (e === 'start') {
+      lines.push(JSON.stringify({ type: 'turn/start', turn: i }))
+      lines.push(JSON.stringify({ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: `问 ${i}` }] } }))
+    } else lines.push(JSON.stringify({ type: 'turn/end', turn: i }))
   })
   return lines
 }
@@ -43,8 +46,15 @@ describe('conversation recall core', () => {
   })
 
   it('user recalls an in-flight trailing turn at the last turn end', () => {
-    // Given a session whose latest turn is still running (no end event)
-    const events = log(['start', 'end', 'start'])
+    // Given a session whose latest turn carries a real user message and still runs
+    const events = [
+      JSON.stringify({ type: 'session', id: 'x' }),
+      JSON.stringify({ type: 'turn/start', turn: 1 }),
+      JSON.stringify({ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: '第一问' }] } }),
+      JSON.stringify({ type: 'turn/end', turn: 1 }),
+      JSON.stringify({ type: 'turn/start', turn: 2 }),
+      JSON.stringify({ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: '第二问' }] } }),
+    ]
     const lastEnd = events.findIndex(l => l.includes('"turn/end"'))
     // When recalling the latest content
     const cut = rollbackCut(events)
@@ -53,9 +63,27 @@ describe('conversation recall core', () => {
     expect(cut!.inFlight).toBe(true)
   })
 
-  it('user recalls a session whose only turn never closed', () => {
-    // Given a log with an unclosed turn and no turn end at all
-    const events = log(['start'])
+  it('user never anchors a recall on injected platform messages', () => {
+    // Given a log whose user-role events are platform injections only
+    const events = [
+      JSON.stringify({ type: 'session', id: 'x' }),
+      JSON.stringify({ type: 'turn/start', turn: 1 }),
+      JSON.stringify({ type: 'user/message', data: { source: { kind: 'runtime-context' }, content: [{ type: 'text', text: 'Current runtime context.' }] } }),
+      JSON.stringify({ type: 'user/message', data: { source: { kind: 'skill-catalog' }, content: [{ type: 'text', text: '<system-reminder>skills</system-reminder>' }] } }),
+    ]
+    // When asking for the recall cut
+    const cut = rollbackCut(events)
+    // Then injected content from other surfaces is never recalled
+    expect(cut).toBeNull()
+  })
+
+  it('user recalls an unclosed solo turn carrying a real message', () => {
+    // Given a log whose only turn never closed but holds the user's message
+    const events = [
+      JSON.stringify({ type: 'session', id: 'x' }),
+      JSON.stringify({ type: 'turn/start', turn: 1 }),
+      JSON.stringify({ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: '我的问题' }] } }),
+    ]
     // When asking for the recall cut
     const cut = rollbackCut(events)
     // Then the whole open turn is dropped at its start - 1 (the header stays)
