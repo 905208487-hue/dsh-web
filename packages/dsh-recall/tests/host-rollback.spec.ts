@@ -10,7 +10,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { zstdCompressSync, zstdDecompressSync } from 'node:zlib'
+import { zstdCompressSync } from 'node:zlib'
+import { decompress as fzDecompress } from 'fzstd'
 import { applyRollback, extractRecalledUserMessage, sessionLogPath } from '../src/host/rollback.ts'
 
 function encodeEvents(events: Array<string | Record<string, unknown>>): Uint8Array {
@@ -19,7 +20,7 @@ function encodeEvents(events: Array<string | Record<string, unknown>>): Uint8Arr
 }
 
 function decodeFile(path: string): string {
-  return zstdDecompressSync(readFileSync(path)).toString('utf8')
+  return Buffer.from(fzDecompress(new Uint8Array(readFileSync(path)))).toString('utf8')
 }
 
 const originalEvents = [
@@ -121,5 +122,26 @@ describe('conversation recall content extraction', () => {
     const recalled = extractRecalledUserMessage(tail)
     // Then nothing is recovered
     expect(recalled).toBeNull()
+  })
+})
+
+describe('conversation recall multi-frame zstd logs', () => {
+  it('user rolls back a log stored as concatenated zstd frames', () => {
+    // Given a session log written as two concatenated zstd frames
+    const dir3 = join(root, 'workspace', 'sess-0000-3333')
+    mkdirSync(dir3, { recursive: true })
+    const first = [JSON.stringify({ type: 'session', id: 'x' }), JSON.stringify({ type: 'turn/start', turn: 1 })].join('\n') + '\n'
+    const second = [JSON.stringify({ type: 'user/message', data: { content: [{ type: 'text', text: 'm' }] } }), JSON.stringify({ type: 'turn/end', turn: 1 })].join('\n') + '\n'
+    writeFileSync(join(dir3, 'session.v4.jsonl.zstd'), Buffer.concat([zstdCompressSync(Buffer.from(first, 'utf8')), zstdCompressSync(Buffer.from(second, 'utf8'))]))
+    // When the rollback is applied
+    const result = applyRollback('sess-0000-3333', root)
+    // Then the cut works across the frame boundary: the frame-2 turn/end is
+    // seen, the single completed turn is removed, and the header stays
+    expect(result.ok).toBe(true)
+    expect(result.removedLines).toBeGreaterThanOrEqual(3)
+    const keptText = decodeFile(join(dir3, 'session.v4.jsonl.zstd'))
+    expect(keptText).toContain('"session"')
+    expect(keptText).not.toContain('"turn/end"')
+    expect(keptText).not.toContain('"user/message"')
   })
 })

@@ -189,24 +189,33 @@ window.__ModuleLoader__.load({
 				if (id === null || inFlight()) return;
 				if (!window.confirm(t("recall.confirm"))) return;
 				setOutcome("loading");
-				fetch("/api/dsh-recall/rollback", {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ sessionId: id })
-				}).then((r) => r.json()).then((res) => {
-					if (!res.ok) {
-						setOutcome(res.reason === "missing-session" ? "missing" : res.reason === "nothing-to-recall" ? "none" : "failed");
-						return;
-					}
-					if (res.recalled !== void 0 && id !== null) {
-						saveDraft(id, {
-							text: res.recalled.text,
-							attachments: res.recalled.attachments ?? []
-						});
-						if (res.recalled.text.length > 0) fillComposer(res.recalled.text);
-					}
-					setOutcome("done");
-				}).catch(() => setOutcome("failed"));
+				let attempts = 0;
+				const attempt = () => {
+					fetch("/api/dsh-recall/rollback", {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({ sessionId: id })
+					}).then((r) => r.json()).then((res) => {
+						if (!res.ok) {
+							if (res.reason === "missing-session" && attempts === 0) {
+								attempts = 1;
+								window.setTimeout(attempt, 2500);
+								return;
+							}
+							setOutcome(res.reason === "missing-session" ? "missing" : res.reason === "nothing-to-recall" ? "none" : "failed");
+							return;
+						}
+						if (res.recalled !== void 0 && id !== null) {
+							saveDraft(id, {
+								text: res.recalled.text,
+								attachments: res.recalled.attachments ?? []
+							});
+							if (res.recalled.text.length > 0) fillComposer(res.recalled.text);
+						}
+						setOutcome("done");
+					}).catch(() => setOutcome("failed"));
+				};
+				attempt();
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",

@@ -1,7 +1,8 @@
 import { copyFileSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { zstdCompressSync, zstdDecompressSync } from "node:zlib";
+import { zstdCompressSync } from "node:zlib";
+import { decompress } from "fzstd";
 //#region src/host/loopback.ts
 /** IPv4 127/8 predicate (four decimal octets, first == 127). */
 function isIPv4Loopback(v4) {
@@ -201,7 +202,8 @@ function applyRollback(sessionId, root = sessionsRoot()) {
 		inFlight: false,
 		requiresRestart: true
 	};
-	const decompressed = zstdDecompressSync(readFileSync(path));
+	const original = readFileSync(path);
+	const decompressed = Buffer.from(decompress(new Uint8Array(original)));
 	const lines = new TextDecoder().decode(decompressed).split("\n").filter((line) => line.trim() !== "");
 	const cut = rollbackCut(lines);
 	if (cut === null) return {

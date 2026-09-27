@@ -19,7 +19,8 @@
 import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync, copyFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { zstdCompressSync, zstdDecompressSync } from 'node:zlib'
+import { zstdCompressSync } from 'node:zlib'
+import { decompress as zstdDecompress } from 'fzstd'
 import { rollbackCut } from '../core/rollback.ts'
 
 /** Default session store root (the dsh CLI's `~/.dsh/sessions`). */
@@ -124,7 +125,11 @@ export function applyRollback(sessionId: string, root: string = sessionsRoot()):
   const path = sessionLogPath(root, sessionId)
   if (path === null) return { ok: false, reason: 'missing-session', sessionId, removedLines: 0, inFlight: false, requiresRestart: true }
   const original = readFileSync(path)
-  const decompressed = zstdDecompressSync(original)
+  // The harness writes session logs as MULTI-FRAME zstd streams; the zlib
+  // zstd codec only decodes the first frame, so decompression goes through
+  // fzstd (pure JS, frame-safe) while compression stays on zlib (single
+  // frame, which the harness reader accepts).
+  const decompressed = Buffer.from(zstdDecompress(new Uint8Array(original)))
   const text = new TextDecoder().decode(decompressed)
   const lines = text.split('\n').filter(line => line.trim() !== '')
   const cut = rollbackCut(lines)
