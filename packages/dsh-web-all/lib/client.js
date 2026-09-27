@@ -4148,6 +4148,7 @@ window.__ModuleLoader__.load({
 				model: normalizeTargetId(input.model),
 				reuseSession: input.reuseSession === true ? true : void 0,
 				teamRun: input.teamRun === true ? true : void 0,
+				goalRun: input.goalRun === false ? false : void 0,
 				...input.freeze === void 0 ? {} : { freeze: freezeOf(input.freeze, now) },
 				...input.handover === void 0 ? {} : { handover: {
 					...input.handover,
@@ -4856,6 +4857,7 @@ window.__ModuleLoader__.load({
 				if ("permission" in patch && patch.permission !== void 0 && patch.permission !== task.permission || "handover" in patch) next.permissionConfirmedAt = void 0;
 				if ("reuseSession" in patch) next.reuseSession = patch.reuseSession === true ? true : void 0;
 				if ("teamRun" in patch) next.teamRun = patch.teamRun === true ? true : void 0;
+				if ("goalRun" in patch) next.goalRun = patch.goalRun === false ? false : void 0;
 				if (workspaceId !== void 0 || "workspaceId" in patch) next.workspaceId = workspaceId;
 				if (mode !== void 0 || "mode" in patch) next.mode = mode;
 				if (permission !== void 0 || "permission" in patch) next.permission = permission;
@@ -5733,6 +5735,7 @@ window.__ModuleLoader__.load({
 			if (record.mode !== void 0 && typeof record.mode !== "string") return false;
 			if (record.permission !== void 0 && typeof record.permission !== "string") return false;
 			if (record.reuseSession !== void 0 && typeof record.reuseSession !== "boolean") return false;
+			if (record.goalRun !== void 0 && typeof record.goalRun !== "boolean") return false;
 			if (!Array.isArray(record.executions)) return false;
 			for (const execution of record.executions) {
 				if (typeof execution !== "object" || execution === null) return false;
@@ -5850,6 +5853,7 @@ window.__ModuleLoader__.load({
 				task.archivedAt = typeof row.archivedAt === "number" && Number.isFinite(row.archivedAt) ? row.archivedAt : void 0;
 				task.permission = isTaskPermission(row.permission) ? row.permission : void 0;
 				task.reuseSession = row.reuseSession === true ? true : void 0;
+				task.goalRun = row.goalRun === false ? false : void 0;
 				task.freeze = normalizeFreeze(row.freeze);
 				task.handover = normalizeHandover(row.handover);
 				task.tags = normalizeTags(row.tags);
@@ -6107,6 +6111,8 @@ window.__ModuleLoader__.load({
 			"exec.teamRunHint": "开启后：执行本任务只启动一个 Leader 会话，每个子任务由它派生为 teammate 并在该会话内并行工作（子任务自身的权限钉住不适用）。关闭则每个成员各开独立会话。",
 			"exec.teamRunUnavailable": "当前部署未提供 Agent Teams 服务，无法启用。",
 			"exec.reuseSessionHint": "开启后，本任务的后续执行在上一次会话里继续（该会话空闲且仍存在时），不再每次新建对话；每次复用时都会重新应用上面钉住的权限与模型。",
+			"exec.goalRun": "以 dsh 内置的 /goal 开始执行任务",
+			"exec.goalRunHint": "默认开启：执行时把任务目标作为持久目标交给 dsh 内置的 /goal，会话会自动续跑多轮，直到 agent 标记目标完成；看板在该目标真正结束后才结算本次执行。关闭则只执行一轮普通对话。",
 			"detail.executionSettings": "执行设置",
 			"exec.hint": "执行时生效：工作区决定执行会话落在哪个工作区；模式决定会话的 agent 预设；权限经 /permission 命令应用到会话。留空则使用运行时默认。",
 			"settings.title": "任务看板",
@@ -6330,6 +6336,8 @@ window.__ModuleLoader__.load({
 			"exec.teamRunHint": "On: running this task starts one Lead session and spawns a teammate per subtask inside it, working in parallel (a subtask permission pin does not apply). Off: every member gets its own independent session.",
 			"exec.teamRunUnavailable": "This deployment serves no Agent Teams service, so team runs cannot be enabled.",
 			"exec.reuseSessionHint": "When on, later runs continue in the previous session (when that session is idle and still exists) instead of starting a new conversation each time; the pinned permission and model above are re-applied on every reuse.",
+			"exec.goalRun": "Start the run with dsh's built-in /goal",
+			"exec.goalRunHint": "On by default: the run arms dsh built-in /goal with the task objective, so the session keeps working automatic continuation rounds until the agent marks the goal complete, and the board settles the execution only when that goal really ends. Off: one plain turn.",
 			"detail.executionSettings": "Execution Settings",
 			"exec.hint": "Applied when the task runs: the workspace decides where the execution session lands; the mode composes the session's agent preset; the permission is applied through the /permission command. Blank = runtime default.",
 			"settings.title": "Task Board",
@@ -6767,6 +6775,7 @@ window.__ModuleLoader__.load({
 			const [model, setModel] = (0, react.useState)(initialTask?.model ?? parentTask?.model ?? "");
 			const inheritedPermission = parentTask === void 0 ? void 0 : effectiveTaskPermission(parentTask);
 			const [reuseSession, setReuseSession] = (0, react.useState)(initialTask?.reuseSession ?? false);
+			const [goalRun, setGoalRun] = (0, react.useState)(initialTask?.goalRun ?? true);
 			const [scheduleEnabled, setScheduleEnabled] = (0, react.useState)(initialTask?.schedule?.enabled ?? false);
 			const [scheduleCron, setScheduleCron] = (0, react.useState)(initialTask?.schedule?.cron ?? "");
 			const [scheduleError, setScheduleError] = (0, react.useState)(void 0);
@@ -6867,6 +6876,7 @@ window.__ModuleLoader__.load({
 					permission: permission === "" ? void 0 : permission,
 					model: model === "" ? void 0 : model,
 					...reuseSession ? { reuseSession: true } : {},
+					...goalRun ? {} : { goalRun: false },
 					...tagList.length > 0 ? { tags: tagList } : {},
 					schedule: scheduleEnabled ? {
 						enabled: true,
@@ -7151,6 +7161,20 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: board_module_css_default.detailText,
 						children: t$4("exec.reuseSessionHint")
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+						className: board_module_css_default.scheduleToggle,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							type: "checkbox",
+							checked: goalRun,
+							onChange: (event) => {
+								setGoalRun(event.target.checked);
+							}
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t$4("exec.goalRun") })]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: board_module_css_default.detailText,
+						children: t$4("exec.goalRunHint")
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: board_module_css_default.detailSection,
@@ -7816,6 +7840,21 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: board_module_css_default.detailText,
 						children: t$4("exec.reuseSessionHint")
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+						className: board_module_css_default.scheduleToggle,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							type: "checkbox",
+							checked: task.goalRun !== false,
+							disabled: pending,
+							onChange: (event) => {
+								controller.updateTask(task.id, { goalRun: event.target.checked });
+							}
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t$4("exec.goalRun") })]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: board_module_css_default.detailText,
+						children: t$4("exec.goalRunHint")
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
 						className: board_module_css_default.scheduleToggle,

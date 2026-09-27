@@ -86,8 +86,8 @@ describe('HostExecutionRunner', () => {
     const promptPayloads: unknown[] = []
     const commands = {
       execute: vi.fn(async (_sessionId: string, line: string) => {
-        order.push('permission')
-        expect(line).toBe('/permission workspace-write')
+        order.push(line.startsWith('/permission ') ? 'permission' : 'goal')
+        if (line.startsWith('/permission ')) expect(line).toBe('/permission workspace-write')
         return { kind: 'success' as const }
       }),
     }
@@ -117,7 +117,10 @@ describe('HostExecutionRunner', () => {
       }),
     }
     await expect(new HostExecutionRunner(gateway, commands, workspaceRegistry()).launch(configuredTask())).resolves.toBe('session-a')
-    expect(order).toEqual(['preset', 'create', 'rename', 'permission', 'prompt'])
+    // The permission pin precedes the prompt; the /goal arming follows it, so
+    // the session's first turn carries the instruction verbatim.
+    expect(order).toEqual(['preset', 'create', 'rename', 'permission', 'prompt', 'goal'])
+    expect(commands.execute).toHaveBeenCalledWith('session-a', '/goal do work', expect.anything())
     expect(gateway.invoke.mock.calls[1]?.[0].args).toEqual({ request: { workspaceId: 'workspace-a', agentPreset: 'preset-a' } })
     expect(promptPayloads).toEqual([{ sessionId: 'session-a', requestId: expect.any(String), mode: 'queue', content: [{ type: 'text', text: 'do work' }] }])
   })
@@ -127,8 +130,8 @@ describe('HostExecutionRunner', () => {
     const promptPayloads: unknown[] = []
     const commands = {
       execute: vi.fn(async (_sessionId: string, line: string) => {
-        order.push('permission')
-        expect(line).toBe('/permission workspace-write')
+        order.push(line.startsWith('/permission ') ? 'permission' : 'goal')
+        if (line.startsWith('/permission ')) expect(line).toBe('/permission workspace-write')
         return { kind: 'success' as const }
       }),
     }
@@ -159,7 +162,7 @@ describe('HostExecutionRunner', () => {
     ).resolves.toBe('session-existing')
     // The pinned permission is re-asserted on the existing session; no
     // create/rename reaches the gateway at all.
-    expect(order).toEqual(['preset', 'projections', 'permission', 'prompt'])
+    expect(order).toEqual(['preset', 'projections', 'permission', 'prompt', 'goal'])
     expect(promptPayloads).toEqual([{ sessionId: 'session-existing', requestId: expect.any(String), mode: 'queue', content: [{ type: 'text', text: 'do work' }] }])
   })
 
@@ -348,7 +351,10 @@ describe('HostExecutionRunner', () => {
     const gateway = {
       invoke: fakeInvoke(async (request: GatewayRequest) => request.method === 'list'
         ? { items: [{ sessionId: 'session-a', running: false }] }
-        : page(request)),
+        // The settle decision reads the goal phase (no goal on this session).
+        : request.method === 'projections'
+          ? { values: { goal: null } }
+          : page(request)),
       stream: fakeStream(async () => ({
         async *[Symbol.asyncIterator]() {
           yield snapshot([sessionEvent('user/message', 400, 4_000, {})], 400, true)
@@ -364,8 +370,13 @@ describe('HostExecutionRunner', () => {
     const items = [{ sessionId: 'session-a', running: false }]
     const list = vi.fn(async () => ({ items }))
     const page = vi.fn(async () => ({ records: [sessionEvent('turn/end', 10, 1_100, { reason: { kind: 'completed' } })], hasMore: false }))
+    const projections = vi.fn(async () => ({ values: { goal: null } }))
     const gateway = {
-      invoke: fakeInvoke(async (request: GatewayRequest) => request.method === 'list' ? list() : page()),
+      invoke: fakeInvoke(async (request: GatewayRequest) => request.method === 'list'
+        ? list()
+        : request.method === 'projections'
+          ? projections()
+          : page()),
       stream: fakeStream(async () => ({
         async *[Symbol.asyncIterator]() {
           yield snapshot([], 10, true)
@@ -379,6 +390,7 @@ describe('HostExecutionRunner', () => {
     await expect(runner.inspect('session-a', 1_000, running.items)).resolves.toEqual({ outcome: 'succeeded' })
     expect(list).toHaveBeenCalledOnce()
     expect(page).toHaveBeenCalledOnce()
+    expect(projections).toHaveBeenCalledOnce()
   })
 
   it('requests the host roster under the descriptor _request wire key and reports it known', async () => {

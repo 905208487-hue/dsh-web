@@ -228,3 +228,39 @@ describe('session reuse toggle (#1419)', () => {
     expect(updateTask).toHaveBeenCalledWith('t1', { reuseSession: false })
   })
 })
+
+describe('goal run toggle', () => {
+  function goalCheckbox(container: HTMLElement): HTMLInputElement {
+    const label = [...container.querySelectorAll('label')].find(node => node.textContent?.includes('以 dsh 内置的 /goal 开始执行任务'))
+    if (label === undefined) throw new Error('no /goal option in the detail view')
+    return label.querySelector('input') as HTMLInputElement
+  }
+
+  it('user opening a card that never touched the option sees it checked and unchecking pins a plain turn', async () => {
+    // Given a card that never touched the option (absent = on by default)
+    const updateTask = vi.fn(async () => true)
+    const { container } = await renderDetail(task(), updateTask)
+
+    // When the detail view renders it
+    const checkbox = goalCheckbox(container)
+
+    // Then the checkbox shows the default, and unchecking writes the opt-out
+    expect(checkbox.checked).toBe(true)
+    await act(async () => { checkbox.click() })
+    expect(updateTask).toHaveBeenCalledWith('t1', { goalRun: false })
+  })
+
+  it('user opening an opted-out card sees it unchecked and re-checking restores the default', async () => {
+    // Given a card that stored the /goal opt-out
+    const updateTask = vi.fn(async () => true)
+    const { container } = await renderDetail(task({ goalRun: false }), updateTask)
+
+    // When the detail view renders it
+    const checkbox = goalCheckbox(container)
+
+    // Then it shows unchecked, and re-checking writes the default back
+    expect(checkbox.checked).toBe(false)
+    await act(async () => { checkbox.click() })
+    expect(updateTask).toHaveBeenCalledWith('t1', { goalRun: true })
+  })
+})

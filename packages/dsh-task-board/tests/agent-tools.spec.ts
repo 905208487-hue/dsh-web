@@ -561,6 +561,29 @@ describe('team-run opt-in through the tools', () => {
   })
 })
 
+describe('/goal opt-in through the tools', () => {
+  it('user creating a card gets a goal run by default and the model can pin a plain turn', async () => {
+    // Given a fresh board
+    const live = harness()
+
+    // When the model creates a card without naming the option
+    const defaulted = await call(live, 'task_board_create', { title: 'default' })
+    const defaultTask = defaulted.task as { id: string; goalRun?: boolean }
+
+    // Then the default is on, and the view reports no deviation from it
+    expect(defaultTask.goalRun).toBeUndefined()
+
+    // And an explicit false pins a single plain turn, which the view reports
+    const opted = await call(live, 'task_board_create', { title: 'plain', goalRun: false })
+    const optedTask = opted.task as { id: string; goalRun?: boolean }
+    expect(optedTask.goalRun).toBe(false)
+
+    // And switching it back to the default clears the stored opt-out
+    const updated = await call(live, 'task_board_update', { taskId: optedTask.id, goalRun: true })
+    expect((updated.task as { goalRun?: boolean }).goalRun).toBeUndefined()
+  })
+})
+
 describe('task_board_update', () => {
   it('user editing one field leaves the other fields untouched', async () => {
     // Given a card with content and a pinned model

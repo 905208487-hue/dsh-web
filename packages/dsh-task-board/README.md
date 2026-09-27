@@ -6,6 +6,7 @@ A hot-pluggable DeepSeek Harness (DSH) Web GUI plugin with a Host-authoritative 
 
 - The browser is an asynchronous view; closing the page does not stop Host scheduling or execution settlement.
 - Every run applies the pinned workspace, agent preset, and permission before sending the task prompt; by default each run creates its own DSH session, and a task can opt into continuing in its previous session instead (issue #1419).
+- dsh's built-in `/goal` is armed for every run by default, so the session keeps working automatic continuation rounds until the goal completes and the board settles the execution on that goal's end; each task can turn the option off.
 - The display may turn off while optional power protection keeps the computer from entering idle system sleep.
 
 ## Features
@@ -22,6 +23,7 @@ A hot-pluggable DeepSeek Harness (DSH) Web GUI plugin with a Host-authoritative 
 - **Host-authoritative ledger**: tasks, schedules, and execution records live in `$DSH_HOME/task-board/ledger-v2.json`; browser actions become confirmed Host transactions.
 - **Bounded execution history**: each task keeps the most recent 20 execution records; the oldest runs are trimmed when a new run starts, so ledger size and write cost stay bounded regardless of how often a task has run.
 - **Real execution**: manual and scheduled runs use the same Host runner, which by default creates a fresh session, renames it, applies the agent preset and `/permission <id>`, then queues the task prompt.
+- **Goal-driven runs (on by default)**: unless a card opts out through its detail-view checkbox (the new-task dialog starts checked), the runner queues the task prompt and then arms dsh's built-in `/goal` with that same composed prompt as the objective. dsh's goal-round driver keeps starting continuation rounds in the session until the agent marks the goal complete, and the board keeps the execution in `running` until the goal leaves its active phase: a completed goal settles the run as succeeded, a blocked one fails it with the goal's own reason. The option is per task (`goalRun`, absent means on) and is available to `task_board_create`/`task_board_update` too.
 - **Optional session reuse**: a task can opt into continuing in its previous execution's session (issue #1419). Reuse happens only when that session is idle and still present in the runtime roster — the Host then re-applies the pinned permission and model on it and queues the prompt, keeping the conversation title and history; otherwise the run mints a fresh session as before, so an unknown roster or a busy session never blocks a scheduled run.
 - **Fail-closed pins**: a missing workspace, missing or broken preset, or rejected permission command fails before the task prompt is sent.
 - **Host scheduler**: 5-field cron supports `*`, `*/n`, ranges, comma lists, Sunday `0/7`, and standard day-of-month/day-of-week OR semantics in the Host local time zone.
@@ -100,6 +102,7 @@ On macOS the backend starts `/usr/bin/caffeinate -i -w <host-pid>` and never req
 - On the first upgraded page load for an origin, `dsh.taskBoard.v1` is imported by stable source and request ids. Tasks merge by id, strictly newer browser top-level fields win, equal timestamps keep Host fields, and execution records merge by execution id.
 - The most recent 256 request ids and SHA-256 action fingerprints are stored with the ledger, so a retried mutation remains idempotent after a Host restart without duplicating full action payloads.
 - Task labels are an optional `tags` field on the task row (`{ name, promptPrefix? }[]`) and needed no schema bump: a v3 document without it loads unchanged, and a malformed list is repaired entry by entry (blanks, repeats, and over-long names dropped, count capped) rather than dropping the task row.
+- The goal opt-in is an optional `goalRun` field on the task row and needed no schema bump either: absent means on, an explicit `false` is the opt-out, and a stray `true` is repaired back to absent on load.
 - The import marker `dsh.taskBoard.v2.hostImported` stores the confirmed Host ledger generation only after import succeeds. A new or recovered ledger generation is offered the retained v1 data again. The v1 localStorage value remains untouched as a read-only rollback copy.
 - One Host process owns a task-board ledger directory at a time through `$DSH_HOME/task-board/ledger-v2.lock`; a second Host using the same DSH home fails closed instead of concurrently writing the ledger.
 
@@ -132,11 +135,12 @@ Set `DSH_POWER_SMOKE=1` to opt into the native helper smoke test on Windows, mac
 1. Mount the package, restart `dsh web`, open the task board, and confirm the Host time zone and power status are visible.
 2. Create and edit a task; refresh or open a second same-origin tab and confirm both show the same Host revision.
 3. Run a task with pinned workspace, preset, and permission; confirm a new session appears and the task settles from its `turn/end` history.
-4. Enable a near-future cron, close all browser pages, and confirm the Host still creates and settles exactly one execution.
-5. Stop the Host past a cron occurrence, restart it, and confirm the missed occurrence is skipped and `nextRunAt` rolls forward from current Host time.
-6. Enable `preventIdleSleep`, run a long session, and let the display turn off; after restoring the display, confirm the session continued and the execution settled.
-7. Disable the setting and all schedules, stop DSH, and confirm the helper exits; on macOS, `pmset -g assertions` should show no display-sleep assertion from this plugin.
-8. On Linux, use `systemd-inhibit --list` to confirm that only an `idle`/`block` entry exists; the display should still follow desktop settings, while manual sleep and lid close remain under system policy.
+4. Run a task with the /goal option checked: confirm the session starts a goal and the card stays in `running` across continuation rounds until the goal completes, then settles as succeeded. Uncheck the option and confirm the next run is a single turn that settles from one `turn/end`.
+5. Enable a near-future cron, close all browser pages, and confirm the Host still creates and settles exactly one execution.
+6. Stop the Host past a cron occurrence, restart it, and confirm the missed occurrence is skipped and `nextRunAt` rolls forward from current Host time.
+7. Enable `preventIdleSleep`, run a long session, and let the display turn off; after restoring the display, confirm the session continued and the execution settled.
+8. Disable the setting and all schedules, stop DSH, and confirm the helper exits; on macOS, `pmset -g assertions` should show no display-sleep assertion from this plugin.
+9. On Linux, use `systemd-inhibit --list` to confirm that only an `idle`/`block` entry exists; the display should still follow desktop settings, while manual sleep and lid close remain under system policy.
 
 ## Known limitations
 
@@ -151,6 +155,8 @@ Set `DSH_POWER_SMOKE=1` to opt into the native helper smoke test on Windows, mac
 - Host execution consumes the same API quota as an ordinary DSH agent session.
 - Running a task also runs its subtask tree: one DSH session per member starts at once, so a deep tree opens several concurrent sessions and each consumes API quota.
 - Agent tool calls are model-driven: a run or a scheduled cascade started from a conversation consumes the same API quota, and an agent can arm a schedule that keeps firing until it is disarmed or the board is switched off.
+- A goal run keeps working for as many rounds as the objective needs: every round consumes API quota, and the session stays busy until the goal completes or dsh blocks it (round limit, a rejected round, or a failed queue), which the board reports as a failed execution.
+- Goal mode needs the runtime's `/goal` command and a command dispatcher. A deployment that serves neither still runs every card as a single turn; the host log reports that the goal was unavailable instead of failing the run.
 
 ## Telemetry
 

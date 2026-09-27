@@ -285,4 +285,18 @@ describe('schedule persistence', () => {
     expect(parsed[1].schedule).toBeUndefined() // not five fields
     expect(parsed[2].schedule).toBeUndefined() // values out of range
   })
+
+  it('user reloading a ledger with the /goal opt-out keeps it and a stray true normalizes back', () => {
+    // Given a stored card that opted out of goal runs
+    const optedOut = createTask({ title: 'goal', description: '', prompt: '', goalRun: false }, 1, 't-goal')
+
+    // When the ledger is parsed back
+    // Then the opt-out survives, and its canonical on-state stays absent
+    expect(parseLedger(JSON.stringify([optedOut]))[0].goalRun).toBe(false)
+    expect(parseLedger(JSON.stringify([{ ...optedOut, goalRun: true }]))[0].goalRun).toBeUndefined()
+
+    // And a non-boolean is an invalid row, like any other field
+    expect(parseLedger(JSON.stringify([{ ...optedOut, goalRun: 'no' }]))).toEqual([])
+    expect(isTaskRecord({ ...optedOut, goalRun: 1 })).toBe(false)
+  })
 })

@@ -167,6 +167,16 @@ function ExecutionSettingsSection({ controller, task, pending }: { controller: B
       <label className={css.scheduleToggle}>
         <input
           type="checkbox"
+          checked={task.goalRun !== false}
+          disabled={pending}
+          onChange={event => { controller.updateTask(task.id, { goalRun: event.target.checked }) }}
+        />
+        <span>{t('exec.goalRun')}</span>
+      </label>
+      <p className={css.detailText}>{t('exec.goalRunHint')}</p>
+      <label className={css.scheduleToggle}>
+        <input
+          type="checkbox"
           checked={task.teamRun === true}
           disabled={pending || !teamRunAvailable}
           onChange={event => { controller.updateTask(task.id, { teamRun: event.target.checked }) }}

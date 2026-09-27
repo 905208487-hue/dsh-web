@@ -6,6 +6,7 @@
 
 - 浏览器只是异步视图；关闭页面不会停止 Host 调度或执行结算。
 - 每次运行在发送任务 Prompt 前应用钉住的工作区、agent 预设与权限；默认每次新建独立 DSH 会话，任务也可选择改为在上一会话中继续（issue #1419）。
+- 默认每次运行都会武装 dsh 内置的 `/goal`：会话自动续跑多轮直到目标完成，看板在该目标真正结束后才结算本次执行；每个任务都可以关闭该选项。
 - 可选电源保护允许显示器熄灭，同时阻止整机因空闲进入系统睡眠。
 
 ## 功能
@@ -22,6 +23,7 @@
 - **Host 权威账本**：任务、计划和执行记录存于 `$DSH_HOME/task-board/ledger-v2.json`；浏览器动作只有经 Host 确认后才成为 UI 状态。
 - **有界执行历史**：每个任务只保留最近 20 条执行记录；新运行开始时截掉最旧的记录，使账本大小与每次写入成本不随任务历史无限增长。
 - **真实执行**：手动运行和定时运行共用 Host runner，默认新建独立会话、重命名、应用 agent 预设和 `/permission <id>`，再以 queue 模式发送任务 Prompt。
+- **目标驱动执行（默认开启）**：除非卡片在详情页取消勾选（新建任务对话框默认勾选），runner 会先入队任务 Prompt，再以同一份组合 Prompt 作为目标武装 dsh 内置的 `/goal`。dsh 的目标轮次驱动器会在同一会话中不断开启续跑轮次，直到 agent 标记目标完成；看板则让该执行一直保持 `running`，直到目标离开 active 阶段：目标正常完成判为成功，被阻塞则以目标自身的原因判为失败。该选项按任务设置（`goalRun`，缺席即开启），`task_board_create`/`task_board_update` 同样可用。
 - **可选会话复用**：任务可选择在上一执行会话中继续（issue #1419）。仅当该会话空闲且仍在运行时会话名册中才复用——Host 会重新应用钉住的权限与模型再以 queue 模式发送 Prompt，会话标题与历史保持不变；否则照旧新建会话，因此名册未知或会话正忙都不会阻塞定时运行。
 - **钉子失败即关闭**：工作区缺失、预设缺失或损坏、权限命令被拒绝时，任务 Prompt 不会发送。
 - **Host 调度器**：5 段 cron 支持 `*`、`*/n`、范围、逗号列表、周日 `0/7` 和标准的日期/星期 OR 语义，时间基准为 Host 本地时区。
@@ -100,6 +102,7 @@ macOS 后端启动 `/usr/bin/caffeinate -i -w <host-pid>`，绝不请求 `-d`。
 - 每个 origin 首次加载新版页面时，按稳定 source id 和 request id 导入 `dsh.taskBoard.v1`。任务按 id 合并，浏览器端严格较新的顶层字段优先，时间戳相同时保留 Host 字段，执行记录按 execution id 合并。
 - 最近 256 个 request id 与动作的 SHA-256 指纹会随账本持久化，因此 Host 重启后的变更重试仍保持幂等，且不会复制完整动作载荷。
 - 任务标签是任务行上的可选 `tags` 字段（`{ name, promptPrefix? }[]`），无需 bump schema：不含该字段的 v3 文档原样加载，非法的标签列表逐条修复（丢弃空名、重复项与超长名，并封顶数量），而不是丢掉整行任务。
+- /goal 选项是任务行上的可选 `goalRun` 字段，同样无需 bump schema：缺席即开启，显式 `false` 是退出选择，多写的 `true` 在加载时被修复回缺席。
 - 只有导入成功并经 Host 确认后，`dsh.taskBoard.v2.hostImported` 才保存当前 Host 账本 generation；新建或损坏恢复出的新 generation 会再次接收保留的 v1 数据。v1 localStorage 原值保持不变，作为只读回退备份。
 - 同一时间只有一个 Host 进程能通过 `$DSH_HOME/task-board/ledger-v2.lock` 持有任务看板账本目录；第二个使用同一 DSH home 的 Host 会失败关闭，不并发写账本。
 
@@ -132,11 +135,12 @@ pnpm --filter @linxin666/dsh-client-ui-task-board build
 1. 挂载插件并重启 `dsh web`，打开任务看板，确认 Host 时区和电源状态可见。
 2. 新建并编辑任务；刷新或打开第二个同源标签页，确认两者显示同一 Host revision。
 3. 执行一个钉住工作区、预设和权限的任务；确认出现新会话，并由该会话的 `turn/end` 历史结算任务。
-4. 启用一个即将到期的 cron，关闭全部浏览器页面，确认 Host 仍只创建并结算一次 execution。
-5. 让 Host 停止并错过一个 cron 触发点，重启后确认该次被跳过，`nextRunAt` 从当前 Host 时间向后滚动。
-6. 开启 `preventIdleSleep` 并运行长任务，让显示器自动熄灭；恢复显示后确认会话继续且 execution 已结算。
-7. 关闭设置并禁用所有计划，再停止 DSH，确认 helper 退出；macOS 可用 `pmset -g assertions` 辅助确认插件没有 display-sleep assertion。
-8. Linux 可用 `systemd-inhibit --list` 确认只存在 `idle`/`block` 条目；显示器仍按桌面设置关闭，手动睡眠和合盖仍由系统策略处理。
+4. 在勾选 /goal 选项的情况下执行一个任务：确认会话启动了目标，卡片在多轮续跑期间保持 `running`，直到目标完成后结算为成功。取消勾选后再执行一次，确认变回单回合、由一条 `turn/end` 结算。
+5. 启用一个即将到期的 cron，关闭全部浏览器页面，确认 Host 仍只创建并结算一次 execution。
+6. 让 Host 停止并错过一个 cron 触发点，重启后确认该次被跳过，`nextRunAt` 从当前 Host 时间向后滚动。
+7. 开启 `preventIdleSleep` 并运行长任务，让显示器自动熄灭；恢复显示后确认会话继续且 execution 已结算。
+8. 关闭设置并禁用所有计划，再停止 DSH，确认 helper 退出；macOS 可用 `pmset -g assertions` 辅助确认插件没有 display-sleep assertion。
+9. Linux 可用 `systemd-inhibit --list` 确认只存在 `idle`/`block` 条目；显示器仍按桌面设置关闭，手动睡眠和合盖仍由系统策略处理。
 
 ## 已知限制
 
@@ -151,6 +155,8 @@ pnpm --filter @linxin666/dsh-client-ui-task-board build
 - Host 执行消耗与普通 DSH agent 会话相同的 API 额度。
 - 执行一个任务会同时执行它的子任务树：每个成员都会立刻开启一个 DSH 会话，树越深并发会话越多，每个会话都会消耗 API 额度。
 - Agent 工具调用由模型驱动：从对话发起的执行或定时级联同样消耗 API 额度，且 agent 可以启用一个持续触发的计划，直到被关闭或看板被关掉。
+- 目标执行会按目标需要不断续跑：每一轮都消耗 API 额度，会话会一直忙碌，直到目标完成或被 dsh 阻塞（轮次上限、回合被拒或入队失败），后者在看板上记为执行失败。
+- 目标模式依赖运行时的 `/goal` 命令与命令派发器。两者都不提供的部署仍会把每张卡片当单回合执行，并在宿主日志中记录目标模式不可用，而不是让执行失败。
 
 ## 数据遥测
 

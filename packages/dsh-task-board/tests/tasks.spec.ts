@@ -249,3 +249,14 @@ describe('withSchedule', () => {
     expect(cleared.schedule?.nextRunAt).toBeUndefined()
   })
 })
+
+describe('goal run opt-in', () => {
+  it('user leaving the option alone gets goal-driven runs and only an explicit false is stored', () => {
+    // Given cards created without the option, with it true, and with it false
+    // When the created records are read
+    // Then absent is the canonical on-state and only the opt-out is persisted
+    expect(sampleTask().goalRun).toBeUndefined()
+    expect(createTask({ title: 'x', description: '', prompt: '', goalRun: true }, NOW, 'task-on').goalRun).toBeUndefined()
+    expect(createTask({ title: 'x', description: '', prompt: '', goalRun: false }, NOW, 'task-off').goalRun).toBe(false)
+  })
+})

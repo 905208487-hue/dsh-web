@@ -534,7 +534,10 @@ describe('TaskBoardHostService poll heartbeat', () => {
       expect(new Set(attached).size).toBe(2)
     })
     expect([...sessions].sort()).toEqual(['session-1', 'session-2'])
-    expect([...permissions].sort()).toEqual(['/permission read-only', '/permission read-only'])
+    expect(permissions.filter(line => line.startsWith('/permission')).sort()).toEqual(['/permission read-only', '/permission read-only'])
+    // Every member of the run also arms its own goal (the option is on by
+    // default), each with that member's own composed prompt.
+    expect(permissions.filter(line => line.startsWith('/goal '))).toHaveLength(2)
     expect(ledger.state().tasks.map(task => task.status)).toEqual(['running', 'running'])
     service.dispose()
   })

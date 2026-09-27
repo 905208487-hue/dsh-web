@@ -124,4 +124,45 @@ describe('task-board action protocol', () => {
       action: { kind: 'import', sourceId: 'browser-a', tasks: [{ ...task, schedule: { enabled: true, cron: '* * * * *', nextRunAt: Number.NaN } }] },
     })).toBeUndefined()
   })
+
+  it('operator sending the /goal opt-out through create and update gets it accepted', () => {
+    // Given create input and update patches that carry the goal option
+    // When the envelopes are parsed
+    // Then the boolean is accepted in both, and anything else is refused
+    expect(parseActionEnvelope({
+      requestId: 'create-goal-off',
+      action: { kind: 'create', id: 'task-goal', input: { title: 'G', description: '', prompt: 'p', goalRun: false } },
+    })?.action.kind).toBe('create')
+
+    // The opt-out is tri-state: true (or null) returns the card to its default.
+    expect(parseActionEnvelope({
+      requestId: 'update-goal-off',
+      action: { kind: 'update', taskId: 'task-goal', patch: { goalRun: false } },
+    })?.action.kind).toBe('update')
+    expect(parseActionEnvelope({
+      requestId: 'update-goal-on',
+      action: { kind: 'update', taskId: 'task-goal', patch: { goalRun: null } },
+    })?.action.kind).toBe('update')
+    expect(parseActionEnvelope({
+      requestId: 'update-goal-bad',
+      action: { kind: 'update', taskId: 'task-goal', patch: { goalRun: 'no' } },
+    })).toBeUndefined()
+    expect(parseActionEnvelope({
+      requestId: 'create-goal-bad',
+      action: { kind: 'create', id: 'task-goal', input: { title: 'G', description: '', prompt: 'p', goalRun: 0 } },
+    })).toBeUndefined()
+  })
+
+  it('user importing legacy tasks keeps the /goal opt-out on the imported card', () => {
+    // Given a legacy card that opted out of goal runs
+    const task = { ...createTask({ title: 'legacy', description: '', prompt: '' }, 1, 'legacy'), goalRun: false }
+
+    // When it is imported
+    const parsed = parseActionEnvelope({ requestId: 'import-goal', action: { kind: 'import', sourceId: 'browser-a', tasks: [task] } })
+
+    // Then the imported card carries the same opt-out
+    expect(parsed?.action.kind).toBe('import')
+    if (parsed?.action.kind !== 'import') throw new Error('expected an import action')
+    expect(parsed.action.tasks[0].goalRun).toBe(false)
+  })
 })

@@ -150,6 +150,8 @@ function taskSummary(
     ...(task.model === undefined ? {} : { model: task.model }),
     ...(task.reuseSession === true ? { reuseSession: true } : {}),
     ...(task.teamRun === true ? { teamRun: true } : {}),
+    // Default-ON switch: only the opt-out is a deviation worth reporting.
+    ...(task.goalRun === false ? { goalRun: false } : {}),
     ...(task.schedule === undefined ? {} : { schedule: scheduleView(task.schedule) }),
     ...(task.freeze === undefined ? {} : { continuationCard: true }),
     ...(task.permissionConfirmedAt === undefined ? {} : { permissionConfirmedAt: task.permissionConfirmedAt }),
@@ -514,6 +516,7 @@ function buildCreateTool(host: TaskBoardToolHost): ToolDefinition {
       model: { type: 'string', description: 'Pinned model as provider/model (or a model id); omit for the host default or the parent value.' },
       reuseSession: { type: 'boolean', description: 'Continue later runs in the previous execution session instead of a fresh conversation.' },
       teamRun: { type: 'boolean', description: 'Run this task as an Agent Team: running it starts one Team Lead session and the Host spawns a teammate per subtask inside it. Omit or false for one independent session per member. Refused when the deployment serves no Agent Teams service.' },
+      goalRun: { type: 'boolean', description: 'Start each run with dsh built-in /goal so the session keeps working continuation rounds until the goal completes. Default true (omit to keep it); pass false for a single plain turn.' },
       tags: {
         type: 'array',
         description: 'Labels: the name renders as a badge and drives the board filter; promptPrefix is injected ahead of the execution prompt on every run.',
@@ -555,6 +558,7 @@ function buildCreateTool(host: TaskBoardToolHost): ToolDefinition {
         ...(args.model === undefined || args.model === '' ? {} : { model: args.model }),
         ...(args.reuseSession === true ? { reuseSession: true } : {}),
         ...(args.teamRun === true ? { teamRun: true } : {}),
+        ...(args.goalRun === false ? { goalRun: false } : {}),
         ...(tags.length === 0 ? {} : { tags }),
         ...(args.schedule === undefined ? {} : { schedule: { enabled: args.schedule.enabled, cron: args.schedule.cron } }),
       }
@@ -591,6 +595,7 @@ function buildUpdateTool(host: TaskBoardToolHost): ToolDefinition {
       model: { type: 'string', description: 'New pinned model; an empty string clears it.' },
       reuseSession: { type: 'boolean', description: 'Continue later runs in the previous execution session.' },
       teamRun: { type: 'boolean', description: 'Switches this task between a plain cascade (one session per member) and an Agent Team run (Lead session plus a teammate per subtask).' },
+      goalRun: { type: 'boolean', description: 'Whether each run starts with dsh built-in /goal (default true). Pass false to run one plain turn instead.' },
       tags: {
         type: 'array',
         description: 'Replacement label set; an empty array clears all labels.',
@@ -619,6 +624,7 @@ function buildUpdateTool(host: TaskBoardToolHost): ToolDefinition {
       }
       if (has(args, 'reuseSession')) patch.reuseSession = args.reuseSession === true
       if (has(args, 'teamRun')) patch.teamRun = args.teamRun === true
+      if (has(args, 'goalRun')) patch.goalRun = args.goalRun === false ? false : true
       if (has(args, 'tags')) {
         const tags = args.tags ?? []
         patch.tags = tags.length === 0

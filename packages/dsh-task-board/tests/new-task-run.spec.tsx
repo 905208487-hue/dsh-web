@@ -59,6 +59,13 @@ function renderModal(options: { started?: boolean } = {}): {
   return { container, createTaskConfirmed, runTask, openTask, onClose }
 }
 
+/** The new-task dialog's /goal opt-out checkbox (checked by default). */
+function goalCheckbox(container: HTMLElement): HTMLInputElement {
+  const label = [...container.querySelectorAll('label')].find(node => node.textContent?.includes(t('exec.goalRun')))
+  if (label === undefined) throw new Error('no /goal option in the new-task dialog')
+  return label.querySelector('input') as HTMLInputElement
+}
+
 function actionButton(container: HTMLElement, label: string): HTMLButtonElement {
   const button = [...container.querySelectorAll('button')].find(candidate => candidate.textContent === label)
   if (button === undefined) throw new Error(`no button labelled ${label}`)
@@ -115,5 +122,28 @@ describe('new-task "create and run" (#1621)', () => {
     expect(payload.schedule).toBeUndefined()
     expect(createTaskConfirmed).toHaveBeenCalledOnce()
     expect(runTask).not.toHaveBeenCalled()
+  })
+
+  it('user creating a task sends the default goal run and the opt-out they uncheck', async () => {
+    // Given an open new-task modal
+    const { container, createTaskConfirmed } = renderModal()
+
+    // Then the /goal option starts checked, and the default payload stores
+    // nothing for it (absent = on)
+    const checkbox = goalCheckbox(container)
+    expect(checkbox.checked).toBe(true)
+    const form = container.querySelector('form')!
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect((createTaskConfirmed.mock.calls[0]![0] as { goalRun?: boolean }).goalRun).toBeUndefined()
+
+    // When the user unchecks it before creating, the opt-out rides the create
+    createTaskConfirmed.mockClear()
+    await act(async () => { checkbox.click() })
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect((createTaskConfirmed.mock.calls[0]![0] as { goalRun?: boolean }).goalRun).toBe(false)
   })
 })

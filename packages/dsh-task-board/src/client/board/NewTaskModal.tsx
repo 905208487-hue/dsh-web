@@ -51,6 +51,9 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
   const [model, setModel] = useState(initialTask?.model ?? parentTask?.model ?? '')
   const inheritedPermission = parentTask === undefined ? undefined : effectiveTaskPermission(parentTask)
   const [reuseSession, setReuseSession] = useState(initialTask?.reuseSession ?? false)
+  // Checked by default: a new task starts its runs with dsh's built-in /goal
+  // unless the user opts out here. A duplicate keeps the original card's choice.
+  const [goalRun, setGoalRun] = useState(initialTask?.goalRun ?? true)
   const [scheduleEnabled, setScheduleEnabled] = useState(initialTask?.schedule?.enabled ?? false)
   const [scheduleCron, setScheduleCron] = useState(initialTask?.schedule?.cron ?? '')
   const [scheduleError, setScheduleError] = useState<string | undefined>(undefined)
@@ -175,6 +178,7 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
       permission: permission === '' ? undefined : permission as TaskPermission,
       model: model === '' ? undefined : model,
       ...(reuseSession ? { reuseSession: true } : {}),
+      ...(goalRun ? {} : { goalRun: false }),
       ...(tagList.length > 0 ? { tags: tagList } : {}),
       schedule: scheduleEnabled ? { enabled: true, cron: scheduleCron.trim() } : undefined,
     })
@@ -385,6 +389,16 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
           <span>{t('exec.reuseSession')}</span>
         </label>
         <p className={css.detailText}>{t('exec.reuseSessionHint')}</p>
+
+        <label className={css.scheduleToggle}>
+          <input
+            type="checkbox"
+            checked={goalRun}
+            onChange={event => { setGoalRun(event.target.checked) }}
+          />
+          <span>{t('exec.goalRun')}</span>
+        </label>
+        <p className={css.detailText}>{t('exec.goalRunHint')}</p>
 
         <section className={css.detailSection}>
           <h4>{t('detail.schedule')}</h4>

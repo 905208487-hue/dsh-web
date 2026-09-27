@@ -169,6 +169,8 @@ export const zh = {
   'exec.teamRunHint': '开启后：执行本任务只启动一个 Leader 会话，每个子任务由它派生为 teammate 并在该会话内并行工作（子任务自身的权限钉住不适用）。关闭则每个成员各开独立会话。',
   'exec.teamRunUnavailable': '当前部署未提供 Agent Teams 服务，无法启用。',
   'exec.reuseSessionHint': '开启后，本任务的后续执行在上一次会话里继续（该会话空闲且仍存在时），不再每次新建对话；每次复用时都会重新应用上面钉住的权限与模型。',
+  'exec.goalRun': '以 dsh 内置的 /goal 开始执行任务',
+  'exec.goalRunHint': '默认开启：执行时把任务目标作为持久目标交给 dsh 内置的 /goal，会话会自动续跑多轮，直到 agent 标记目标完成；看板在该目标真正结束后才结算本次执行。关闭则只执行一轮普通对话。',
   'detail.executionSettings': '执行设置',
   'exec.hint': '执行时生效：工作区决定执行会话落在哪个工作区；模式决定会话的 agent 预设；权限经 /permission 命令应用到会话。留空则使用运行时默认。',
   // 插件设置卡片（settings.plugin.item 席位）。
@@ -395,6 +397,8 @@ export const en: Record<keyof typeof zh, string> = {
   'exec.teamRunHint': 'On: running this task starts one Lead session and spawns a teammate per subtask inside it, working in parallel (a subtask permission pin does not apply). Off: every member gets its own independent session.',
   'exec.teamRunUnavailable': 'This deployment serves no Agent Teams service, so team runs cannot be enabled.',
   'exec.reuseSessionHint': 'When on, later runs continue in the previous session (when that session is idle and still exists) instead of starting a new conversation each time; the pinned permission and model above are re-applied on every reuse.',
+  'exec.goalRun': "Start the run with dsh's built-in /goal",
+  'exec.goalRunHint': 'On by default: the run arms dsh built-in /goal with the task objective, so the session keeps working automatic continuation rounds until the agent marks the goal complete, and the board settles the execution only when that goal really ends. Off: one plain turn.',
   'detail.executionSettings': 'Execution Settings',
   'exec.hint': 'Applied when the task runs: the workspace decides where the execution session lands; the mode composes the session\'s agent preset; the permission is applied through the /permission command. Blank = runtime default.',
   // Plugin settings card (the `settings.plugin.item` seat).
