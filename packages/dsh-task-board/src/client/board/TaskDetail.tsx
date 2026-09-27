@@ -18,6 +18,7 @@ import { ConfirmDialog } from './ConfirmDialog.tsx'
 import { EditTaskModal, EditTagsModal } from './EditTaskModal.tsx'
 import { LinkSubtaskModal } from './LinkSubtaskModal.tsx'
 import { NewTaskModal } from './NewTaskModal.tsx'
+import { inheritPresetLabel, presetLabel } from './preset-label.ts'
 import { formatHostTimestamp, formatTime } from './TaskCard.tsx'
 import { STATUS_KEY } from './status-key.ts'
 
@@ -107,18 +108,18 @@ function ExecutionSettingsSection({ controller, task, pending }: { controller: B
         </select>
       </label>
       <label className={css.field}>
-        <span className={css.fieldLabel}>{t('new.mode')}</span>
+        <span className={css.fieldLabel}>{t('new.agentPreset')}</span>
         <select
           className={css.select}
           value={mode}
           disabled={pending}
           onChange={event => { controller.updateTask(task.id, { mode: event.target.value }) }}
         >
-          <option value="">{t('exec.mode.default')}</option>
+          <option value="">{inheritPresetLabel(options.presets)}</option>
           {!modeKnown && <option value={mode}>{mode}{t('exec.mode.removed')}</option>}
           {options.presets.map(preset => (
             <option key={preset.id} value={preset.id} disabled={preset.broken !== undefined}>
-              {preset.name ?? preset.id}
+              {presetLabel(preset)}
               {preset.isDefault ? t('exec.mode.defaultSuffix') : ''}
               {preset.broken !== undefined ? t('exec.mode.brokenSuffix') : ''}
             </option>
@@ -494,7 +495,7 @@ export function TaskDetail({ controller, task }: { controller: BoardController; 
               <h4>{t('detail.handover')}</h4>
               <p className={css.detailText}>
                 {t('new.workspace')}: {current.handover.workspaceId ?? t('exec.workspace.recent')}
-                {' · '}{t('new.mode')}: {current.handover.mode ?? t('exec.mode.default')}
+                {' · '}{t('new.agentPreset')}: {current.handover.mode ?? t('exec.mode.inherit')}
                 {' · '}{t('new.permission')}: {current.handover.permission === undefined ? t('exec.permission.default') : t(`exec.permission.${current.handover.permission}` as TaskBoardKey)}
               </p>
               <p className={css.detailText}><strong>{t('detail.handover.references')}</strong></p>

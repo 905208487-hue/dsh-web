@@ -415,10 +415,10 @@
 .modal {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: min(520px, calc(100vw - 48px));
   max-height: calc(100vh - 96px);
-  overflow-y: auto;
+  overflow: hidden;
   padding: 18px;
   background: var(--dsw-alias-bg-base);
   border: 1px solid var(--dsw-alias-border-l2);
@@ -447,6 +447,95 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
+}
+
+/* --- form sections (create/edit dialog) --------------------------------------
+ * The task form groups its configuration into collapsible regions so the
+ * dialog fits without a scrollbar: only the content region starts open, and
+ * every collapsed header carries a one-line summary of what it holds. The
+ * body keeps an overflow fallback for tiny viewports. The chevron is drawn
+ * with borders (no glyph), so no font or emoji can change it.
+ * ----------------------------------------------------------------------------- */
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Every direct child keeps its natural height: a column flex item shrinks by
+   default, and a shrunk region would clip its own fields behind its
+   `overflow: hidden` instead of letting the body scroll. */
+.modalBody > * {
+  flex: none;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--dsw-alias-separator-primary);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.formSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.formSectionHeader:hover {
+  background: var(--dsw-alias-bg-mask-1);
+}
+
+.formSectionChevron {
+  flex: none;
+  width: 0;
+  height: 0;
+  margin-left: 1px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--dsw-alias-label-tertiary);
+  transition: transform 120ms ease;
+}
+
+.formSection[data-open='true'] .formSectionChevron {
+  transform: rotate(90deg);
+}
+
+.formSectionTitle {
+  flex: none;
+}
+
+.formSectionSummary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 400;
+  color: var(--dsw-alias-label-tertiary);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.formSectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--dsw-alias-separator-primary);
 }
 
 .field {
@@ -942,7 +1031,8 @@
 .input:focus-visible,
 .select:focus-visible,
 .schedulePreset:focus-visible,
-.scheduleToggle input:focus-visible {
+.scheduleToggle input:focus-visible,
+.formSectionHeader:focus-visible {
   outline: 2px solid var(--dsw-alias-state-business-primary);
   outline-offset: 2px;
 }
@@ -957,7 +1047,9 @@
 .input,
 .select,
 .schedulePreset,
-.scheduleToggle input {
+.scheduleToggle input,
+.formSectionHeader,
+.formSectionChevron {
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, outline-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 
@@ -1017,7 +1109,9 @@
   .input,
   .select,
   .schedulePreset,
-  .scheduleToggle input {
+  .scheduleToggle input,
+  .formSectionHeader,
+  .formSectionChevron {
     transition: none;
   }
 

@@ -8,6 +8,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NewTaskModal } from '../src/client/board/NewTaskModal.tsx'
+import { openFormSection } from './form-sections.ts'
 import { t } from '../src/client/locales.ts'
 import type { BoardController, ControllerSnapshot } from '../src/core/controller.ts'
 import type { TaskRecord } from '../src/core/tasks.ts'
@@ -61,6 +62,8 @@ function renderModal(options: { started?: boolean } = {}): {
 
 /** The new-task dialog's /goal opt-out checkbox (checked by default). */
 function goalCheckbox(container: HTMLElement): HTMLInputElement {
+  // The /goal opt-out lives in the collapsed "run mode" region.
+  openFormSection(container, t('new.section.run'))
   const label = [...container.querySelectorAll('label')].find(node => node.textContent?.includes(t('exec.goalRun')))
   if (label === undefined) throw new Error('no /goal option in the new-task dialog')
   return label.querySelector('input') as HTMLInputElement
