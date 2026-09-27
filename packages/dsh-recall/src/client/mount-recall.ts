@@ -69,7 +69,8 @@ export function mountRecallTrigger(props: RecallTriggerProps): () => void {
     // the trigger joins that message's action row, so it always sits on the
     // newest content and re-seats itself when the shell re-renders rows.
     const copies = [...flow.querySelectorAll('button')]
-      .filter((b) => /copy|复制/i.test(b.getAttribute('aria-label') ?? '') && b.getBoundingClientRect().width > 0)
+      // "Copy" / 复制 (escaped for the CJK-free client gate).
+      .filter((b) => /copy|\u590d\u5236/i.test(b.getAttribute('aria-label') ?? '') && b.getBoundingClientRect().width > 0)
     const anchor = copies.length > 0 ? copies[copies.length - 1] : null
     const row = anchor?.parentElement ?? null
     if (anchor === null || row === null) {

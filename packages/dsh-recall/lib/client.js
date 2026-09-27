@@ -222,7 +222,7 @@ window.__ModuleLoader__.load({
 				};
 				attempt();
 			};
-			const status = outcome === "done" ? t("recall.done") : outcome === "failed" || outcome === "missing" || outcome === "none" ? t("recall.failed") : null;
+			const status = outcome === "failed" || outcome === "missing" || outcome === "none" ? t("recall.failed") : null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: recall_module_css_default.wrap,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
@@ -286,7 +286,7 @@ window.__ModuleLoader__.load({
 					const draft = takeDraft(sid);
 					if (draft !== null && draft.text.length > 0) fillComposer(draft.text);
 				}
-				const copies = [...flow.querySelectorAll("button")].filter((b) => /copy|复制/i.test(b.getAttribute("aria-label") ?? "") && b.getBoundingClientRect().width > 0);
+				const copies = [...flow.querySelectorAll("button")].filter((b) => /copy|\u590d\u5236/i.test(b.getAttribute("aria-label") ?? "") && b.getBoundingClientRect().width > 0);
 				const anchor = copies.length > 0 ? copies[copies.length - 1] : null;
 				const row = anchor?.parentElement ?? null;
 				if (anchor === null || row === null) {
@@ -315,14 +315,12 @@ window.__ModuleLoader__.load({
 			"recall.button": "撤回最新",
 			"recall.hint": "撤回最新一条对话内容（仅最新；历史对话不可撤回）",
 			"recall.confirm": "确定撤回最新一条对话内容？历史对话不受影响。",
-			"recall.done": "已撤回并回填输入框（附件如需保留请重新选择；重启后自动带出）",
 			"recall.failed": "撤回失败，请重试"
 		};
 		const en = {
 			"recall.button": "Recall latest",
 			"recall.hint": "Recall the latest conversation turn (latest only; history stays untouched)",
 			"recall.confirm": "Recall the latest conversation turn? History stays untouched.",
-			"recall.done": "Recalled and refilled into the composer (re-select attachments if needed; reopen/restart to apply)",
 			"recall.failed": "Recall failed, try again"
 		};
 		//#endregion

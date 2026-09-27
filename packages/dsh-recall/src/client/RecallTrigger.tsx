@@ -66,7 +66,9 @@ export function RecallTrigger({ t, sessionId, inFlight }: RecallTriggerProps) {
     attempt()
   }
 
-  const status = outcome === 'done' ? t('recall.done') : outcome === 'failed' || outcome === 'missing' || outcome === 'none' ? t('recall.failed') : null
+  // Success stays silent: the composer refill itself is the feedback. Only a
+  // failure surfaces a small status text so the operator knows to retry.
+  const status = outcome === 'failed' || outcome === 'missing' || outcome === 'none' ? t('recall.failed') : null
   return (
     <span className={css.wrap}>
       <button
