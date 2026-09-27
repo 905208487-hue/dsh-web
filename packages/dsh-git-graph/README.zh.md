@@ -8,25 +8,18 @@
 
 ## 仓库布局与构建
 
-与 DeepSeek Harness 主仓保持同级（sibling checkout，turtle-ui 同款布局；路径任意，以下仅为示例）：
-
-```text
-~/code/deepseek-harness   # deepseek-harness checkout（sibling）
-~/code/dsh-git-graph      # 本仓库
-```
-
-peer APIs 全部来自 sibling checkout 的源码（tsconfig 通过 `../deepseek-harness/tsconfig.base.json` 的 paths 解析；sibling 目录名不同时把 tsconfig 各文件里的 `../deepseek-harness` 相对路径换成实际目录即可），类型门是 `pnpm run typecheck`（`tsc -b`，会连带构建 references 指向的 sibling 包，向 sibling 的 `lib/` 写声明产物——与 turtle-ui 相同的设计）。
+本包是 dsh-web 全家桶仓库内的自包含 cordis 插件包（见下文「通用安装」），不涉及 DeepSeek Harness 源码 checkout。所有 peer API 来自 devDependencies 声明的官方 `@deepseek-ai/*` NPM SDK、由 node_modules 解析，类型门是 `pnpm run typecheck`（`tsc -b`，只构建本包自己的 host 与 client program）。
 
 ```sh
 pnpm install
-pnpm run typecheck   # tsc -b（含 sibling 引用项目）
+pnpm run typecheck   # tsc -b（host + client program）
 pnpm test            # vitest（core 纯函数 / 真实 git 服务 / jsdom 组件）
 pnpm run build       # tsc -b && tsdown（lib/index.js + lib/invariant.js + lib/client.js）
 ```
 
-`lib/client.js` 是浏览器 bundle（闭包工厂产物，`window.__ModuleLoader__.load`），由 host 的 client-modules 按 `/plugins/<id>/client.js` 伺服；构建预设 `build/tsdown.client.ts` + `build/web/src/platform.ts` 是从主仓 `packages/client/tsdown.client.ts` / `packages/client/web/src/platform.ts` 复制的副本，主仓版本变更时需同步。
+`lib/client.js` 是浏览器 bundle（闭包工厂产物，`window.__ModuleLoader__.load`），由 host 的 client-modules 按 `/plugins/<id>/client.js` 伺服；`tsdown.config.ts` 与 `tsdown.prepare.config.ts` 都 import 唯一的共享客户端预设 `shared/tsdown.client.ts`（及其读取的浏览器平台种子表），包内不保留副本。
 
-git 安装（无 sibling checkout 的消费者机器）走 `prepare` 脚本：`tsdown --config tsdown.prepare.config.ts` 从 src 直接 transpile，不做类型检查（`tsconfig.prepare.json` 自包含）。
+git 安装走 `prepare` 脚本：`tsdown --config tsdown.prepare.config.ts` 从 src 直接 transpile，不做类型检查（`tsconfig.prepare.json` 自包含）。
 
 ## 激活
 

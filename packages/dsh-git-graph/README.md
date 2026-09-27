@@ -8,25 +8,18 @@ Behavior aligns with ZCode's `GitBranchSwitcher`: searchable popover, a checkmar
 
 ## Repository layout and build
 
-Kept as a sibling of the DeepSeek Harness main repo (sibling checkout, same turtle-ui layout; the path is arbitrary, below is only an example):
-
-```text
-~/code/deepseek-harness   # deepseek-harness checkout (sibling)
-~/code/dsh-git-graph      # this repository
-```
-
-All peer APIs come from the sibling checkout's source (tsconfig resolves via the paths of `../deepseek-harness/tsconfig.base.json`; when the sibling directory has a different name, replace the `../deepseek-harness` relative path in the tsconfig files with the actual directory). The type gate is `pnpm run typecheck` (`tsc -b`, which also builds the sibling packages referenced by `references`, writing declaration artifacts into the sibling's `lib/` — the same design as turtle-ui).
+The plugin is a self-contained cordis plugin package inside the dsh-web family monorepo (see "Generic install" below); no DeepSeek Harness source checkout is involved. All peer APIs come from the official `@deepseek-ai/*` npm SDK declared in `devDependencies`, resolved from `node_modules`, and the type gate is `pnpm run typecheck` (`tsc -b` over the package's own host and client programs).
 
 ```sh
 pnpm install
-pnpm run typecheck   # tsc -b (including sibling referenced projects)
+pnpm run typecheck   # tsc -b (host + client programs)
 pnpm test            # vitest (core pure functions / real git service / jsdom components)
 pnpm run build       # tsc -b && tsdown (lib/index.js + lib/invariant.js + lib/client.js)
 ```
 
-`lib/client.js` is the browser bundle (a closure-factory artifact, `window.__ModuleLoader__.load`), served by the host's client-modules at `/plugins/<id>/client.js`; the build presets `build/tsdown.client.ts` + `build/web/src/platform.ts` are copies taken from the main repo's `packages/client/tsdown.client.ts` / `packages/client/web/src/platform.ts`, and must be kept in sync when the main repo changes.
+`lib/client.js` is the browser bundle (a closure-factory artifact, `window.__ModuleLoader__.load`), served by the host's client-modules at `/plugins/<id>/client.js`; both `tsdown.config.ts` and `tsdown.prepare.config.ts` import the one shared client preset at `shared/tsdown.client.ts` (with the browser platform seed table it reads), and the package keeps no copy of either.
 
-Git installs (consumer machines without a sibling checkout) go through the `prepare` script: `tsdown --config tsdown.prepare.config.ts` transpiles directly from src without type checking (`tsconfig.prepare.json` is self-contained).
+Git installs go through the `prepare` script: `tsdown --config tsdown.prepare.config.ts` transpiles directly from src without type checking (`tsconfig.prepare.json` is self-contained).
 
 ## Activation
 

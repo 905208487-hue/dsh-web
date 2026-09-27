@@ -1,5 +1,5 @@
 # Bilingual-pair consistency record (docs/i18n.md): the git blob hash of each
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with git hash-object.
-2026-08-27-orca-status-character-dead-write-surfaces.md: 786587db399a52bb1b603570fd6af5aaf1284ac7
-2026-08-27-orca-status-character-dead-write-surfaces.zh.md: c149ad74f483abec94afe47ed9dc0a41a2f1771c
+2026-09-26-dead-shared-artifacts-removed.md: 7c973bd7f9e39e7fb343b04763a8e13aa35bfbf7
+2026-09-26-dead-shared-artifacts-removed.zh.md: 97f4a00c877d4003e1916471cd32ab2a13374daf

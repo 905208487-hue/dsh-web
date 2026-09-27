@@ -30,8 +30,10 @@ test('copies cover the settings trio for all consumers plus host and http helper
   // binds a family namespace (6 today). Every family panel now renders through
   // the native layout seats, so the panel-mount-core and sidebar-entry-core
   // copies are gone and body-mutations serves only the aggregate shell and the
-  // usage card.
-  assert.equal(entries.length, 99)
+  // usage card. run-guarded.ts is not synced here: no in-repo package imports
+  // it (the satellite repositories that do carry their own copies), so only the
+  // shared source and its spec remain in this repository.
+  assert.equal(entries.length, 96)
   const clientTrio = entries.filter(entry => entry.target.includes('/src/client/'))
   assert.equal(clientTrio.length, 39)
   const hostCopies = entries.filter(entry => entry.target.includes('/src/host/')
@@ -41,7 +43,7 @@ test('copies cover the settings trio for all consumers plus host and http helper
     || entry.target.includes('/src/pair-access.ts')
     || entry.target.includes('/src/agent/')
     || entry.target.endsWith('/packages/dsh-task-board/src/http.ts'))
-  assert.equal(hostCopies.length, 48)
+  assert.equal(hostCopies.length, 45)
 })
 
 test('checkSync detects drift and applySync repairs it', async () => {
