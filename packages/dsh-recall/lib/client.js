@@ -163,7 +163,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/dsh-recall/src/client/recall.module.css.mjs
-		const css = ".I6_ymW_trigger{appearance:none;box-sizing:border-box;color:inherit;cursor:pointer;background:color-mix(in srgb, currentColor 6%, transparent);border:1px solid color-mix(in srgb, currentColor 16%, transparent);opacity:.8;border-radius:8px;justify-content:center;align-self:flex-start;align-items:center;width:26px;height:26px;margin:6px 16px 14px;padding:5px;transition:opacity .12s,background-color .12s;display:inline-flex}.I6_ymW_wrap{align-items:center;gap:8px;margin:2px 16px 12px;display:inline-flex}.I6_ymW_status{opacity:.65;font:400 12px/16px inherit}.I6_ymW_trigger:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.I6_ymW_trigger:disabled{cursor:default;opacity:.5}.I6_ymW_trigger:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.I6_ymW_trigger svg{flex:none;display:block}";
+		const css = ".I6_ymW_trigger{appearance:none;box-sizing:border-box;color:inherit;cursor:pointer;background:color-mix(in srgb, currentColor 6%, transparent);border:1px solid color-mix(in srgb, currentColor 16%, transparent);opacity:.8;border-radius:8px;justify-content:center;align-self:flex-start;align-items:center;width:26px;height:26px;margin:0;padding:4px;transition:opacity .12s,background-color .12s;display:inline-flex}.I6_ymW_wrap{align-items:center;gap:6px;display:inline-flex}.I6_ymW_status{opacity:.65;font:400 12px/16px inherit}.I6_ymW_trigger:hover:not(:disabled){opacity:1;background:color-mix(in srgb, currentColor 10%, transparent)}.I6_ymW_trigger:disabled{cursor:default;opacity:.5}.I6_ymW_trigger:focus-visible{outline:2px solid color-mix(in srgb, currentColor 45%, transparent);outline-offset:-1px}.I6_ymW_trigger svg{flex:none;display:block}";
 		const tagId = "@linxin666/dsh-recall/packages/dsh-recall/src/client/recall.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -263,7 +263,7 @@ window.__ModuleLoader__.load({
 			return document.querySelector("[data-streaming], [data-state=\"running\"], [aria-busy=\"true\"]") !== null;
 		}
 		/**
-		* Mount the recall trigger at the tail of the open conversation flow.
+		* Mount the recall trigger beside the open conversation's latest copy button.
 		* @param props - label and rollback request inputs.
 		* @returns disposer removing the container and its observers.
 		*/
@@ -286,7 +286,14 @@ window.__ModuleLoader__.load({
 					const draft = takeDraft(sid);
 					if (draft !== null && draft.text.length > 0) fillComposer(draft.text);
 				}
-				flow.append(container);
+				const copies = [...flow.querySelectorAll("button")].filter((b) => /copy|复制/i.test(b.getAttribute("aria-label") ?? "") && b.getBoundingClientRect().width > 0);
+				const anchor = copies.length > 0 ? copies[copies.length - 1] : null;
+				const row = anchor?.parentElement ?? null;
+				if (anchor === null || row === null) {
+					container.style.display = "none";
+					return;
+				}
+				if (container.parentElement !== row) row.insertBefore(container, anchor.nextSibling);
 				container.style.display = props.sessionId() !== null && !props.inFlight() ? "flex" : "none";
 			};
 			place();

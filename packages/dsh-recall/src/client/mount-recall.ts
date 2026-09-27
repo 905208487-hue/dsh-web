@@ -1,7 +1,7 @@
 /**
- * Browser-side conversation recall (撤回): the trigger mounts at the tail of
- * the open conversation's message flow, visible only for the LATEST turn and
- * only while no turn is streaming. Clicking it confirms once, calls the host
+ * Browser-side conversation recall (撤回): the trigger mounts in the latest
+ * message's action row, right beside its copy button, visible only for the
+ * LATEST turn and only while no turn is streaming. Clicking it confirms once, calls the host
  * rollback route with the active session id, and reports the outcome (the
  * host flags that a reopen or restart is required).
  *
@@ -37,7 +37,7 @@ export function isTurnInFlight(): boolean {
 }
 
 /**
- * Mount the recall trigger at the tail of the open conversation flow.
+ * Mount the recall trigger beside the open conversation's latest copy button.
  * @param props - label and rollback request inputs.
  * @returns disposer removing the container and its observers.
  */
@@ -65,10 +65,18 @@ export function mountRecallTrigger(props: RecallTriggerProps): () => void {
       const draft = takeDraft(sid)
       if (draft !== null && draft.text.length > 0) fillComposer(draft.text)
     }
-    // Always re-seat at the flow tail: the shell's flow may insert children
-    // (the streaming tail, the next turn) after the container between
-    // mutations, so the trigger must stay below the LAST message.
-    flow.append(container)
+    // Anchor on the LATEST message's copy button (localized labels covered):
+    // the trigger joins that message's action row, so it always sits on the
+    // newest content and re-seats itself when the shell re-renders rows.
+    const copies = [...flow.querySelectorAll('button')]
+      .filter((b) => /copy|复制/i.test(b.getAttribute('aria-label') ?? '') && b.getBoundingClientRect().width > 0)
+    const anchor = copies.length > 0 ? copies[copies.length - 1] : null
+    const row = anchor?.parentElement ?? null
+    if (anchor === null || row === null) {
+      container.style.display = 'none'
+      return
+    }
+    if (container.parentElement !== row) row.insertBefore(container, anchor.nextSibling)
     // The recall gate: only the latest turn's tail, and only when it finished.
     container.style.display = props.sessionId() !== null && !props.inFlight() ? 'flex' : 'none'
   }

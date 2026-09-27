@@ -14,8 +14,8 @@
   border-radius: 8px;
   justify-content: center;
   align-items: center;
-  margin: 6px 16px 14px;
-  padding: 5px;
+  margin: 0;
+  padding: 4px;
   display: inline-flex;
   width: 26px;
   height: 26px;
@@ -26,8 +26,7 @@
 .wrap {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 2px 16px 12px;
+  gap: 6px;
 }
 
 .status {
