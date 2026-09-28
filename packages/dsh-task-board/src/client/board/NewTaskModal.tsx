@@ -11,6 +11,7 @@ import { collectKnownTags, TASK_PERMISSIONS, type TaskPermission, type TaskRecor
 import { t, type TaskBoardKey } from '../locales.ts'
 import { SCHEDULE_PRESETS } from '../schedule-presets.ts'
 import { CollapsibleSection, ModalShell, TaskContentFields, TaskTagFields, cleanTags } from './TaskForm.tsx'
+import { formatHostTimestamp } from './TaskCard.tsx'
 import { readParseModelPreference, writeParseModelPreference } from './parse-model-pref.ts'
 import { inheritPresetLabel, isBuiltinPreset, presetLabel } from './preset-label.ts'
 import css from '../board.module.css'
@@ -535,7 +536,7 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
             {scheduleError !== undefined && <p className={css.formError}>{scheduleError}</p>}
             {scheduleError === undefined && scheduleNextRun !== undefined && (
               <p className={css.scheduleMeta}>
-                {t('detail.schedule.nextRun')} {new Date(scheduleNextRun).toLocaleString()}
+                {t('detail.schedule.nextRun')} {formatHostTimestamp(scheduleNextRun, controller.getSnapshot().host?.scheduler.timeZone)}
               </p>
             )}
           </>

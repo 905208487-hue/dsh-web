@@ -372,8 +372,12 @@ export function apply(ctx: ClientContext): void {
         console.error('[dsh-task-board] model options read failed', error)
       }
     }
+    void pushPresetOptions()
     void pushModelOptions()
-    disposers.push(ctx.on('connection/reset', () => { void pushModelOptions() }))
+    disposers.push(ctx.on('connection/reset', () => {
+      void pushPresetOptions()
+      void pushModelOptions()
+    }))
     // Native panel surfaces: one sidebar row and one center-column page, both
     // through the official slot seats the shell itself renders. The layout's
     // panel selection is reconciled back into the controller so the board's own

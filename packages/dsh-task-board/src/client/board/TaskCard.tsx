@@ -13,15 +13,34 @@ import { executionLabel, tagTone } from '../../core/tasks.ts'
 import { t } from '../locales.ts'
 import css from '../board.module.css'
 
+/**
+ * Built formatters, keyed by time zone ('' = the browser's own). Constructing
+ * an Intl.DateTimeFormat is orders of magnitude more expensive than formatting
+ * with one, and the board renders dozens of timestamps per SSE frame; the
+ * cached formatter keeps that cost off the render path.
+ */
+const HOST_TIMESTAMP_FORMATS = new Map<string, Intl.DateTimeFormat>()
+
+function hostTimestampFormat(timeZone: string | undefined): Intl.DateTimeFormat {
+  const key = timeZone ?? ''
+  const cached = HOST_TIMESTAMP_FORMATS.get(key)
+  if (cached !== undefined) return cached
+  const format = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+    ...(timeZone === undefined ? {} : { timeZone }),
+  })
+  HOST_TIMESTAMP_FORMATS.set(key, format)
+  return format
+}
+
 /** Compact relative/absolute time label. */
 export function formatHostTimestamp(ms: number, timeZone?: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'medium',
-      ...(timeZone === undefined ? {} : { timeZone }),
-    }).format(new Date(ms))
+    return hostTimestampFormat(timeZone).format(new Date(ms))
   } catch {
+    // An unsupported time-zone id throws on construction: never cache it, and
+    // fall back to the ISO instant for this call.
     return new Date(ms).toISOString()
   }
 }

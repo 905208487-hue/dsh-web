@@ -36,6 +36,31 @@ export function isExecutionOutcome(value: unknown): value is ExecutionOutcome {
   return value === 'succeeded' || value === 'failed' || value === 'cancelled'
 }
 
+/**
+ * Reusable lineage index over ONE task list: the id lookup and the direct
+ * children per parent. A caller that runs several lineage queries over the same
+ * ledger (the link-subtask candidate gate runs one per task) builds this once
+ * instead of rescanning the list per query.
+ */
+export interface LineageIndex {
+  readonly byId: ReadonlyMap<string, TaskRecord>
+  readonly childrenByParent: ReadonlyMap<string, readonly TaskRecord[]>
+}
+
+/** Build the reusable index for a task list (ledger order preserved). */
+export function buildLineageIndex(tasks: readonly TaskRecord[]): LineageIndex {
+  const byId = new Map<string, TaskRecord>()
+  const childrenByParent = new Map<string, TaskRecord[]>()
+  for (const task of tasks) {
+    byId.set(task.id, task)
+    if (task.parentId === undefined) continue
+    const siblings = childrenByParent.get(task.parentId)
+    if (siblings === undefined) childrenByParent.set(task.parentId, [task])
+    else siblings.push(task)
+  }
+  return { byId, childrenByParent }
+}
+
 function indexOf(tasks: readonly TaskRecord[]): Map<string, TaskRecord> {
   return new Map(tasks.map(task => [task.id, task]))
 }
@@ -46,8 +71,8 @@ function indexOf(tasks: readonly TaskRecord[]): Map<string, TaskRecord> {
  * under a larger limit survives that limit being lowered, and restore and
  * inheritance must still see all of it.
  */
-export function ancestorChain(tasks: readonly TaskRecord[], task: TaskRecord): TaskRecord[] {
-  const index = indexOf(tasks)
+export function ancestorChain(tasks: readonly TaskRecord[], task: TaskRecord, lineage?: LineageIndex): TaskRecord[] {
+  const index = lineage?.byId ?? indexOf(tasks)
   const chain: TaskRecord[] = []
   const seen = new Set<string>([task.id])
   let current = task.parentId === undefined ? undefined : index.get(task.parentId)
@@ -61,13 +86,14 @@ export function ancestorChain(tasks: readonly TaskRecord[], task: TaskRecord): T
 }
 
 /** Root-to-task depth: a root task is 0, its subtask 1, and so on. */
-export function taskDepth(tasks: readonly TaskRecord[], id: string): number {
-  const task = indexOf(tasks).get(id)
-  return task === undefined ? 0 : ancestorChain(tasks, task).length
+export function taskDepth(tasks: readonly TaskRecord[], id: string, lineage?: LineageIndex): number {
+  const task = (lineage?.byId ?? indexOf(tasks)).get(id)
+  return task === undefined ? 0 : ancestorChain(tasks, task, lineage).length
 }
 
 /** Direct subtasks of a task, in ledger order. */
-export function directSubtasks(tasks: readonly TaskRecord[], id: string): TaskRecord[] {
+export function directSubtasks(tasks: readonly TaskRecord[], id: string, lineage?: LineageIndex): TaskRecord[] {
+  if (lineage !== undefined) return [...(lineage.childrenByParent.get(id) ?? [])]
   return tasks.filter(task => task.parentId === id)
 }
 
@@ -75,15 +101,18 @@ export function directSubtasks(tasks: readonly TaskRecord[], id: string): TaskRe
  * Descendants of a task in breadth-first order, bounded by maxSubtaskDepth
  * total depth. The visited set keeps a malformed ledger from looping.
  */
-export function descendantTasks(tasks: readonly TaskRecord[], id: string, maxSubtaskDepth: number): TaskRecord[] {
+export function descendantTasks(tasks: readonly TaskRecord[], id: string, maxSubtaskDepth: number, lineage?: LineageIndex): TaskRecord[] {
   const visited = new Set<string>([id])
   const found: TaskRecord[] = []
   let frontier = [id]
   for (let depth = 1; depth <= maxSubtaskDepth && frontier.length > 0; depth += 1) {
     const next: string[] = []
     for (const parentId of frontier) {
-      for (const task of tasks) {
-        if (task.parentId !== parentId || visited.has(task.id)) continue
+      const children = lineage === undefined
+        ? tasks.filter(task => task.parentId === parentId)
+        : lineage.childrenByParent.get(parentId) ?? []
+      for (const task of children) {
+        if (visited.has(task.id)) continue
         visited.add(task.id)
         found.push(task)
         next.push(task.id)
@@ -99,13 +128,13 @@ export function descendantTasks(tasks: readonly TaskRecord[], id: string, maxSub
  * The visited set makes the walk terminate on a cyclic hand-edited ledger
  * instead of recursing until the stack overflows.
  */
-export function subtreeHeight(tasks: readonly TaskRecord[], id: string, visited: ReadonlySet<string> = new Set<string>()): number {
+export function subtreeHeight(tasks: readonly TaskRecord[], id: string, visited: ReadonlySet<string> = new Set<string>(), lineage?: LineageIndex): number {
   if (visited.has(id)) return 0
   const seen = new Set([...visited, id])
-  const children = directSubtasks(tasks, id)
+  const children = directSubtasks(tasks, id, lineage)
   if (children.length === 0) return 0
   let height = 0
-  for (const child of children) height = Math.max(height, 1 + subtreeHeight(tasks, child.id, seen))
+  for (const child of children) height = Math.max(height, 1 + subtreeHeight(tasks, child.id, seen, lineage))
   return Math.min(height, SUBTASK_DEPTH_MAX)
 }
 
@@ -137,16 +166,17 @@ export function checkParentLink(
   childId: string,
   parentId: string | null,
   maxSubtaskDepth: number,
+  lineage?: LineageIndex,
 ): ParentLinkCheck {
-  const child = tasks.find(task => task.id === childId)
+  const child = lineage === undefined ? tasks.find(task => task.id === childId) : lineage.byId.get(childId)
   if (child === undefined) return { ok: false, reason: 'unknown-task' }
   if (parentId === null || parentId === '') return { ok: true }
   if (parentId === childId) return { ok: false, reason: 'self-parent' }
-  const parent = tasks.find(task => task.id === parentId)
+  const parent = lineage === undefined ? tasks.find(task => task.id === parentId) : lineage.byId.get(parentId)
   if (parent === undefined) return { ok: false, reason: 'unknown-parent' }
   if (parent.archivedAt !== undefined) return { ok: false, reason: 'archived-parent' }
-  if (descendantTasks(tasks, childId, SUBTASK_DEPTH_MAX).some(task => task.id === parentId)) return { ok: false, reason: 'cycle' }
-  const depth = taskDepth(tasks, parentId) + 1 + subtreeHeight(tasks, childId)
+  if (descendantTasks(tasks, childId, SUBTASK_DEPTH_MAX, lineage).some(task => task.id === parentId)) return { ok: false, reason: 'cycle' }
+  const depth = taskDepth(tasks, parentId, lineage) + 1 + subtreeHeight(tasks, childId, new Set<string>(), lineage)
   if (depth > maxSubtaskDepth) return { ok: false, reason: 'depth-exceeded' }
   return { ok: true }
 }

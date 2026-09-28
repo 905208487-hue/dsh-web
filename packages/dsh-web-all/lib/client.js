@@ -4319,6 +4319,22 @@ window.__ModuleLoader__.load({
 		function isExecutionOutcome(value) {
 			return value === "succeeded" || value === "failed" || value === "cancelled";
 		}
+		/** Build the reusable index for a task list (ledger order preserved). */
+		function buildLineageIndex(tasks) {
+			const byId = /* @__PURE__ */ new Map();
+			const childrenByParent = /* @__PURE__ */ new Map();
+			for (const task of tasks) {
+				byId.set(task.id, task);
+				if (task.parentId === void 0) continue;
+				const siblings = childrenByParent.get(task.parentId);
+				if (siblings === void 0) childrenByParent.set(task.parentId, [task]);
+				else siblings.push(task);
+			}
+			return {
+				byId,
+				childrenByParent
+			};
+		}
 		function indexOf(tasks) {
 			return new Map(tasks.map((task) => [task.id, task]));
 		}
@@ -4328,8 +4344,8 @@ window.__ModuleLoader__.load({
 		* under a larger limit survives that limit being lowered, and restore and
 		* inheritance must still see all of it.
 		*/
-		function ancestorChain(tasks, task) {
-			const index = indexOf(tasks);
+		function ancestorChain(tasks, task, lineage) {
+			const index = lineage?.byId ?? indexOf(tasks);
 			const chain = [];
 			const seen = /* @__PURE__ */ new Set([task.id]);
 			let current = task.parentId === void 0 ? void 0 : index.get(task.parentId);
@@ -4342,29 +4358,33 @@ window.__ModuleLoader__.load({
 			return chain;
 		}
 		/** Root-to-task depth: a root task is 0, its subtask 1, and so on. */
-		function taskDepth(tasks, id) {
-			const task = indexOf(tasks).get(id);
-			return task === void 0 ? 0 : ancestorChain(tasks, task).length;
+		function taskDepth(tasks, id, lineage) {
+			const task = (lineage?.byId ?? indexOf(tasks)).get(id);
+			return task === void 0 ? 0 : ancestorChain(tasks, task, lineage).length;
 		}
 		/** Direct subtasks of a task, in ledger order. */
-		function directSubtasks(tasks, id) {
+		function directSubtasks(tasks, id, lineage) {
+			if (lineage !== void 0) return [...lineage.childrenByParent.get(id) ?? []];
 			return tasks.filter((task) => task.parentId === id);
 		}
 		/**
 		* Descendants of a task in breadth-first order, bounded by maxSubtaskDepth
 		* total depth. The visited set keeps a malformed ledger from looping.
 		*/
-		function descendantTasks(tasks, id, maxSubtaskDepth) {
+		function descendantTasks(tasks, id, maxSubtaskDepth, lineage) {
 			const visited = /* @__PURE__ */ new Set([id]);
 			const found = [];
 			let frontier = [id];
 			for (let depth = 1; depth <= maxSubtaskDepth && frontier.length > 0; depth += 1) {
 				const next = [];
-				for (const parentId of frontier) for (const task of tasks) {
-					if (task.parentId !== parentId || visited.has(task.id)) continue;
-					visited.add(task.id);
-					found.push(task);
-					next.push(task.id);
+				for (const parentId of frontier) {
+					const children = lineage === void 0 ? tasks.filter((task) => task.parentId === parentId) : lineage.childrenByParent.get(parentId) ?? [];
+					for (const task of children) {
+						if (visited.has(task.id)) continue;
+						visited.add(task.id);
+						found.push(task);
+						next.push(task.id);
+					}
 				}
 				frontier = next;
 			}
@@ -4375,13 +4395,13 @@ window.__ModuleLoader__.load({
 		* The visited set makes the walk terminate on a cyclic hand-edited ledger
 		* instead of recursing until the stack overflows.
 		*/
-		function subtreeHeight(tasks, id, visited = /* @__PURE__ */ new Set()) {
+		function subtreeHeight(tasks, id, visited = /* @__PURE__ */ new Set(), lineage) {
 			if (visited.has(id)) return 0;
 			const seen = /* @__PURE__ */ new Set([...visited, id]);
-			const children = directSubtasks(tasks, id);
+			const children = directSubtasks(tasks, id, lineage);
 			if (children.length === 0) return 0;
 			let height = 0;
-			for (const child of children) height = Math.max(height, 1 + subtreeHeight(tasks, child.id, seen));
+			for (const child of children) height = Math.max(height, 1 + subtreeHeight(tasks, child.id, seen, lineage));
 			return Math.min(height, 3);
 		}
 		/**
@@ -4391,8 +4411,8 @@ window.__ModuleLoader__.load({
 		* and the resulting depth (parent depth + 1 + the child own subtree height)
 		* must stay within maxSubtaskDepth.
 		*/
-		function checkParentLink(tasks, childId, parentId, maxSubtaskDepth) {
-			if (tasks.find((task) => task.id === childId) === void 0) return {
+		function checkParentLink(tasks, childId, parentId, maxSubtaskDepth, lineage) {
+			if ((lineage === void 0 ? tasks.find((task) => task.id === childId) : lineage.byId.get(childId)) === void 0) return {
 				ok: false,
 				reason: "unknown-task"
 			};
@@ -4401,7 +4421,7 @@ window.__ModuleLoader__.load({
 				ok: false,
 				reason: "self-parent"
 			};
-			const parent = tasks.find((task) => task.id === parentId);
+			const parent = lineage === void 0 ? tasks.find((task) => task.id === parentId) : lineage.byId.get(parentId);
 			if (parent === void 0) return {
 				ok: false,
 				reason: "unknown-parent"
@@ -4410,11 +4430,11 @@ window.__ModuleLoader__.load({
 				ok: false,
 				reason: "archived-parent"
 			};
-			if (descendantTasks(tasks, childId, 3).some((task) => task.id === parentId)) return {
+			if (descendantTasks(tasks, childId, 3, lineage).some((task) => task.id === parentId)) return {
 				ok: false,
 				reason: "cycle"
 			};
-			if (taskDepth(tasks, parentId) + 1 + subtreeHeight(tasks, childId) > maxSubtaskDepth) return {
+			if (taskDepth(tasks, parentId, lineage) + 1 + subtreeHeight(tasks, childId, /* @__PURE__ */ new Set(), lineage) > maxSubtaskDepth) return {
 				ok: false,
 				reason: "depth-exceeded"
 			};
@@ -6936,6 +6956,166 @@ window.__ModuleLoader__.load({
 			return normalizeTags(tags) ?? [];
 		}
 		//#endregion
+		//#region ../dsh-task-board/src/client/board/TaskCard.tsx
+		/**
+		* Task card: the board's column item. Clicking opens the task detail — it
+		* never executes anything directly (detail holds the Run button).
+		*
+		* Memoized: the card re-renders only when its own task record changes, so a
+		* status/filter update on one card (or scrolling) never re-renders every
+		* card on the board. The per-card onClick is built with a stable task reference
+		* by the board, so the memo boundary is effective.
+		*/
+		/**
+		* Built formatters, keyed by time zone ('' = the browser's own). Constructing
+		* an Intl.DateTimeFormat is orders of magnitude more expensive than formatting
+		* with one, and the board renders dozens of timestamps per SSE frame; the
+		* cached formatter keeps that cost off the render path.
+		*/
+		const HOST_TIMESTAMP_FORMATS = /* @__PURE__ */ new Map();
+		function hostTimestampFormat(timeZone) {
+			const key = timeZone ?? "";
+			const cached = HOST_TIMESTAMP_FORMATS.get(key);
+			if (cached !== void 0) return cached;
+			const format = new Intl.DateTimeFormat(void 0, {
+				dateStyle: "medium",
+				timeStyle: "medium",
+				...timeZone === void 0 ? {} : { timeZone }
+			});
+			HOST_TIMESTAMP_FORMATS.set(key, format);
+			return format;
+		}
+		/** Compact relative/absolute time label. */
+		function formatHostTimestamp(ms, timeZone) {
+			try {
+				return hostTimestampFormat(timeZone).format(new Date(ms));
+			} catch {
+				return new Date(ms).toISOString();
+			}
+		}
+		function formatTime$3(ms, timeZone) {
+			const date = new Date(ms);
+			const minutes = Math.floor((Date.now() - ms) / 6e4);
+			if (minutes < 1) return t$4("time.justNow");
+			if (minutes < 60) return `${minutes}m`;
+			if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
+			if (timeZone !== void 0) return formatHostTimestamp(ms, timeZone);
+			return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+		}
+		function TaskCardInner({ task, pending, timeZone, onClick, subtaskCount = 0, isSubtask = false, subtasksDone = 0, subtasksRunning = 0, subtasksFailed = 0 }) {
+			const latest = task.executions[task.executions.length - 1];
+			const runs = task.executions.length;
+			const archived = task.archivedAt !== void 0;
+			const isDraggable = !archived && task.status !== "running" && !pending;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+				type: "button",
+				className: board_module_css_default.card,
+				"data-status": archived ? "archived" : task.status,
+				"data-dsh-part": "card",
+				"data-pending": pending || void 0,
+				draggable: isDraggable,
+				onDragStart: isDraggable ? (event) => {
+					event.dataTransfer.setData("text/plain", task.id);
+					event.dataTransfer.effectAllowed = "move";
+				} : void 0,
+				onClick,
+				title: task.description !== "" ? task.description : task.title,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: board_module_css_default.cardTitle,
+						children: task.title
+					}),
+					task.tags !== void 0 && task.tags.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: board_module_css_default.cardTags,
+						children: task.tags.map((tag) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: board_module_css_default.cardTag,
+							"data-tag-tone": tagTone(tag.name),
+							"data-dsh-part": "tag-badge",
+							"data-tag-hint": tag.promptPrefix === void 0 ? void 0 : tag.promptPrefix,
+							title: tag.promptPrefix === void 0 ? tag.name : tag.promptPrefix,
+							children: tag.name
+						}, tag.name))
+					}),
+					task.description !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: board_module_css_default.cardExcerpt,
+						children: task.description
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: board_module_css_default.cardMeta,
+						children: [
+							isSubtask && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: board_module_css_default.cardSubtask,
+								"data-dsh-part": "subtask-badge",
+								children: t$4("card.subtask")
+							}),
+							subtaskCount > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: board_module_css_default.cardSubtask,
+								"data-dsh-part": "subtask-count",
+								"data-tone": subtasksFailed > 0 ? "failed" : subtasksRunning > 0 ? "running" : subtasksDone === subtaskCount ? "done" : void 0,
+								title: t$4("card.subtasksBreakdown", {
+									total: String(subtaskCount),
+									done: String(subtasksDone),
+									running: String(subtasksRunning),
+									failed: String(subtasksFailed)
+								}),
+								children: [
+									t$4("card.subtasks", { count: String(subtaskCount) }),
+									subtasksFailed > 0 ? " · " + t$4("card.subtasksFailed", { count: String(subtasksFailed) }) : "",
+									subtasksFailed === 0 && subtasksRunning > 0 ? " · " + t$4("card.subtasksRunning", { count: String(subtasksRunning) }) : ""
+								]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: board_module_css_default.cardTime,
+								children: [
+									t$4("board.updated"),
+									" ",
+									formatTime$3(task.updatedAt)
+								]
+							}),
+							task.freeze !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: board_module_css_default.cardSchedule,
+								title: task.freeze.goal,
+								children: t$4("card.frozen")
+							}),
+							!archived && task.schedule?.enabled === true && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: board_module_css_default.cardSchedule,
+								title: task.schedule.nextRunAt !== void 0 ? `${t$4("card.scheduled")} · ${formatHostTimestamp(task.schedule.nextRunAt, timeZone)}` : t$4("card.scheduled"),
+								children: t$4("card.scheduled")
+							}),
+							latest !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: board_module_css_default.cardRun,
+								"data-result": archived ? void 0 : latest.result,
+								children: [
+									runs,
+									" ",
+									t$4("board.runs")
+								]
+							}),
+							latest?.sessionId !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: board_module_css_default.cardSession,
+								title: latest.sessionId,
+								children: "⌁"
+							}),
+							!archived && (task.status === "running" || pending) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: board_module_css_default.cardSpinner,
+								"aria-hidden": "true"
+							})
+						]
+					}),
+					!archived && pending && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: board_module_css_default.cardRunningLabel,
+						children: [t$4("board.pending"), "…"]
+					}),
+					!archived && latest !== void 0 && executionLabel(latest) === "running" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: board_module_css_default.cardRunningLabel,
+						children: [latest.ownResult === void 0 ? t$4("detail.result.running") : t$4("detail.subtasks.waiting"), "…"]
+					})
+				]
+			});
+		}
+		/** Memoized card: re-renders only when the card's own task record changes. */
+		const TaskCard = (0, react.memo)(TaskCardInner);
+		//#endregion
 		//#region ../dsh-task-board/src/client/board/parse-model-pref.ts
 		/**
 		* The model the user last picked for AI parsing, remembered per browser so the
@@ -7544,7 +7724,7 @@ window.__ModuleLoader__.load({
 								children: [
 									t$4("detail.schedule.nextRun"),
 									" ",
-									new Date(scheduleNextRun).toLocaleString()
+									formatHostTimestamp(scheduleNextRun, controller.getSnapshot().host?.scheduler.timeZone)
 								]
 							})
 						] })]
@@ -7562,151 +7742,6 @@ window.__ModuleLoader__.load({
 			done: "board.status.done",
 			failed: "board.status.failed"
 		};
-		//#endregion
-		//#region ../dsh-task-board/src/client/board/TaskCard.tsx
-		/**
-		* Task card: the board's column item. Clicking opens the task detail — it
-		* never executes anything directly (detail holds the Run button).
-		*
-		* Memoized: the card re-renders only when its own task record changes, so a
-		* status/filter update on one card (or scrolling) never re-renders every
-		* card on the board. The per-card onClick is built with a stable task reference
-		* by the board, so the memo boundary is effective.
-		*/
-		/** Compact relative/absolute time label. */
-		function formatHostTimestamp(ms, timeZone) {
-			try {
-				return new Intl.DateTimeFormat(void 0, {
-					dateStyle: "medium",
-					timeStyle: "medium",
-					...timeZone === void 0 ? {} : { timeZone }
-				}).format(new Date(ms));
-			} catch {
-				return new Date(ms).toISOString();
-			}
-		}
-		function formatTime$3(ms, timeZone) {
-			const date = new Date(ms);
-			const minutes = Math.floor((Date.now() - ms) / 6e4);
-			if (minutes < 1) return t$4("time.justNow");
-			if (minutes < 60) return `${minutes}m`;
-			if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
-			if (timeZone !== void 0) return formatHostTimestamp(ms, timeZone);
-			return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-		}
-		function TaskCardInner({ task, pending, timeZone, onClick, subtaskCount = 0, isSubtask = false, subtasksDone = 0, subtasksRunning = 0, subtasksFailed = 0 }) {
-			const latest = task.executions[task.executions.length - 1];
-			const runs = task.executions.length;
-			const archived = task.archivedAt !== void 0;
-			const isDraggable = !archived && task.status !== "running" && !pending;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-				type: "button",
-				className: board_module_css_default.card,
-				"data-status": archived ? "archived" : task.status,
-				"data-dsh-part": "card",
-				"data-pending": pending || void 0,
-				draggable: isDraggable,
-				onDragStart: isDraggable ? (event) => {
-					event.dataTransfer.setData("text/plain", task.id);
-					event.dataTransfer.effectAllowed = "move";
-				} : void 0,
-				onClick,
-				title: task.description !== "" ? task.description : task.title,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: board_module_css_default.cardTitle,
-						children: task.title
-					}),
-					task.tags !== void 0 && task.tags.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: board_module_css_default.cardTags,
-						children: task.tags.map((tag) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: board_module_css_default.cardTag,
-							"data-tag-tone": tagTone(tag.name),
-							"data-dsh-part": "tag-badge",
-							"data-tag-hint": tag.promptPrefix === void 0 ? void 0 : tag.promptPrefix,
-							title: tag.promptPrefix === void 0 ? tag.name : tag.promptPrefix,
-							children: tag.name
-						}, tag.name))
-					}),
-					task.description !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: board_module_css_default.cardExcerpt,
-						children: task.description
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: board_module_css_default.cardMeta,
-						children: [
-							isSubtask && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: board_module_css_default.cardSubtask,
-								"data-dsh-part": "subtask-badge",
-								children: t$4("card.subtask")
-							}),
-							subtaskCount > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: board_module_css_default.cardSubtask,
-								"data-dsh-part": "subtask-count",
-								"data-tone": subtasksFailed > 0 ? "failed" : subtasksRunning > 0 ? "running" : subtasksDone === subtaskCount ? "done" : void 0,
-								title: t$4("card.subtasksBreakdown", {
-									total: String(subtaskCount),
-									done: String(subtasksDone),
-									running: String(subtasksRunning),
-									failed: String(subtasksFailed)
-								}),
-								children: [
-									t$4("card.subtasks", { count: String(subtaskCount) }),
-									subtasksFailed > 0 ? " · " + t$4("card.subtasksFailed", { count: String(subtasksFailed) }) : "",
-									subtasksFailed === 0 && subtasksRunning > 0 ? " · " + t$4("card.subtasksRunning", { count: String(subtasksRunning) }) : ""
-								]
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: board_module_css_default.cardTime,
-								children: [
-									t$4("board.updated"),
-									" ",
-									formatTime$3(task.updatedAt)
-								]
-							}),
-							task.freeze !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: board_module_css_default.cardSchedule,
-								title: task.freeze.goal,
-								children: t$4("card.frozen")
-							}),
-							!archived && task.schedule?.enabled === true && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: board_module_css_default.cardSchedule,
-								title: task.schedule.nextRunAt !== void 0 ? `${t$4("card.scheduled")} · ${formatHostTimestamp(task.schedule.nextRunAt, timeZone)}` : t$4("card.scheduled"),
-								children: t$4("card.scheduled")
-							}),
-							latest !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: board_module_css_default.cardRun,
-								"data-result": archived ? void 0 : latest.result,
-								children: [
-									runs,
-									" ",
-									t$4("board.runs")
-								]
-							}),
-							latest?.sessionId !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: board_module_css_default.cardSession,
-								title: latest.sessionId,
-								children: "⌁"
-							}),
-							!archived && (task.status === "running" || pending) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: board_module_css_default.cardSpinner,
-								"aria-hidden": "true"
-							})
-						]
-					}),
-					!archived && pending && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: board_module_css_default.cardRunningLabel,
-						children: [t$4("board.pending"), "…"]
-					}),
-					!archived && latest !== void 0 && executionLabel(latest) === "running" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: board_module_css_default.cardRunningLabel,
-						children: [latest.ownResult === void 0 ? t$4("detail.result.running") : t$4("detail.subtasks.waiting"), "…"]
-					})
-				]
-			});
-		}
-		/** Memoized card: re-renders only when the card's own task record changes. */
-		const TaskCard = (0, react.memo)(TaskCardInner);
 		//#endregion
 		//#region ../dsh-task-board/src/client/board/ConfirmDialog.tsx
 		/**
@@ -7861,7 +7896,15 @@ window.__ModuleLoader__.load({
 			const [error, setError] = (0, react.useState)(void 0);
 			const snapshot = controller.getSnapshot();
 			const limit = snapshot.host?.maxSubtaskDepth ?? 1;
-			const candidates = snapshot.tasks.filter((task) => task.archivedAt === void 0 && task.status !== "running" && task.parentId === void 0 && task.id !== parent.id && checkParentLink(snapshot.tasks, task.id, parent.id, limit).ok);
+			const tasks = snapshot.tasks;
+			const candidates = (0, react.useMemo)(() => {
+				const lineage = buildLineageIndex(tasks);
+				return tasks.filter((task) => task.archivedAt === void 0 && task.status !== "running" && task.parentId === void 0 && task.id !== parent.id && checkParentLink(tasks, task.id, parent.id, limit, lineage).ok);
+			}, [
+				tasks,
+				parent.id,
+				limit
+			]);
 			const link = async (taskId) => {
 				setPending(true);
 				setError(void 0);
@@ -7993,15 +8036,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** The execution-target editor: workspace / mode / permission pickers. */
-		function ExecutionSettingsSection({ controller, task, pending }) {
-			const [options, setOptions] = (0, react.useState)(controller.getSnapshot().executionOptions);
-			const teamRunOffered = () => controller.getSnapshot().host?.teamRunAvailable === true;
-			const [teamRunAvailable, setTeamRunAvailable] = (0, react.useState)(teamRunOffered());
-			(0, react.useEffect)(() => controller.subscribe(() => {
-				const snapshot = controller.getSnapshot();
-				setOptions(snapshot.executionOptions);
-				setTeamRunAvailable(snapshot.host?.teamRunAvailable === true);
-			}), [controller]);
+		function ExecutionSettingsSection({ controller, task, pending, executionOptions, teamRunAvailable }) {
+			const options = executionOptions;
 			const workspaceId = task.workspaceId ?? "";
 			const mode = task.mode ?? "";
 			const permission = task.permission ?? "";
@@ -8304,9 +8340,7 @@ window.__ModuleLoader__.load({
 		* and the actions that grow or prune the tree. Every gate here mirrors the
 		* Host lineage gate for affordance only; the Host re-checks the action.
 		*/
-		function SubtaskSection({ controller, task, pending, archived }) {
-			const [snapshot, setSnapshot] = (0, react.useState)(controller.getSnapshot());
-			(0, react.useEffect)(() => controller.subscribe(() => setSnapshot(controller.getSnapshot())), [controller]);
+		function SubtaskSection({ controller, task, pending, archived, snapshot }) {
 			const [showAdd, setShowAdd] = (0, react.useState)(false);
 			const [showLink, setShowLink] = (0, react.useState)(false);
 			const tasks = snapshot.tasks;
@@ -8505,7 +8539,8 @@ window.__ModuleLoader__.load({
 										controller,
 										task: current,
 										pending,
-										archived
+										archived,
+										snapshot
 									}),
 									current.tags !== void 0 && current.tags.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 										className: board_module_css_default.detailSection,
@@ -8633,7 +8668,9 @@ window.__ModuleLoader__.load({
 									!archived && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ExecutionSettingsSection, {
 										controller,
 										task: current,
-										pending
+										pending,
+										executionOptions: snapshot.executionOptions,
+										teamRunAvailable: snapshot.host?.teamRunAvailable === true
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ScheduleSection, {
 										controller,
 										task: current,
@@ -10882,6 +10919,44 @@ window.__ModuleLoader__.load({
 			"layout"
 		];
 		/**
+		* Read the agent-preset roster through whichever face the running host
+		* serves: the generated api-remotes face (`remote.agentPresets`,
+		* 0.1.2-alpha.2) or the connection RPC face
+		* (`connection.api.agentPresets`, hosts below that cohort). Answers
+		* undefined when the host serves neither, so the caller leaves the picker
+		* options untouched instead of erroring.
+		*/
+		async function readPresetRoster(ctx, remote) {
+			let remotes;
+			try {
+				remotes = remote.agentPresets;
+			} catch {
+				remotes = void 0;
+			}
+			if (remotes !== void 0) {
+				const response = await remotes.list();
+				if (!response.ok) return {
+					ok: false,
+					presets: []
+				};
+				return {
+					ok: true,
+					presets: response.value.presets
+				};
+			}
+			const legacy = ctx.get("connection").api?.agentPresets;
+			if (legacy === void 0) return void 0;
+			const response = await legacy.list({});
+			if (!response.result.ok || response.result.value === void 0) return {
+				ok: false,
+				presets: []
+			};
+			return {
+				ok: true,
+				presets: response.result.value.presets ?? []
+			};
+		}
+		/**
 		* Mount the task board.
 		* @param ctx - client root context (services: sessions, workspaces).
 		*/
@@ -10947,6 +11022,21 @@ window.__ModuleLoader__.load({
 				controller.setWorkspaceCreator(async (path) => {
 					return { workspaceId: (await workspaces.create({ path })).workspaceId };
 				});
+				const pushPresetOptions = async () => {
+					try {
+						const roster = await readPresetRoster(ctx, remote);
+						if (roster === void 0 || !roster.ok) return;
+						controller.setExecutionOptions({ presets: roster.presets.map((preset) => ({
+							id: preset.id,
+							name: preset.name,
+							description: preset.description,
+							broken: preset.broken,
+							isDefault: preset.isDefault
+						})) });
+					} catch (error) {
+						console.error("[dsh-task-board] agent preset roster read failed", error);
+					}
+				};
 				const pushModelOptions = async () => {
 					try {
 						let models = [];
@@ -11002,8 +11092,10 @@ window.__ModuleLoader__.load({
 						console.error("[dsh-task-board] model options read failed", error);
 					}
 				};
+				pushPresetOptions();
 				pushModelOptions();
 				disposers.push(ctx.on("connection/reset", () => {
+					pushPresetOptions();
 					pushModelOptions();
 				}));
 				try {
