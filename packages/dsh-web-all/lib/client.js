@@ -6078,7 +6078,9 @@ window.__ModuleLoader__.load({
 			"board.updated": "更新于",
 			"board.created": "创建于",
 			"board.hostError": "Host 操作失败：{error}",
-			"board.hostError.notMounted": "任务看板的后台接口没有挂载：宿主可能没有加载该插件，也可能后台数据正被另一个 DSH 实例占用。重启 DSH 服务后再试",
+			"board.hostError.notMounted": "任务看板的后台接口没有挂载：宿主没有加载这个插件（可能未安装、未启用，或该行启动失败）。重启 DSH 服务后再试",
+			"board.hostError.ledgerLocked": "任务看板的账本已被另一个 DSH 进程占用（占用者 pid {pid}），本实例没有注册后台接口：关闭那个 DSH 实例，或等它退出后再点重试——反复重启本实例无效（宿主原因：{detail}）",
+			"board.hostError.degraded": "任务看板这一行在启动时降级，后台接口没有注册（宿主原因：{detail}）",
 			"board.hostError.unauthorized": "登录状态已失效，请刷新页面后重试",
 			"board.hostError.forbidden": "当前环境未通过同源校验：桌面外壳或反向代理可能未传递浏览器标记，也没有携带宿主认证凭据",
 			"board.hostError.locked": "任务看板的后台数据被占用：{detail}",
@@ -6323,7 +6325,9 @@ window.__ModuleLoader__.load({
 			"board.updated": "Updated",
 			"board.created": "Created",
 			"board.hostError": "Host action failed: {error}",
-			"board.hostError.notMounted": "The task board Host API is not mounted: the Host may not have loaded the plugin, or another DSH instance holds the ledger. Restart the DSH service and try again",
+			"board.hostError.notMounted": "The task board Host API is not mounted: the Host did not load this plugin (not installed, disabled, or its row failed to start). Restart the DSH service and try again",
+			"board.hostError.ledgerLocked": "Another DSH process (pid {pid}) holds the task board ledger, so this instance registered no Host API: close that DSH instance, or wait for it to exit and retry. Restarting this instance cannot help (reason: {detail})",
+			"board.hostError.degraded": "The task board row degraded during start, so its Host API was not registered: {detail}",
 			"board.hostError.unauthorized": "This session is no longer signed in; reload the page and try again",
 			"board.hostError.forbidden": "The request did not pass the same-origin fence: the desktop shell or reverse proxy may not have forwarded browser credentials",
 			"board.hostError.locked": "The task board ledger is locked: {detail}",
@@ -10190,6 +10194,71 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region ../dsh-task-board/src/core/degraded-reason.ts
+		/**
+		* The one degraded record naming `plugin`, or undefined when that row is not
+		* degraded (or the payload does not come from the shell's own shape). A
+		* plugin may appear once: the shell keys the ledger by package name and
+		* refreshes the record on every new failure.
+		* @param body - parsed JSON body of the health route.
+		* @param plugin - the real plugin package name to look for.
+		* @returns the degraded row, or undefined when the ledger does not name it.
+		*/
+		function degradedRowOf(body, plugin) {
+			if (typeof body !== "object" || body === null) return void 0;
+			const ledger = body;
+			if (ledger.ok !== true || !Array.isArray(ledger.degraded)) return void 0;
+			for (const entry of ledger.degraded) {
+				if (typeof entry !== "object" || entry === null) continue;
+				const record = entry;
+				if (record.plugin !== plugin) continue;
+				const stage = record.stage === "import" || record.stage === "shape" || record.stage === "start" ? record.stage : void 0;
+				if (stage === void 0) continue;
+				return {
+					plugin,
+					stage,
+					reason: typeof record.reason === "string" ? record.reason : ""
+				};
+			}
+		}
+		/** The ledger owner pid a task-board lock reason names, when it names one. */
+		const OWNED_BY_PROCESS_RE = /already owned by process\s+(\d+)/;
+		/**
+		* The marker the ledger appends when it could NOT confirm the recorded PID
+		* belongs to the lock's real owner: the PID was reused by an unrelated process
+		* after a crash, and the reason then carries the manual-removal step instead.
+		* That reason must be rendered verbatim — telling the user to close "the other
+		* DSH instance" would send them after a process that never touched the board.
+		*/
+		const UNCONFIRMED_OWNER_MARKER = "reused after a crash";
+		/**
+		* Extract the pid of the LIVE process a ledger-lock failure blames, when the
+		* reason identifies one. The task board's lock refusal is the one degraded
+		* reason that carries an owner the user can act on, so the panel renders the
+		* pid in its own sentence and adds the guidance that actually applies.
+		* @param reason - the shell's one-line failure reason.
+		* @returns the confirmed owner pid, or undefined when the reason names none or
+		*   warns that the PID may have been reused (its own text owns the recovery).
+		*/
+		function ledgerOwnerPid(reason) {
+			if (reason.includes(UNCONFIRMED_OWNER_MARKER)) return void 0;
+			const match = OWNED_BY_PROCESS_RE.exec(reason);
+			if (match === null) return void 0;
+			const pid = Number(match[1]);
+			return Number.isSafeInteger(pid) && pid > 0 ? pid : void 0;
+		}
+		//#endregion
+		//#region ../dsh-task-board/src/core/package-name.ts
+		/**
+		* npm identity of this plugin. The dsh-web-all degraded ledger is keyed by the
+		* real plugin package name of a family row, and this plugin's browser half
+		* must name its OWN row there to learn why its Host API is missing (issue
+		* #1730): the served bundle cannot derive the name, because a family row
+		* mounts the package from a versioned profile path. The host half spells the
+		* same name in its single-mount guard (src/index.ts); the two move together.
+		*/
+		const TASK_BOARD_PACKAGE = "@linxin666/dsh-client-ui-task-board";
+		//#endregion
 		//#region ../dsh-task-board/src/protocol.ts
 		const TASK_BOARD_API_PREFIX = "/api/task-board";
 		/** Whether a decoded reply carries the three draft strings the form accepts. */
@@ -10228,6 +10297,90 @@ window.__ModuleLoader__.load({
 				this.name = "HostApiError";
 			}
 		};
+		/**
+		* Same-origin family health route served by the dsh-web-all shell: the
+		* degraded ledger, in which a family row that failed during apply appears WITH
+		* its reason. DOCUMENT-RELATIVE for the same reason as the board's own routes
+		* (issue #1707). A 404 here means the family shell is absent or older than the
+		* route, which is not itself a failure of the board.
+		*/
+		const FAMILY_DEGRADED_ROUTE = "api/dsh-web-all/degraded";
+		/** Health-route ceiling: an unresponsive family shell must not hold the board's first paint. */
+		const DEGRADED_LOOKUP_TIMEOUT_MS = 2e3;
+		/**
+		* The failure text for a row this browser knows failed during start.
+		*
+		* A ledger lock is the one class with an owner the user can act on, so its
+		* reason is unpacked into the pid plus what to do about it; every other
+		* degraded row is reported with the shell's own reason verbatim. The raw
+		* reason rides along either way, because it is the only text that names the
+		* lock file or the recovery step when the pid is not the whole story.
+		* @param reason - the shell's one-line failure reason (never empty).
+		*/
+		function degradedFailureMessage(reason) {
+			const pid = ledgerOwnerPid(reason);
+			if (pid === void 0) return {
+				failure: "degraded",
+				message: t$4("board.hostError.degraded", { detail: reason })
+			};
+			return {
+				failure: "ledger-locked",
+				message: t$4("board.hostError.ledgerLocked", {
+					pid: String(pid),
+					detail: reason
+				})
+			};
+		}
+		/**
+		* The degraded record the family shell holds for THIS board, or undefined when
+		* the row is healthy, the shell is absent, or the answer is unusable. The
+		* lookup is best-effort by contract: any uncertainty keeps the caller's own
+		* failure text instead of replacing it with a weaker one.
+		* @param fetchImpl - fetch implementation (injected for tests).
+		* @returns the ledger's reason for this row, or undefined when it names none.
+		*/
+		async function fetchDegradedReason(fetchImpl) {
+			const controller = new AbortController();
+			const timer = globalThis.setTimeout(() => {
+				controller.abort();
+			}, DEGRADED_LOOKUP_TIMEOUT_MS);
+			try {
+				const response = await fetchImpl(FAMILY_DEGRADED_ROUTE, {
+					signal: controller.signal,
+					headers: { accept: "application/json" },
+					cache: "no-store"
+				});
+				if (!response.ok) return void 0;
+				return degradedRowOf(await response.json(), TASK_BOARD_PACKAGE)?.reason;
+			} catch {
+				return;
+			} finally {
+				globalThis.clearTimeout(timer);
+			}
+		}
+		/**
+		* Name the real reason this board's routes are missing (issue #1730).
+		*
+		* The core webserver answers an unmounted route with a bare 404, which cannot
+		* distinguish "this deployment never loaded the plugin" from "this row
+		* degraded during start" — a second DSH process holding `ledger-v2.lock` is
+		* the case that matters, because the panel's advice ("restart the service")
+		* is then false: the lock belongs to the other process, and restarting cannot
+		* win it. The family health route knows the difference, so the 404 is
+		* disambiguated there before anything is shown.
+		* @param fallback - copy for the plain "routes are not there" failure, which
+		*   is route-specific (the board's state route and the AI-parse route phrase
+		*   their own absence); it is also what is shown when the ledger names nothing.
+		* @param fetchImpl - fetch implementation (injected for tests).
+		* @returns the HostApiError to throw for a missing board route.
+		*/
+		async function missingRouteFailure(fallback = t$4("board.hostError.notMounted"), fetchImpl = fetch) {
+			const absent = () => new HostApiError("not-mounted", fallback, 404);
+			const reason = await fetchDegradedReason(fetchImpl);
+			if (reason === void 0 || reason === "") return absent();
+			const described = degradedFailureMessage(reason);
+			return new HostApiError(described.failure, described.message, 404);
+		}
 		function uuid() {
 			return globalThis.crypto?.randomUUID?.() ?? `browser-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 		}
@@ -10256,7 +10409,7 @@ window.__ModuleLoader__.load({
 				if (response.status === 503 || /lock/i.test(hostError)) throw new HostApiError("locked", t$4("board.hostError.locked", { detail: hostError }), response.status);
 				throw new HostApiError("rejected", hostError, response.status);
 			}
-			if (response.status === 404) throw new HostApiError("not-mounted", t$4("board.hostError.notMounted"), 404);
+			if (response.status === 404) throw await missingRouteFailure();
 			if (response.status === 403) throw new HostApiError("forbidden", t$4("board.hostError.forbidden"), 403);
 			if (response.status === 401) throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), 401);
 			throw new HostApiError("unexpected", t$4("board.hostError.unexpected", { status: String(response.status) }), response.status);
@@ -10357,7 +10510,7 @@ window.__ModuleLoader__.load({
 					if (record !== void 0 && isTaskParseDraft(record.draft)) return record.draft;
 					throw new HostApiError("unexpected", t$4("new.aiParseFailed", { error: t$4("board.hostError.unexpected", { status: String(response.status) }) }), response.status);
 				}
-				if (response.status === 404) throw new HostApiError("not-mounted", t$4("new.aiParseUnavailable"), 404);
+				if (response.status === 404) throw await missingRouteFailure(t$4("new.aiParseUnavailable"));
 				if (response.status === 403) throw new HostApiError("forbidden", t$4("board.hostError.forbidden"), 403);
 				if (response.status === 401) throw new HostApiError("unauthorized", t$4("board.hostError.unauthorized"), 401);
 				const code = typeof record?.code === "string" ? record.code : void 0;

@@ -11,6 +11,21 @@ function shellState() {
 }
 //#endregion
 //#region src/degraded.ts
+/** Longest recorded reason; a reason is one line of copy, not a stack dump. */
+const DEGRADED_REASON_MAX = 500;
+/**
+* Compress a thrown value into the one line a UI can render: the first
+* non-empty line of the message, bounded. The full stack stays in `message`
+* for the log and for tooling that wants it.
+* @param error - the caught value.
+* @param maxLength - bound on the returned string.
+* @returns one line naming the failure, never empty.
+*/
+function failureReason(error, maxLength = 500) {
+	const line = ((error instanceof Error ? error.message : String(error)).split("\n", 1)[0] ?? "").trim();
+	const reason = line === "" ? "unknown failure" : line;
+	return reason.length <= maxLength ? reason : reason.slice(0, maxLength - 3) + "...";
+}
 /** Record (or refresh) one plugin's degraded state. Errors are logged here once. */
 function recordDegraded(plugin, stage, error) {
 	const message = error instanceof Error ? error.stack ?? error.message : String(error);
@@ -19,6 +34,7 @@ function recordDegraded(plugin, stage, error) {
 		plugin,
 		stage,
 		message,
+		reason: failureReason(error),
 		at: (/* @__PURE__ */ new Date()).toISOString()
 	});
 }
@@ -30,7 +46,11 @@ function clearDegraded(plugin) {
 function listDegraded() {
 	return [...shellState().degraded.values()];
 }
+/** For test teardown and test isolation only. */
+function _resetDegradedForTest() {
+	shellState().degraded.clear();
+}
 //#endregion
-export { shellState as i, listDegraded as n, recordDegraded as r, clearDegraded as t };
+export { listDegraded as a, failureReason as i, _resetDegradedForTest as n, recordDegraded as o, clearDegraded as r, shellState as s, DEGRADED_REASON_MAX as t };
 
-//# sourceMappingURL=degraded-CA6yzGPr.js.map
+//# sourceMappingURL=degraded-DtoWhWX-.js.map

@@ -817,3 +817,30 @@ describe('win32StartTimeMs', () => {
     expect(invocations).toBe(0)
   })
 })
+
+/**
+ * Lock-refusal text contract (issue #1730).
+ *
+ * The refusal message is not only a log line: the degraded-ledger reason the
+ * task board renders carries it, and the panel unpacks the owning pid out of
+ * it. Its shape must therefore keep naming the owner, so the panel can say
+ * which process to close instead of advising a restart that cannot win a lock.
+ */
+describe('task-board ledger lock refusal text', () => {
+  it('operator is told which live process owns the ledger', () => {
+    // Given a ledger directory whose lock a live owner already holds
+    const root = tempRoot()
+    const first = new HostTaskLedger(root, () => NOW)
+    // When a second board tries to start on the same directory
+    let message = ''
+    try {
+      new HostTaskLedger(root, () => NOW)
+    } catch (error) {
+      message = (error as Error).message
+    }
+    // Then the refusal names the owning process, which is what the panel shows
+    expect(message).toContain('already owned by process')
+    expect(/already owned by process\s+\d+/.test(message)).toBe(true)
+    first.dispose()
+  })
+})

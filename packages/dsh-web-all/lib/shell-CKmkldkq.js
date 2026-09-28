@@ -1,4 +1,4 @@
-import { i as shellState, n as listDegraded, r as recordDegraded } from "./degraded-CA6yzGPr.js";
+import { a as listDegraded, o as recordDegraded, s as shellState } from "./degraded-DtoWhWX-.js";
 //#region ../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.5/node_modules/@deepseek-ai/cosmokit/lib/index.js
 /** Return true when a value is `null` or `undefined`. */
 function isNullable(value) {
@@ -950,7 +950,12 @@ const inject = [];
 * instead of taking the boot down.
 */
 const Config = Schema.any().volatile();
-/** Loopback-fenced degraded-state route (installed once per shell context). */
+/**
+* Loopback-fenced degraded-state route (installed once per shell context).
+* Payload is additive: `{ ok, degraded: [{ plugin, stage, message, reason, at }] }`
+* — the reason field is what a degraded plugin's own panel renders (#1730),
+* and a reader that predates it keeps using stage/message.
+*/
 function makeDegradedRoute() {
 	return {
 		kind: "exact",
@@ -1219,4 +1224,4 @@ async function apply(ctx, config) {
 //#endregion
 export { inject as i, _resetDegradedRouteForTest as n, apply as r, Config as t };
 
-//# sourceMappingURL=shell-DWqLngib.js.map
+//# sourceMappingURL=shell-CKmkldkq.js.map

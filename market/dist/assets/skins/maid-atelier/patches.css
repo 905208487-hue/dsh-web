@@ -193,6 +193,27 @@ body[data-maid-composer-motion] [data-skin-trim-layer] {
   will-change: transform;
 }
 
+/* #1742: the top trim is body-level (hooks.mjs appends
+   [data-skin-chrome="top-trim"] to <body>) with position: absolute, z-index 1
+   and a 76px band, and it shifts right by the sidebar width. The official
+   plugin manager is the main-slot occupant, and its head row starts at the
+   window's top edge (the page's own 28px padding-top), inside that band; the
+   page column paints no background of its own, so the navy tile and lace cover
+   the row while pointer-events: none only keeps it clickable (#1742).
+   z-index cannot resolve this: raising the page above the trim would hide the
+   skin's own conversation chrome just as well. The decoration yields on that
+   page instead. Hiding the layer is sufficient because the trim is decoration
+   only: it paints nothing the page needs.
+   The selector is scoped to the main outlet on purpose - panels mounted
+   elsewhere (settings surfaces live under [data-slot="sidebar.settings"]) keep
+   their trim, and an active conversation keeps the whole band untouched.
+   data-plugin-panel / data-plugin-detail are the manager's official stable
+   attributes; no hashed CSS-module class name is involved. */
+body:has([data-slot="main"] [data-plugin-panel]) [data-skin-chrome="top-trim"],
+body:has([data-slot="main"] [data-plugin-detail]) [data-skin-chrome="top-trim"] {
+  display: none;
+}
+
 [data-skin-trim-layer="landing"]:after {
   content: "";
   left: calc((100% - var(--maid-sidebar-width) - 8px) / 2);
