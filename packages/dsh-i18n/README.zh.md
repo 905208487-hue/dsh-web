@@ -32,7 +32,7 @@ dsh Web GUI 的语言包插件：向 Web GUI 语言目录注册 Русский�
 
 ## 安装
 
-需要 DSH 0.1.7-rc.2 或更高版本：插件针对 0.1.7-rc.2 DSH cohort 开发，其 `@deepseek-ai/*` 运行时服务由宿主自身提供。
+需要 DSH 0.2.0-rc.1 或更高版本：插件针对 0.2.0-rc.1 DSH cohort 开发，其 `@deepseek-ai/*` 运行时服务由宿主自身提供。
 
 在你的 profile（如 `~/.dsh/profiles/web`）中执行：
 
