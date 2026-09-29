@@ -1047,26 +1047,65 @@ export default function defineSkinHooks() {
         return host
       }
       let mountedLogoRow = null
-      let measuredShellChild = null
       // How far the shell pushed the brand row below the sidebar's content
       // start: 0 on the browser shell, the macOS desktop traffic-light strip on
       // the darwin shell. The skin's pane-anchored top-left chrome follows it.
-      const syncShellTopInset = (row, pane) => {
-        const first = pane.firstElementChild
-        if (mountedLogoRow === row && measuredShellChild === first) return
-        measuredShellChild = first
+      //
+      // The offset is derived from boxes the shell's stylesheets size -- the
+      // caption strip, the row below it, the pane's own padding -- and those
+      // stylesheets can land after the DOM they shape (a strip read while it is
+      // still unstyled reports the browser-shell offset). It is therefore
+      // re-read from those boxes on every mount and on every size change they
+      // report, never remembered against the mount that first asked for it.
+      const applyShellTopInset = (row, pane) => {
         const contentTop = pane.getBoundingClientRect().top
           + Number.parseFloat(view.getComputedStyle(pane).paddingTop || '0')
         const inset = Math.max(0, Math.round(row.getBoundingClientRect().top - contentTop))
-        body.style.setProperty(SHELL_TOP_INSET_PROPERTY, inset + 'px')
+        const value = inset + 'px'
+        if (body.style.getPropertyValue(SHELL_TOP_INSET_PROPERTY) !== value) {
+          body.style.setProperty(SHELL_TOP_INSET_PROPERTY, value)
+        }
+      }
+      let shellTopInsetObserver = null
+      let shellTopInsetObserved = []
+      const remeasureShellTopInset = () => {
+        const row = mountedLogoRow
+        if (row === null || !row.isConnected) return
+        const pane = row.parentElement
+        if (pane === null) return
+        applyShellTopInset(row, pane)
+      }
+      // The boxes the offset is read from: the pane (its padding), the row
+      // itself, and the row's preceding sibling when one exists (the caption
+      // strip that pushes the row down). A rail-to-wide round can swap any of
+      // them, so the observation follows the resolved row.
+      const observeShellTopInset = (row, pane) => {
+        if (typeof view.ResizeObserver === 'undefined') return
+        const first = pane.firstElementChild
+        const preceding = first === null || first === row ? null : first
+        const next = preceding === null ? [pane, row] : [pane, preceding, row]
+        const unchanged = shellTopInsetObserver !== null
+          && next.length === shellTopInsetObserved.length
+          && next.every((node, index) => node === shellTopInsetObserved[index])
+        if (unchanged) return
+        if (shellTopInsetObserver === null) shellTopInsetObserver = new view.ResizeObserver(remeasureShellTopInset)
+        shellTopInsetObserver.disconnect()
+        shellTopInsetObserved = next
+        for (const node of next) shellTopInsetObserver.observe(node)
       }
       const mountDshWordmark = () => {
         const row = sidebarLogoRowOf()
         if (row === null) return false
         row.setAttribute(LOGO_ROW_ATTRIBUTE, '')
         const pane = row.parentElement
-        if (pane !== null) syncShellTopInset(row, pane)
+        if (pane !== null) {
+          applyShellTopInset(row, pane)
+          observeShellTopInset(row, pane)
+        }
         if (mountedLogoRow !== null && mountedLogoRow !== row) {
+          // The row moved: the old one keeps neither the skin's chrome nor the
+          // marker that anchors the chrome's own styling.
+          mountedLogoRow.removeAttribute(LOGO_ROW_ATTRIBUTE)
           mountedLogoRow
             .querySelectorAll(':scope > [data-orca-link-wordmark], :scope > [data-orca-link-signal]')
             .forEach((stale) => stale.remove())
@@ -2756,6 +2795,9 @@ export default function defineSkinHooks() {
       wordmarkObserver.observe(body, { childList: true, subtree: true })
       disposers.push(() => {
         wordmarkObserver.disconnect()
+        shellTopInsetObserver?.disconnect()
+        shellTopInsetObserver = null
+        shellTopInsetObserved = []
         doc.querySelectorAll('[data-orca-link-wordmark], [data-orca-link-signal]').forEach((node) => node.remove())
         doc.querySelectorAll('[data-orca-link-brand]').forEach((node) => node.removeAttribute('data-orca-link-brand'))
         doc.querySelectorAll('[' + LOGO_ROW_ATTRIBUTE + ']').forEach((node) => node.removeAttribute(LOGO_ROW_ATTRIBUTE))
