@@ -603,7 +603,21 @@ function buildUpdateTool(host: TaskBoardToolHost): ToolDefinition {
       prompt: { type: 'string', description: 'New execution prompt.' },
       workspaceId: { type: 'string', description: 'New workspace id; an empty string clears it.' },
       mode: { type: 'string', description: 'New agent preset id; an empty string clears it.' },
-      permission: { type: 'string', enum: [...TASK_PERMISSIONS, ''], description: 'New permission preset; an empty string clears it back to the session default.' },
+      // `enum` with a clearing value would advertise the empty string as a
+      // legal member of the enum. Some OpenAI-compatible gateways forward the
+      // tool schema to Gemini, which rejects an empty enum member outright
+      // ("cannot be empty") and fails the whole request - not just this tool -
+      // even for a plain greeting, because the schema ships with every call
+      // (issue #1748). Splitting the clear value into its own `const` branch
+      // keeps both the real enum intact and the wire representation valid for
+      // those gateways.
+      permission: {
+        oneOf: [
+          { type: 'string', enum: [...TASK_PERMISSIONS] },
+          { type: 'string', const: '' },
+        ],
+        description: 'New permission preset; an empty string clears it back to the session default.',
+      },
       model: { type: 'string', description: 'New pinned model; an empty string clears it.' },
       reuseSession: { type: 'boolean', description: 'Continue later runs in the previous execution session.' },
       teamRun: { type: 'boolean', description: 'Switches this task between a plain cascade (one session per member) and an Agent Team run (Lead session plus a teammate per subtask).' },

@@ -76,6 +76,79 @@ function query(params: Record<string, string | number | undefined>): string {
   return text === '' ? '' : '?' + text
 }
 
+/** The location facts a terminal socket URL is built from. */
+interface PageLocation {
+  /** Page scheme with its colon (for example `https:` or `dsh-app:`). */
+  protocol: string
+  /** Page authority, empty for a scheme that carries none. */
+  host: string
+}
+
+/**
+ * The WebSocket URL the terminal route is reached at, or undefined when this
+ * page cannot carry one.
+ *
+ * A page delivered by an application on this machine (the official DSH
+ * Desktop shell serves its Web GUI from `dsh-app://app/`) has no WebSocket
+ * transport: its scheme handler forwards HTTP requests to the local host but
+ * cannot upgrade a socket, so `ws://app/...` never connects and the terminal
+ * reports "connection error" (issue #1744). Every other page is a web page and
+ * resolves the socket against its own origin, exactly as before.
+ *
+ * A blank authority is treated the same as an application scheme: there is
+ * nothing to dial, and the caller gets the actionable reason instead of a
+ * socket that can only fail.
+ *
+ * @param location - the page location to read.
+ * @param search - the query string carrying `alias` or `session`.
+ * @returns the absolute `ws:`/`wss:` URL, or undefined when the page cannot carry one.
+ */
+export function terminalSocketUrl(location: PageLocation, search: string): string | undefined {
+  if (WEB_PAGE_PROTOCOLS.includes(location.protocol)) {
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+    return scheme + '://' + location.host + SSH_API.terminal + search
+  }
+  return undefined
+}
+
+/**
+ * Schemes a network page can be delivered with. Every other scheme belongs to
+ * an application on this machine, which is the same classification the remote
+ * channel and the update seat use (`isWebPageProtocol` / `isApplicationDeliveredPage`).
+ */
+const WEB_PAGE_PROTOCOLS: readonly string[] = [
+  'http:',
+  'https:',
+  'blob:',
+  'data:',
+  'about:',
+  'filesystem:',
+]
+
+/**
+ * A terminal connection that never opened: it reports one failure once the
+ * view has attached its `onExit`, so the tab shows why instead of sitting on a
+ * spinner, and every later frame is a no-op.
+ */
+function failedTerminal(reason: string): TerminalConnection {
+  const connection: TerminalConnection = {
+    onReady: undefined,
+    onOutput: undefined,
+    onExit: undefined,
+    onAuthPrompt: undefined,
+    send: () => undefined,
+    resize: () => undefined,
+    sendAuthResponse: () => undefined,
+    detach: () => undefined,
+    close: () => undefined,
+  }
+  // The view binds onExit after the open() call returns, so the failure is
+  // delivered on the next microtask - never synchronously, which would race
+  // the handler the caller is about to assign.
+  queueMicrotask(() => { connection.onExit?.(null, reason) })
+  return connection
+}
+
 /** One open terminal connection (WebSocket JSON frames). */
 export interface TerminalConnection {
   /** Fired on the ready frame (shell is up); carries the host session id and alias. */
@@ -375,9 +448,19 @@ export class SshApi {
 
   /** One terminal socket over either an alias (open) or a session id (attach). */
   private terminalSocket(search: string): TerminalConnection {
-    const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const url = scheme + '://' + window.location.host + SSH_API.terminal + search
-    const socket = new WebSocket(url)
+    const target = terminalSocketUrl(window.location, search)
+    if (target === undefined) {
+      // This page has no WebSocket transport at all (the desktop shell's
+      // custom scheme forwards HTTP only). Say so plainly instead of opening
+      // a socket that can only report "connection error".
+      return failedTerminal(tt('terminal.noWebSocket'))
+    }
+    let socket: WebSocket
+    try {
+      socket = new WebSocket(target)
+    } catch (error) {
+      return failedTerminal(error instanceof Error ? error.message : String(error))
+    }
     // A deliberate detach/close must not surface as a transport error: the
     // view tears down silently, and only an UNEXPECTED close reports exit.
     let leaving = false
