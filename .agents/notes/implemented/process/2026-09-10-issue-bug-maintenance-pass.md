@@ -14,7 +14,7 @@ Six bug reports were reproduced, fixed on `dev`, and closed with the verified ev
 - #1458 (scene-resource URL encoding) — commit `16241a86`, [note](../bug-fix/2026-09-10-scene-resource-url-encoding.md); the renderer-domain collaborator was notified in the issue thread, per the repository rule for that domain.
 - #1447 (task-board archive gate) — commit `b0151d32`, [note](../bug-fix/2026-09-10-task-board-archive-non-running.md).
 - #1453 (plugin-manager effective enablement) — commit `7375afad`, [note](../bug-fix/2026-09-10-plugin-manager-effective-enablement.md).
-- #1442 (root alias aggregate pin) — commit `058c981c`, [note](../bug-fix/2026-09-10-root-alias-exact-aggregate-pin.md).
+- #1442 (root alias aggregate pin) — commit `058c981c`, [note](../architecture/2026-09-29-root-alias-caret-aggregate-range.md) (the exact pin was superseded on 2026-09-29 by the release-line caret, in the same note).
 
 Both remaining bug reports were closed on the owner's decisions after the pass, each with its verified position recorded in its thread:
 
