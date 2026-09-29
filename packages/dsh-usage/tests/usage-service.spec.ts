@@ -71,6 +71,13 @@ const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringif
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/**
+ * start() folds the persisted ledger asynchronously, so a fixed sleep races
+ * the file read on a loaded runner. Wait for an outcome that depends on the
+ * load instead, bounded by vi.waitFor.
+ */
+const waitForPersistedLoad = (assert: () => void): Promise<void> => vi.waitFor(assert, { timeout: 2_000 })
+
 const requestHeaderEvent = (provider: string, model: string) => ({
   type: 'request/header',
   data: { header: { config: { provider, model } } },
@@ -153,7 +160,9 @@ describe('session fold → overview', () => {
     const session = {}
     fireSessionEvent(session, requestHeaderEvent('deepseek', 'm'))
     fireSessionEvent(session, usageEvent(50, 0))
-    await sleep(30)
+    await waitForPersistedLoad(() => {
+      expect(service.overview().usage.all?.from).toBe(localDateKey(dayAt(40).getTime()))
+    })
 
     const usage = service.overview().usage
     // The trend window caps at the last 30 recorded days; the whole-ledger
@@ -493,10 +502,10 @@ describe('persistence', () => {
     const session = {}
     fireSessionEvent(session, requestHeaderEvent('deepseek', 'deepseek-v4-pro'))
     fireSessionEvent(session, usageEvent(50, 0))
-    await sleep(30)
-
     // Replacement-on-load would drop the in-window fold (100); the merge keeps both (150).
-    expect(service.overview().usage.today.totals.inputTokens).toBe(150)
+    await waitForPersistedLoad(() => {
+      expect(service.overview().usage.today.totals.inputTokens).toBe(150)
+    })
     await service.stop()
   })
 
@@ -538,8 +547,9 @@ describe('persistence', () => {
     const { ctx } = makeCtx()
     const service = new UsageService(ctx, { ...OPTIONS, retainDays: 180 })
     service.start()
-    await sleep(30)
-    expect(service.overview().usage.days.map((day) => day.date)).toContain(localDateKey(twentyDaysAgo.getTime()))
+    await waitForPersistedLoad(() => {
+      expect(service.overview().usage.days.map((day) => day.date)).toContain(localDateKey(twentyDaysAgo.getTime()))
+    })
 
     service.applyOptions({ ...OPTIONS, retainDays: 7 })
     expect(service.overview().usage.days.map((day) => day.date)).toEqual([localDateKey(Date.now())])
