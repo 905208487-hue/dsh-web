@@ -112,6 +112,155 @@ describe('aggregate responsive compat contract', () => {
     expect(RESPONSIVE_CSS).not.toMatch(/class\*=/)
   })
 
+  it('user sees the split reasoning-effort trigger styled like the model trigger at every width', () => {
+    // The split picker hides the official effort span and adds its own
+    // trigger; a media-query-only copy left the desktop trigger with the
+    // browser's default button chrome, which read as "inconsistent format".
+    // Given the aggregate responsive stylesheet, when the operator reads the
+    // split effort trigger's rules, then they sit in the outer scope with the
+    // official trigger's geometry, so no width falls back to button chrome.
+    const at = RESPONSIVE_CSS.indexOf('[data-dsh-model-effort-trigger] {')
+    expect(at).toBeGreaterThanOrEqual(0)
+    let depth = 0
+    let mediaOuterDepth: number | undefined
+    for (let i = 0; i < at; i += 1) {
+      const ch = RESPONSIVE_CSS[i]
+      if (ch === '{') depth += 1
+      else if (ch === '}') depth -= 1
+      else if (RESPONSIVE_CSS.startsWith('@media', i)) mediaOuterDepth = depth
+    }
+    expect(mediaOuterDepth !== undefined && depth > mediaOuterDepth).toBe(false)
+
+    // Same geometry as the official trigger (ModelSelect.module.css).
+    const rule = RESPONSIVE_CSS.match(/\[data-dsh-model-effort-trigger\]\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rule).toContain('height: 28px')
+    expect(rule).toContain('border-radius: var(--dsw-radius-sm)')
+    expect(rule).toContain('font-size: 13px')
+    expect(rule).toContain('line-height: 20px')
+    expect(rule).toContain('padding: 0 4px 0 8px')
+    expect(rule).toContain('gap: 4px')
+
+    // The official shape is "value + chevron", never a "Effort: value" prefix.
+    expect(RESPONSIVE_CSS).toContain('[data-dsh-model-effort-label]')
+    expect(RESPONSIVE_CSS).toContain('[data-dsh-model-effort-chevron]')
+    expect(RESPONSIVE_CSS).not.toContain('[data-dsh-model-effort-trigger]::before')
+  })
+
+  it('user reads the split reasoning-effort trigger as value plus chevron, not a labelled prefix', () => {
+    // Given the official model seat renders one trigger carrying the model
+    // name and the effort value
+    document.body.innerHTML = `
+      <div data-dsh-frame>
+        <div data-slot="conversation.input.model">
+          <button type="button" aria-haspopup="menu" aria-expanded="false" title="DeepSeek-V3 \u00b7 \u9ad8">
+            <span class="triggerLabel">DeepSeek-V3</span>
+            <span class="triggerEffort">\u9ad8</span>
+          </button>
+        </div>
+      </div>`
+    let cleanup: (() => void) | undefined
+    // When the shim splits the seat into two triggers
+    apply({ effect: (effect: () => (() => void) | void) => { cleanup = effect() ?? undefined } } as never)
+    try {
+      const effort = document.querySelector<HTMLButtonElement>('[data-dsh-model-effort-trigger]')
+      // Then the effort trigger mirrors the official shape: bare value + chevron
+      expect(effort).toBeInstanceOf(HTMLButtonElement)
+      expect(effort?.querySelector('[data-dsh-model-effort-label]')?.textContent).toBe('\u9ad8')
+      expect(effort?.querySelectorAll('svg[data-dsh-model-effort-chevron]')).toHaveLength(1)
+      expect(effort?.textContent?.trim()).toBe('\u9ad8')
+      expect(effort?.textContent).not.toContain('\u63a8\u7406\u7b49\u7ea7')
+      // The full meaning stays available to assistive tech
+      expect(effort?.getAttribute('title')).toBe('\u63a8\u7406\u7b49\u7ea7: \u9ad8')
+      expect(effort?.getAttribute('aria-label')).toContain('\u9ad8')
+      // The original effort span is hidden, not removed
+      expect(document.querySelectorAll('[data-dsh-model-original-effort]')).toHaveLength(1)
+      // The trigger is seated INSIDE the official trigger's own wrapper, so the
+      // composer row's 12px gap cannot separate the pair; appending it to the
+      // display:contents slot outlet did exactly that.
+      const root = document.querySelector('[data-dsh-model-root]')
+      expect(root?.contains(effort)).toBe(true)
+      expect(effort?.parentElement).toBe(root)
+      expect(effort?.previousElementSibling).toBeInstanceOf(HTMLButtonElement)
+    } finally {
+      cleanup?.()
+    }
+  })
+
+  it('user sees the bottom Mario ride the skateboard while a task runs and walk when idle', async () => {
+    // Given the Mario display mode (the test environment has no localStorage,
+    // which readDisplayMode falls back from) and no running task
+    vi.useFakeTimers()
+    document.body.innerHTML = '<main data-dsh-frame><section class="centerCol"></section></main>'
+    let cleanup: (() => void) | undefined
+    apply({ effect: (effect: () => (() => void) | void) => { cleanup = effect() ?? undefined } } as never)
+    try {
+      const runner = document.querySelector<HTMLElement>('[data-dsh-mario-runner]')
+      expect(runner).toBeInstanceOf(HTMLElement)
+      // Then the idle page walks (no board attribute)
+      await vi.advanceTimersByTimeAsync(140)
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(false)
+
+      // When a task starts streaming
+      const running = document.createElement('div')
+      running.setAttribute('data-streaming', '')
+      document.body.append(running)
+      // Then Mario rides the board while it runs
+      await vi.advanceTimersByTimeAsync(280)
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(true)
+      expect(document.body.dataset.dshMarioTaskCount).toBe('1')
+
+      // When the task ends, Mario walks again
+      running.remove()
+      await vi.advanceTimersByTimeAsync(280)
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(false)
+      expect(document.body.dataset.dshMarioTaskCount).toBe('0')
+    } finally {
+      cleanup?.()
+      vi.useRealTimers()
+    }
+  }, 8000)
+
+  it('user sees the bottom Mario ride the skateboard while the turn is busy but nothing streams', async () => {
+    // Given a thinking / tool-call stretch that carries no streaming marker,
+    // so the composer's stop button is the only busy signal — this is the
+    // exact moment the skateboard was reported missing
+    vi.useFakeTimers()
+    document.body.innerHTML = '<main data-dsh-frame><section class="centerCol"></section></main>'
+    let cleanup: (() => void) | undefined
+    apply({ effect: (effect: () => (() => void) | void) => { cleanup = effect() ?? undefined } } as never)
+    try {
+      const runner = document.querySelector<HTMLElement>('[data-dsh-mario-runner]')
+      expect(runner).toBeInstanceOf(HTMLElement)
+      await vi.advanceTimersByTimeAsync(140)
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(false)
+
+      // When the composer turns its primary button into a stop button
+      const stop = document.createElement('button')
+      stop.type = 'button'
+      stop.setAttribute('aria-label', '\u505c\u6b62\u751f\u6210')
+      stop.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="3" fill="currentColor"></rect></svg>'
+      document.body.append(stop)
+      await vi.advanceTimersByTimeAsync(280)
+      // Then the skateboard appears from the stop button alone, and the task
+      // count follows it
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(true)
+      expect(document.body.dataset.dshMarioTaskCount).toBe('1')
+      // The localized label alone is also enough (falling back from the icon)
+      stop.querySelector('rect')?.remove()
+      await vi.advanceTimersByTimeAsync(280)
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(true)
+
+      // When the turn ends, Mario walks again on both signals
+      stop.removeAttribute('aria-label')
+      await vi.advanceTimersByTimeAsync(280)
+      expect(runner?.hasAttribute('data-dsh-mario-skateboard')).toBe(false)
+      expect(document.body.dataset.dshMarioTaskCount).toBe('0')
+    } finally {
+      cleanup?.()
+      vi.useRealTimers()
+    }
+  }, 8000)
+
   it('keeps an open settings dialog reachable in the collapsed narrow rail (#1510)', () => {
     // The official settings panel renders inside the sidebar foot, which the
     // collapse rule hides and the collapsed pane freezes with pointer-events:

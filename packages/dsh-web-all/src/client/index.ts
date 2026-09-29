@@ -292,6 +292,74 @@ html[data-platform="darwin"] body > :is(
 [data-dsh-frame] [data-dsh-responsive-part="composer"],
 [data-dsh-frame] [data-dsh-responsive-part="sidebar-toggle"],
   [data-dsh-frame] [data-dsh-responsive-part="menu"] { touch-action: manipulation; }
+/*
+ * Split model / reasoning-effort selectors. The official seat renders ONE
+ * trigger carrying "model name" plus the effort; the family splits that into
+ * two triggers that must read as a matched pair.
+ *
+ * The slot outlet carries an inline display:contents, so it can never be
+ * the flex container: the second trigger is appended INSIDE the official
+ * trigger's root wrapper (stamped data-dsh-model-root) and that wrapper
+ * becomes the row. Appending to the outlet instead made the composer row's
+ * own 12px gap push the two triggers apart.
+ *
+ * Neither trigger declares a font family: the official one keeps the button
+ * default, so the split one must not inherit the page font or the pair
+ * renders in two different typefaces.
+ */
+[data-dsh-model-root] {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+[data-dsh-frame] [data-slot="conversation.input.model"] [data-dsh-model-original-effort] {
+  display: none !important;
+}
+[data-dsh-model-effort-trigger] {
+  appearance: none;
+  border: none;
+  outline: none;
+  height: 28px;
+  max-width: min(180px, 32vw);
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 8px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+}
+[data-dsh-model-effort-trigger]:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+[data-dsh-model-effort-trigger]:focus-visible {
+  box-shadow: 0 0 0 2px var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+}
+[data-dsh-model-effort-trigger]:disabled {
+  color: var(--dsw-alias-label-dimmed);
+  cursor: default;
+}
+[data-dsh-model-effort-label] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1000;
+}
+[data-dsh-model-effort-chevron] {
+  color: var(--dsw-alias-label-caption);
+  flex: none;
+  transition: transform .12s;
+}
+[data-dsh-model-effort-trigger][aria-expanded="true"] [data-dsh-model-effort-chevron] {
+  transform: rotate(180deg);
+}
 @media (max-width: 768px) {
   [data-dsh-frame] [data-dsh-responsive-part="sidebar-toggle"] { min-width: 44px; min-height: 44px; }
   [data-dsh-frame] {
@@ -384,17 +452,6 @@ html[data-platform="darwin"] body > :is(
     min-width: 0;
     max-width: 100%;
     flex-wrap: wrap;
-  }
-  [data-dsh-frame] [data-slot="conversation.input.model"] {
-    min-width: 0;
-    max-width: 45%;
-  }
-  [data-dsh-frame] [data-slot="conversation.input.model"] :is(button, span) {
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   [data-dsh-frame] textarea[data-phase] {
     min-width: 0;
@@ -696,7 +753,7 @@ body[data-dsh-mario-active="true"] [data-dsh-mario-runner] {
   filter: drop-shadow(0 4px 4px rgb(0 0 0 / 20%));
 }
 [data-dsh-mario-runner][data-dsh-mario-skateboard="true"]::after {
-  animation: dsh-mario-skateboard-glide 720ms ease-in-out infinite;
+  animation: dsh-mario-skateboard-glide calc(var(--dsh-mario-step-duration) * 1.4) ease-in-out infinite;
 }
 [data-dsh-mario-mushroom] {
   width: 38px;
@@ -876,6 +933,126 @@ function installDisplayModeSetting(ctx: Context): void {
   }, DisplayModeRow))
 }
 
+function modelPickerText(key: 'effort' | 'effortAria'): string {
+  const isEnglish = document.documentElement.lang.toLowerCase().startsWith('en')
+  if (key === 'effort') return isEnglish ? 'Effort' : '\u63a8\u7406\u7b49\u7ea7'
+  return isEnglish ? 'Choose reasoning effort' : '\u9009\u62e9\u63a8\u7406\u7b49\u7ea7'
+}
+
+/** Value span of the split effort trigger (the official trigger's own shape). */
+const EFFORT_LABEL_MARKUP = '<span data-dsh-model-effort-label=""></span>'
+/** Chevron of the split effort trigger, copied from the official chevron icon. */
+const EFFORT_CHEVRON_MARKUP = '<svg data-dsh-model-effort-chevron="" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1"><path d="M4 6L7.29289 9.29289C7.68342 9.68342 8.31658 9.68342 8.70711 9.29289L12 6" stroke="currentColor"></path></svg>'
+
+/**
+ * Write one attribute only when it actually changes. The wiring observer
+ * watches these attributes, so an unconditional write would re-trigger it
+ * forever.
+ * @param element - the target element.
+ * @param name - attribute name.
+ * @param value - desired value.
+ */
+function setAttr(element: Element, name: string, value: string): void {
+  if (element.getAttribute(name) !== value) element.setAttribute(name, value)
+}
+
+function installSplitModelEffortPicker(): () => void {
+  const bypass = new WeakSet<HTMLButtonElement>()
+  let wireTimer = 0
+  const triggerOf = (): HTMLButtonElement | null => document.querySelector<HTMLButtonElement>('[data-slot="conversation.input.model"] button[aria-haspopup="menu"]:not([data-dsh-model-effort-trigger])')
+  const menuOf = (trigger: HTMLButtonElement): HTMLElement | null => {
+    const id = trigger.getAttribute('aria-controls')
+    if (id !== null && id !== '') return document.getElementById(id)
+    return document.querySelector<HTMLElement>('[role="menu"][aria-busy]')
+  }
+  const drill = (kind: 'model' | 'effort'): void => {
+    const trigger = triggerOf()
+    if (trigger === null || trigger.disabled) return
+    if (trigger.getAttribute('aria-expanded') !== 'true') {
+      bypass.add(trigger)
+      trigger.click()
+      bypass.delete(trigger)
+    }
+    window.setTimeout(() => {
+      const menu = menuOf(trigger)
+      if (menu === null) return
+      const rows = Array.from(menu.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]'))
+      const row = rows[kind === 'model' ? 0 : 1]
+      if (row !== undefined && !row.disabled) row.click()
+    }, 0)
+  }
+  const wire = (): void => {
+    wireTimer = 0
+    const slot = document.querySelector<HTMLElement>('[data-slot="conversation.input.model"]')
+    const trigger = triggerOf()
+    if (slot === null || trigger === null) return
+    const labels = Array.from(trigger.querySelectorAll<HTMLElement>(':scope > span'))
+    const effort = labels[1]
+    const effortText = effort?.textContent?.trim() ?? ''
+    // The slot outlet is `display: contents`, so a trigger appended there
+    // becomes a sibling in the composer row and the row's 12px gap separates
+    // it from the model trigger. Seat it inside the official trigger's own
+    // wrapper instead, and make that wrapper the row.
+    const root = trigger.parentElement instanceof HTMLElement ? trigger.parentElement : slot
+    root.setAttribute('data-dsh-model-root', '')
+    let effortButton = root.querySelector<HTMLButtonElement>('[data-dsh-model-effort-trigger]')
+    if (effort === undefined || effortText === '') {
+      effortButton?.remove()
+      return
+    }
+    effort.setAttribute('data-dsh-model-original-effort', '')
+    if (effortButton === null) {
+      effortButton = document.createElement('button')
+      effortButton.type = 'button'
+      effortButton.setAttribute('data-dsh-model-effort-trigger', '')
+      effortButton.setAttribute('aria-haspopup', 'menu')
+      // Same shape as the official trigger: value span + chevron, no label
+      // prefix (the official trigger carries no "Model"/"Effort" wording
+      // either; the full meaning stays in title/aria-label).
+      effortButton.innerHTML = `${EFFORT_LABEL_MARKUP}${EFFORT_CHEVRON_MARKUP}`
+      root.append(effortButton)
+    }
+    const effortValue = effortButton.querySelector<HTMLElement>('[data-dsh-model-effort-label]')
+    if (effortValue !== null && effortValue.textContent !== effortText) effortValue.textContent = effortText
+    setAttr(effortButton, 'title', `${modelPickerText('effort')}: ${effortText}`)
+    setAttr(effortButton, 'aria-label', `${modelPickerText('effortAria')}\uff0c${effortText}`)
+    setAttr(effortButton, 'aria-expanded', trigger.getAttribute('aria-expanded') === 'true' ? 'true' : 'false')
+    effortButton.disabled = trigger.disabled
+  }
+  const schedule = (): void => {
+    if (wireTimer !== 0) return
+    wireTimer = window.setTimeout(wire, 0)
+  }
+  const onClick = (event: MouseEvent): void => {
+    const target = event.target
+    if (!(target instanceof Element)) return
+    const effortButton = target.closest<HTMLButtonElement>('[data-dsh-model-effort-trigger]')
+    if (effortButton !== null) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      drill('effort')
+      return
+    }
+    const trigger = target.closest<HTMLButtonElement>('[data-slot="conversation.input.model"] button[aria-haspopup="menu"]:not([data-dsh-model-effort-trigger])')
+    if (trigger === null || bypass.has(trigger)) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    drill('model')
+  }
+  document.body.addEventListener('click', onClick, true)
+  const observer = new MutationObserver(schedule)
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['aria-expanded', 'aria-busy', 'disabled', 'title'] })
+  wire()
+  return () => {
+    document.body.removeEventListener('click', onClick, true)
+    observer.disconnect()
+    if (wireTimer !== 0) window.clearTimeout(wireTimer)
+    document.querySelector('[data-dsh-model-effort-trigger]')?.remove()
+    document.querySelectorAll('[data-dsh-model-original-effort]').forEach(element => element.removeAttribute('data-dsh-model-original-effort'))
+    document.querySelectorAll('[data-dsh-model-root]').forEach(element => element.removeAttribute('data-dsh-model-root'))
+  }
+}
+
 function stampSemanticParts(frame: Element): boolean {
   let changed = false
   const mark = (element: Element, part: string): void => {
@@ -1035,10 +1212,30 @@ const ACTIVE_TASK_SELECTOR = [
 
 const ACTIVE_TASK_TEXT = /\b(Running|Executing|Compacting context|Deep diving)\b|\u8fd0\u884c\u4e2d|\u6267\u884c\u4e2d|\u6b63\u5728\u538b\u7f29|\u6df1\u5ea6\u601d\u8003/ // i18n-allow: aggregate inline running-task text, zh alternatives match on purpose
 
+/**
+ * Streaming-marker blind spot. The marker attributes above only exist while
+ * assistant TEXT is streaming; during the tool-call / thinking stretch a turn
+ * is busy but nothing is marked, so the page would read as idle. The composer
+ * covers that window: while an agent turn runs it turns its primary button (and
+ * a dedicated control) into a stop button, whose icon is a rounded square.
+ */
+const ACTIVE_STOP_ICON_SELECTOR = 'button svg rect[width="10"][height="10"][rx="3"][fill="currentColor"]'
+const ACTIVE_STOP_LABEL = /\u505c\u6b62\u751f\u6210|stop generating/i // i18n-allow: official composer stop labels (zh/en), substring match is intentional
+
+/**
+ * Count the busy signals the live DOM carries.
+ * @returns 0 when the page is idle, otherwise at least one, capped for pacing.
+ */
 function activeTaskCount(): number {
   const matches = new Set<Element>()
   document.querySelectorAll(ACTIVE_TASK_SELECTOR).forEach(element => matches.add(element))
-  if (matches.size > 0) return Math.min(matches.size, 8)
+  // The composer stop state is a plain "busy" fact: it should not inflate the
+  // count by itself, only guarantee at least one running signal.
+  if (document.querySelector(ACTIVE_STOP_ICON_SELECTOR) !== null) matches.add(document.body)
+  if (matches.size > 0) return Math.max(1, Math.min(matches.size, 8))
+  for (const button of document.querySelectorAll('button[aria-label]')) {
+    if (ACTIVE_STOP_LABEL.test(button.getAttribute('aria-label') ?? '')) return 1
+  }
   return ACTIVE_TASK_TEXT.test(document.body.innerText) ? 1 : 0
 }
 
@@ -1125,8 +1322,7 @@ function installMarioRunner(): () => void {
   let mushroomSquashing = false
   let mushroomHideTimer = 0
   let nextMushroomAt = Date.now() + 3000 + Math.random() * 6000
-  let skateboardTimer = 0
-  let nextSkateboardAt = Date.now() + 10000 + Math.random() * 14000
+  let skateboarding = false
 
   const maxX = (): number => Math.max(0, window.innerWidth - 116)
   const paintPosition = (): void => {
@@ -1147,22 +1343,17 @@ function installMarioRunner(): () => void {
     paintMushroom()
     scheduleNextMushroom()
   }
-  const scheduleNextSkateboard = (): void => {
-    nextSkateboardAt = Date.now() + 16000 + Math.random() * 20000
-  }
-  const stopSkateboard = (): void => {
-    runner.removeAttribute('data-dsh-mario-skateboard')
-    if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer)
-    skateboardTimer = 0
-    scheduleNextSkateboard()
-  }
-  const startSkateboard = (): void => {
-    runner.setAttribute('data-dsh-mario-skateboard', 'true')
-    if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer)
-    skateboardTimer = window.setTimeout(() => {
-      skateboardTimer = 0
-      stopSkateboard()
-    }, 4200 + Math.random() * 2200)
+  /**
+   * The board is a state, not a random treat: a running task puts Mario on it
+   * and the idle page walks. Only the change is written, so the 20Hz movement
+   * loop never touches the DOM attribute.
+   * @param on - true while at least one task is executing.
+   */
+  const setSkateboard = (on: boolean): void => {
+    if (skateboarding === on) return
+    skateboarding = on
+    if (on) runner.setAttribute('data-dsh-mario-skateboard', 'true')
+    else runner.removeAttribute('data-dsh-mario-skateboard')
   }
   const update = (): void => {
     updateTimer = 0
@@ -1170,7 +1361,7 @@ function installMarioRunner(): () => void {
       taskCount = 0
       speed = 0
       if (mushroomVisible) hideMushroom()
-      runner.removeAttribute('data-dsh-mario-skateboard')
+      setSkateboard(false)
       document.body.removeAttribute('data-dsh-mario-active')
       delete document.body.dataset.dshMarioTaskCount
       return
@@ -1179,7 +1370,9 @@ function installMarioRunner(): () => void {
     const tempo = marioRunTempo(count)
     taskCount = count
     speed = tempo.speed
-    if (count > 1 && mushroomVisible) hideMushroom()
+    // Any running task means the board; an idle page walks.
+    setSkateboard(count > 0)
+    if (count > 0 && mushroomVisible) hideMushroom()
     document.body.toggleAttribute('data-dsh-mario-active', count > 0)
     document.body.dataset.dshMarioTaskCount = String(count)
     runner.style.setProperty('--dsh-mario-step-duration', tempo.step)
@@ -1204,10 +1397,8 @@ function installMarioRunner(): () => void {
       dir = 1
     }
     paintPosition()
-    if (taskCount <= 1 && skateboardTimer === 0 && !mushroomVisible && Date.now() >= nextSkateboardAt) {
-      startSkateboard()
-    }
-    if (taskCount <= 1 && skateboardTimer === 0 && !mushroomVisible && Date.now() >= nextMushroomAt) {
+    // The mushroom is a walking-page treat only; on the board Mario is busy.
+    if (taskCount === 0 && !mushroomVisible && Date.now() >= nextMushroomAt) {
       const right = maxX()
       const lead = 110 + Math.random() * 70
       mushroomX = dir > 0 ? Math.min(right, x + lead) : Math.max(0, x - lead)
@@ -1220,7 +1411,7 @@ function installMarioRunner(): () => void {
       }
     }
     if (mushroomVisible && !mushroomSquashing) {
-      if (taskCount > 1 || Math.abs(mushroomX - x) > 320) {
+      if (taskCount > 0 || Math.abs(mushroomX - x) > 320) {
         hideMushroom()
       } else if (Math.abs(mushroomX - x) < 30) {
         mushroomSquashing = true
@@ -1261,7 +1452,7 @@ function installMarioRunner(): () => void {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ['aria-busy', 'data-state', 'data-status', 'data-streaming', 'data-pending-steering', 'class'],
+    attributeFilter: ['aria-busy', 'aria-label', 'data-state', 'data-status', 'data-streaming', 'data-pending-steering', 'class'],
   })
   const interval = window.setInterval(schedule, 1400)
   const moveInterval = window.setInterval(move, 50)
@@ -1277,7 +1468,6 @@ function installMarioRunner(): () => void {
     if (updateTimer !== 0) window.clearTimeout(updateTimer)
     if (interactTimer !== 0) window.clearTimeout(interactTimer)
     if (mushroomHideTimer !== 0) window.clearTimeout(mushroomHideTimer)
-    if (skateboardTimer !== 0) window.clearTimeout(skateboardTimer)
     runner.removeEventListener('pointerenter', pause)
     runner.removeEventListener('pointerleave', resume)
     runner.removeEventListener('click', interact)
@@ -1310,6 +1500,7 @@ export function apply(ctx: Context): void {
     const bootShield = installBootShield()
     const removeMarioRunner = installMarioRunner()
     const removeMarioHeroEffects = installMarioHeroEffects()
+    const removeSplitModelEffortPicker = installSplitModelEffortPicker()
     const removeDisplayModeSync = installDisplayModeSync(applyShims)
     applyShims()
     let removeMobileDismiss = (): void => {}
@@ -1345,6 +1536,7 @@ export function apply(ctx: Context): void {
       responsiveStyle.remove()
       removeMobileDismiss()
       removeDisplayModeSync()
+      removeSplitModelEffortPicker()
       removeMarioRunner()
       removeMarioHeroEffects()
     }
