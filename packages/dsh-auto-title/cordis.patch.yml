@@ -1,0 +1,6 @@
+# bundle patch for the dsh-auto-title plugin: inserts its plugin row into the web profile roster.
+# Applied as a profile bundle layer. Install with:
+# `dsh plugin --profile web add link:<repo>/packages/dsh-auto-title`.
+- insert:
+    - id: ui-dsh-auto-title
+      name: '@linxin666/dsh-auto-title'

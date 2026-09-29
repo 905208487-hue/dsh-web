@@ -96,6 +96,7 @@ const MANIFEST = [
       'packages/dsh-git-graph/src/host/dsh-home.ts',
       'packages/dsh-usage/src/dsh-home.ts',
       'packages/dsh-session-archive/src/dsh-home.ts',
+      'packages/dsh-auto-title/src/dsh-home.ts',
     ],
   },
   {
@@ -127,6 +128,7 @@ const MANIFEST = [
       'packages/dsh-session-archive/src/mount-once.ts',
       'packages/dsh-model-capabilities/src/mount-once.ts',
       'packages/dsh-update/src/mount-once.ts',
+      'packages/dsh-auto-title/src/mount-once.ts',
     ],
   },
 
