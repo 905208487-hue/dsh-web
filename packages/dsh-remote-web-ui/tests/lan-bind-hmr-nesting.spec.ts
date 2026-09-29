@@ -1,6 +1,6 @@
 /**
- * Issue #1751: saving a remote-web-ui setting failed with "HMR transactions
- * cannot be nested".
+ * Issues #1751 and #1754: saving a remote-web-ui setting failed with
+ * "HMR transactions cannot be nested".
  *
  * The Host runs settings/mutate inside hmr.runExclusive. Committing a volatile
  * field announces loader/volatile-update, which drove sync() synchronously on
@@ -8,10 +8,15 @@
  * config watcher refreshes from. The watcher's refresh then re-entered
  * runExclusive and rejected, which surfaced as the user's save failing.
  *
- * The regression is a placement rule, so the test asserts it directly: the
- * patch write and the blocking firewall probes live in applyLanBindWork, which
- * only ever runs from a setImmediate hop, and sync() itself reaches them
- * solely through scheduleLanBindWork().
+ * The first fix deferred the write with setImmediate on the belief that a fresh
+ * callback starts a fresh AsyncLocalStorage store. That belief is wrong:
+ * AsyncLocalStorage is propagated into setImmediate, into node:timers, and
+ * into AsyncResource scopes. What actually keeps the file and the save apart
+ * is that the write only happens when the desired block differs from the
+ * committed one, so the coalesced follow-up sync() finds nothing to write.
+ *
+ * The regression is therefore a placement AND idempotence rule, and the test
+ * asserts both directly.
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -43,7 +48,7 @@ function bodyOf(name) {
   throw new Error('unbalanced braces after ' + name)
 }
 
-describe('remote-web-ui LAN bind vs. the HMR transaction (issue #1751)', () => {
+describe('remote-web-ui LAN bind vs. the HMR transaction (issues #1751 and #1754)', () => {
   it('operator keeps the patch write and the firewall probes off the sync path', () => {
     // Given the host half that applies the settings
     // When the two functions that own the LAN bind work and the save path are read
@@ -55,16 +60,27 @@ describe('remote-web-ui LAN bind vs. the HMR transaction (issue #1751)', () => {
     expect(bodyOf('sync')).not.toContain('ensureFirewallRule(')
   })
 
-  it('operator reaches the LAN bind work only through the setImmediate hop', () => {
+  it('operator writes the block only when the committed one differs from the desired one', () => {
+    // Given the deferred worker, the one thing that actually keeps the patch file
+    // out of a second save is that a settled profile produces no write at all
+    // When the current-vs-desired comparison that guards the write is read
+    // Then the write sits behind that comparison, and re-reading the same block
+    // therefore cannot touch the file a second time
+    const work = bodyOf('applyLanBindWork')
+    expect(work).toContain('current.host !== desiredHost || current.port !== desiredPort')
+    const guard = work.indexOf('current.host !== desiredHost || current.port !== desiredPort')
+    const write = work.indexOf('writeLanBind(')
+    expect(guard).toBeGreaterThan(-1)
+    expect(write).toBeGreaterThan(guard)
+  })
+
+  it('operator sees the deferral settle on the last committed value', () => {
     // Given the same source
     // When the scheduler that defers the work is read
-    // Then it starts a fresh async context before running it, which keeps the
-    // watcher-driven refresh out of the save's own transaction
+    // Then the deferred value is re-read at run time, so two toggles inside one
+    // tick settle on the last committed value rather than the first
     const schedule = bodyOf('scheduleLanBindWork')
     expect(schedule).toContain('setImmediate(')
-    expect(schedule).toContain('applyLanBindWork(')
-    // The deferred value is re-read at run time, so two toggles inside one
-    // tick settle on the last committed value rather than the first.
     expect(schedule).toContain('applyLanBindWork(resolve())')
   })
 
