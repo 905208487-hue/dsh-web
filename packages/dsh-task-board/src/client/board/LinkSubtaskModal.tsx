@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react'
 import type { BoardController } from '../../core/controller.ts'
 import { DEFAULT_SUBTASK_DEPTH, buildLineageIndex, checkParentLink } from '../../core/subtask.ts'
-import type { TaskRecord } from '../../core/tasks.ts'
+import { hasOpenExecution, type TaskRecord } from '../../core/tasks.ts'
 import { t } from '../locales.ts'
 import css from '../board.module.css'
 import { STATUS_KEY } from './status-key.ts'
@@ -39,9 +39,10 @@ export function LinkSubtaskModal({ controller, parent, onClose }: LinkSubtaskMod
     const lineage = buildLineageIndex(tasks)
     return tasks.filter(task =>
       task.archivedAt === undefined
-      // A running task may already be a participant of another run group; the
-      // Host refuses the move, so it is not offered here.
-      && task.status !== 'running'
+      // An executing task may already be a participant of another run group;
+      // the Host refuses the move, so it is not offered here. A card parked in
+      // the running column by hand carries no execution and stays linkable.
+      && !hasOpenExecution(task)
       && task.parentId === undefined
       && task.id !== parent.id
       && checkParentLink(tasks, task.id, parent.id, limit, lineage).ok,

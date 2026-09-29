@@ -5,7 +5,7 @@
  */
 import { memo, useCallback, useEffect, useState } from 'react'
 import { selectedTaskOf, type BoardController } from '../../core/controller.ts'
-import { COLUMNS, canMoveManually, collectKnownTags, tagTone, type TaskRecord } from '../../core/tasks.ts'
+import { COLUMNS, MANUAL_STATUSES, canMoveTask, collectKnownTags, hasOpenExecution, tagTone, type TaskRecord } from '../../core/tasks.ts'
 import { t } from '../locales.ts'
 import css from '../board.module.css'
 import { NewTaskModal } from './NewTaskModal.tsx'
@@ -109,8 +109,10 @@ export function TaskBoard({ controller }: { controller: BoardController }) {
     if (task.parentId === undefined) continue
     subtaskCounts.set(task.parentId, (subtaskCounts.get(task.parentId) ?? 0) + 1)
     const rollup = subtaskRollup.get(task.parentId) ?? { done: 0, running: 0, failed: 0 }
-    if (task.status === 'done') rollup.done += 1
-    else if (task.status === 'running') rollup.running += 1
+    // "Running" in the badge means the runner is executing that subtask; a
+    // subtask parked in the running column by hand is not executing anything.
+    if (hasOpenExecution(task)) rollup.running += 1
+    else if (task.status === 'done') rollup.done += 1
     else if (task.status === 'failed') rollup.failed += 1
     subtaskRollup.set(task.parentId, rollup)
   }
@@ -336,7 +338,9 @@ export function TaskBoard({ controller }: { controller: BoardController }) {
         ) : (
           COLUMNS.map(column => {
             const tasks = visible.filter(task => task.status === column.status)
-            const isManualDropTarget = column.status === 'backlog' || column.status === 'todo'
+            // Every manually reachable column accepts a drop; `running`
+            // never does, because only the runner opens an execution.
+            const isManualDropTarget = MANUAL_STATUSES.includes(column.status)
             return (
               <section
                 key={column.status}
@@ -352,7 +356,7 @@ export function TaskBoard({ controller }: { controller: BoardController }) {
                   const taskId = event.dataTransfer.getData('text/plain')
                   if (!taskId) return
                   const dropped = snapshot.tasks.find(t => t.id === taskId)
-                  if (dropped && canMoveManually(dropped.status, column.status) && dropped.status !== column.status) {
+                  if (dropped && canMoveTask(dropped, column.status)) {
                     controller.moveTask(taskId, column.status)
                   }
                 } : undefined}

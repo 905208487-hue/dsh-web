@@ -4199,8 +4199,26 @@ window.__ModuleLoader__.load({
 				label: "已失败"
 			}
 		];
-		/** Statuses a user may move a card to manually (execution states are owned by the runner). */
-		const MANUAL_STATUSES = ["backlog", "todo"];
+		/**
+		* Statuses a card may be moved to by hand: every column. The board UI and the
+		* agent tool surface share this one list, so no column can be manual on one
+		* surface and locked on the other.
+		*
+		* The column is a board statement, not a claim about a run. A hand-written
+		* `done`/`failed` declares that the work finished (or failed) outside a
+		* Host-run execution — human hands, an external system — and a hand-written
+		* `running` says the work is under way without a tracked session. None of them
+		* creates an {@link ExecutionRecord}, which is what keeps a declaration
+		* distinguishable from a recorded outcome in the card's execution history; the
+		* next settled run overwrites the column with the real one.
+		*/
+		const MANUAL_STATUSES = [
+			"backlog",
+			"todo",
+			"running",
+			"done",
+			"failed"
+		];
 		/** All valid statuses (closed union guard). */
 		const ALL_STATUSES = [
 			"backlog",
@@ -4213,9 +4231,33 @@ window.__ModuleLoader__.load({
 		function isTaskStatus(value) {
 			return typeof value === "string" && ALL_STATUSES.includes(value);
 		}
-		/** Whether a manual move target is allowed from the given status. */
+		/**
+		* Whether the manual move `from` -> `to` is a legal *column* change: any
+		* column, and never the one the card already shows.
+		*
+		* Whether the card may be moved at all is a separate question. The lock an
+		* executing card carries belongs to its open execution, never to the column
+		* text, so it is {@link canMoveTask} — not this predicate — that expresses it.
+		*/
 		function canMoveManually(from, to) {
-			return from !== "running" && MANUAL_STATUSES.includes(to);
+			return from !== to && MANUAL_STATUSES.includes(to);
+		}
+		/**
+		* Whether the board may move `task` to `to` by hand: the card is on-board,
+		* holds no open execution, and the target is a legal column change. The ledger,
+		* the detail view's status buttons and the board's drop handler all decide
+		* through this one predicate, so no two surfaces can disagree about a card.
+		*/
+		function canMoveTask(task, to) {
+			return task.archivedAt === void 0 && !hasOpenExecution(task) && canMoveManually(task.status, to);
+		}
+		/**
+		* Whether the task still has an execution the runner has not settled. This —
+		* not the `running` column — is what "the runner owns this card" means: a card
+		* parked in `running` by hand has no session and stays fully movable.
+		*/
+		function hasOpenExecution(task) {
+			return task.executions.some((execution) => execution.endedAt === void 0);
 		}
 		/** Normalize one optional execution-target string: trim; blank collapses to undefined. */
 		function normalizeTargetId(value) {
@@ -5016,7 +5058,7 @@ window.__ModuleLoader__.load({
 				applied: false,
 				error: "archived task is read-only"
 			};
-			if (task.status === "running" || task.executions.some((execution) => execution.endedAt === void 0)) return {
+			if (task.executions.some((execution) => execution.endedAt === void 0)) return {
 				tasks,
 				applied: false,
 				error: "running task cannot be re-parented"
@@ -5065,11 +5107,13 @@ window.__ModuleLoader__.load({
 		];
 		/**
 		* Whether a task's content may still be edited: the task must be on-board
-		* (not archived) and must never have started executing. Fail-closed: a
-		* running, settled, or cancelled-before-launch task keeps its content fixed.
+		* (not archived) and must never have started executing. Fail-closed: a task
+		* with any execution record — running, settled, or cancelled before launch —
+		* keeps its content fixed. The run, not the column, is the trigger: a card
+		* parked in 'running' by hand has nothing recorded yet and stays editable.
 		*/
 		function canEditTaskContent(task) {
-			return task.archivedAt === void 0 && task.status !== "running" && task.executions.length === 0;
+			return task.archivedAt === void 0 && task.executions.length === 0;
 		}
 		/** Keep an unknown permission string from entering the ledger. */
 		function normalizePermission(current, value) {
@@ -5510,7 +5554,7 @@ window.__ModuleLoader__.load({
 			*/
 			async runTask(id) {
 				const task = this.tasks.find((candidate) => candidate.id === id);
-				if (task === void 0 || task.archivedAt !== void 0 || task.status === "running") return false;
+				if (task === void 0 || task.archivedAt !== void 0 || hasOpenExecution(task)) return false;
 				if (this.deps.transport === void 0) return false;
 				return await this.commitRemote({
 					kind: "run",
@@ -6344,6 +6388,9 @@ window.__ModuleLoader__.load({
 			"delete.cancel": "取消",
 			"status.move.backlog": "移到待规划",
 			"status.move.todo": "移到待办",
+			"status.move.running": "移到进行中",
+			"status.move.done": "移到已完成",
+			"status.move.failed": "移到已失败",
 			"exec.error.noWorkspace": "没有可用工作区，无法执行任务",
 			"exec.error.promptRejected": "Prompt 被拒绝",
 			"run.failed": "执行失败：{error}",
@@ -6602,6 +6649,9 @@ window.__ModuleLoader__.load({
 			"delete.cancel": "Cancel",
 			"status.move.backlog": "Move to Backlog",
 			"status.move.todo": "Move to To Do",
+			"status.move.running": "Move to Running",
+			"status.move.done": "Move to Done",
+			"status.move.failed": "Move to Failed",
 			"exec.error.noWorkspace": "No workspace is available to run the task",
 			"exec.error.promptRejected": "Prompt rejected",
 			"run.failed": "Run failed: {error}",
@@ -7274,7 +7324,8 @@ window.__ModuleLoader__.load({
 			const latest = task.executions[task.executions.length - 1];
 			const runs = task.executions.length;
 			const archived = task.archivedAt !== void 0;
-			const isDraggable = !archived && task.status !== "running" && !pending;
+			const busy = hasOpenExecution(task);
+			const isDraggable = !archived && !busy && !pending;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
 				className: board_module_css_default.card,
@@ -7364,7 +7415,7 @@ window.__ModuleLoader__.load({
 								title: latest.sessionId,
 								children: "⌁"
 							}),
-							!archived && (task.status === "running" || pending) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							!archived && (busy || pending) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: board_module_css_default.cardSpinner,
 								"aria-hidden": "true"
 							})
@@ -8187,7 +8238,7 @@ window.__ModuleLoader__.load({
 			const tasks = snapshot.tasks;
 			const candidates = (0, react.useMemo)(() => {
 				const lineage = buildLineageIndex(tasks);
-				return tasks.filter((task) => task.archivedAt === void 0 && task.status !== "running" && task.parentId === void 0 && task.id !== parent.id && checkParentLink(tasks, task.id, parent.id, limit, lineage).ok);
+				return tasks.filter((task) => task.archivedAt === void 0 && !hasOpenExecution(task) && task.parentId === void 0 && task.id !== parent.id && checkParentLink(tasks, task.id, parent.id, limit, lineage).ok);
 			}, [
 				tasks,
 				parent.id,
@@ -8715,8 +8766,8 @@ window.__ModuleLoader__.load({
 								!archived && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 									type: "button",
 									className: board_module_css_default.linkButton,
-									disabled: pending || child.status === "running",
-									title: child.status === "running" ? t$4("detail.subtasks.runningLock") : void 0,
+									disabled: pending || hasOpenExecution(child),
+									title: hasOpenExecution(child) ? t$4("detail.subtasks.runningLock") : void 0,
 									onClick: () => {
 										controller.setParent(child.id, null);
 									},
@@ -8789,7 +8840,7 @@ window.__ModuleLoader__.load({
 			}, [task.id]);
 			const current = latest;
 			const snapshot = controller.getSnapshot();
-			const running = current.status === "running";
+			const busy = hasOpenExecution(current);
 			const archived = current.archivedAt !== void 0;
 			const pending = snapshot.pendingTaskIds.includes(current.id);
 			const transportError = snapshot.transportError;
@@ -9019,7 +9070,7 @@ window.__ModuleLoader__.load({
 											children: MANUAL_STATUSES.map((status) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 												type: "button",
 												className: board_module_css_default.ghostButton,
-												disabled: current.status === status || running || pending,
+												disabled: pending || !canMoveTask(current, status),
 												onClick: () => {
 													controller.moveTask(current.id, status);
 												},
@@ -9045,7 +9096,7 @@ window.__ModuleLoader__.load({
 										},
 										children: t$4("detail.edit")
 									}),
-									!archived && !canEditTaskContent(current) && current.status !== "running" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									!archived && !canEditTaskContent(current) && !busy && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 										type: "button",
 										className: board_module_css_default.ghostButton,
 										disabled: pending,
@@ -9067,7 +9118,7 @@ window.__ModuleLoader__.load({
 									!archived && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 										type: "button",
 										className: board_module_css_default.primaryButton,
-										disabled: running || pending,
+										disabled: busy || pending,
 										title: subtaskChildren.length > 0 ? t$4("detail.subtasks.runHint", { count: String(subtaskChildren.length) }) : void 0,
 										onClick: () => {
 											controller.rerunTask(current.id).then(() => {
@@ -9135,7 +9186,7 @@ window.__ModuleLoader__.load({
 							setShowEdit(false);
 						}
 					}),
-					showEditTags && !archived && current.status !== "running" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EditTagsModal, {
+					showEditTags && !archived && !busy && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EditTagsModal, {
 						controller,
 						task: current,
 						onClose: () => {
@@ -9227,8 +9278,8 @@ window.__ModuleLoader__.load({
 					running: 0,
 					failed: 0
 				};
-				if (task.status === "done") rollup.done += 1;
-				else if (task.status === "running") rollup.running += 1;
+				if (hasOpenExecution(task)) rollup.running += 1;
+				else if (task.status === "done") rollup.done += 1;
 				else if (task.status === "failed") rollup.failed += 1;
 				subtaskRollup.set(task.parentId, rollup);
 			}
@@ -9495,7 +9546,7 @@ window.__ModuleLoader__.load({
 							})]
 						}) : COLUMNS.map((column) => {
 							const tasks = visible.filter((task) => task.status === column.status);
-							const isManualDropTarget = column.status === "backlog" || column.status === "todo";
+							const isManualDropTarget = MANUAL_STATUSES.includes(column.status);
 							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 								className: board_module_css_default.column,
 								"data-status": column.status,
@@ -9509,7 +9560,7 @@ window.__ModuleLoader__.load({
 									const taskId = event.dataTransfer.getData("text/plain");
 									if (!taskId) return;
 									const dropped = snapshot.tasks.find((t) => t.id === taskId);
-									if (dropped && canMoveManually(dropped.status, column.status) && dropped.status !== column.status) controller.moveTask(taskId, column.status);
+									if (dropped && canMoveTask(dropped, column.status)) controller.moveTask(taskId, column.status);
 								} : void 0,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 									className: board_module_css_default.columnHeader,

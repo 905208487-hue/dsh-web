@@ -440,6 +440,36 @@ describe('task_board_manage', () => {
     expect(moved.ok).toBe(true)
     expect((moved.task as { status: string }).status).toBe('backlog')
   })
+
+  it('user marking a card done declares completion without a run', async () => {
+    // Given a card in the todo column
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the user records work that finished outside the board
+    const moved = await call(live, 'task_board_manage', { taskId, action: 'move-done' })
+
+    // Then the card reports the done column and holds no execution record
+    expect(moved.ok).toBe(true)
+    expect((moved.task as { status: string }).status).toBe('done')
+    expect((moved.task as { executionCount: number }).executionCount).toBe(0)
+  })
+
+  it('user parks a card in the running column and sees it there without a run', async () => {
+    // Given a card in the todo column
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the user records work that is under way outside the board
+    const moved = await call(live, 'task_board_manage', { taskId, action: 'move-running' })
+
+    // Then the card reports the running column and holds no execution record
+    expect(moved.ok).toBe(true)
+    expect((moved.task as { status: string }).status).toBe('running')
+    expect((moved.task as { executionCount: number }).executionCount).toBe(0)
+  })
 })
 
 describe('task_board_schedule', () => {

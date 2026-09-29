@@ -199,10 +199,6 @@ describe('HostTaskLedger', () => {
       error: undefined,
     }))
     const running = startExecution({ ...task('running'), executions: history }, NOW - 1_000, 'open').task
-    const awaitingSession = {
-      ...startExecution(task('awaiting-session'), NOW - 500, 'awaiting-session-open').task,
-      status: 'todo' as const,
-    }
     const archivedSchedule = {
       ...withSchedule(task('archived-schedule'), {
         enabled: true, cron: '* * * * *', nextRunAt: NOW, lastTriggeredAt: undefined,
@@ -220,10 +216,18 @@ describe('HostTaskLedger', () => {
             ? { ...execution, sessionId: 'session-open' }
             : execution),
         },
-        awaitingSession,
         archivedSchedule,
       ],
     })
+    // A launch whose session has not resolved yet is what the runtime view has
+    // to project; a stored session-less execution no longer survives import,
+    // because boot cancels any open execution that never got a session.
+    ledger.applyRequest('create-awaiting', {
+      kind: 'create',
+      id: 'awaiting-session',
+      input: { title: 'Awaiting', description: '', prompt: '' },
+    })
+    ledger.applyRequest('run-awaiting', { kind: 'run', taskId: 'awaiting-session' })
     ledger.applyRequest('create-scheduled', {
       kind: 'create',
       id: 'scheduled',
@@ -241,9 +245,9 @@ describe('HostTaskLedger', () => {
         teamMember: false,
       }, {
         taskId: 'awaiting-session',
-        executionId: 'awaiting-session-open',
+        executionId: expect.any(String),
         sessionId: undefined,
-        startedAt: NOW - 500,
+        startedAt: NOW,
         teamMember: false,
       }],
     })
@@ -485,6 +489,36 @@ describe('HostTaskLedger', () => {
     expect(() => ledger.applyRequest('move', { kind: 'move', taskId: 'task-a', status: 'todo' })).toThrow('cannot be moved')
     expect(() => ledger.applyRequest('delete', { kind: 'delete', taskId: 'task-a' })).toThrow('cannot be deleted')
     expect(ledger.state().tasks[0].executions).toHaveLength(1)
+  })
+
+  it('operator parks a card in the running column by hand and moves it back', () => {
+    // Given a card the operator parked in the running column without a run
+    const ledger = new HostTaskLedger(tempRoot(), () => NOW)
+    ledger.applyRequest('create', { kind: 'create', id: 'task-a', input: { title: 'A', description: '', prompt: '' } })
+    ledger.applyRequest('park', { kind: 'move', taskId: 'task-a', status: 'running' })
+    expect(ledger.state().tasks[0].status).toBe('running')
+
+    // When the operator moves it back to the todo column
+    ledger.applyRequest('unpark', { kind: 'move', taskId: 'task-a', status: 'todo' })
+
+    // Then the column follows and no execution was ever recorded
+    expect(ledger.state().tasks[0].status).toBe('todo')
+    expect(ledger.state().tasks[0].executions).toHaveLength(0)
+  })
+
+  it('operator declaring a card done records the column without inventing an execution', () => {
+    // Given a card that has never been run
+    const ledger = new HostTaskLedger(tempRoot(), () => NOW)
+    ledger.applyRequest('create', { kind: 'create', id: 'task-a', input: { title: 'A', description: '', prompt: '' } })
+
+    // When the operator declares the work finished on the board
+    ledger.applyRequest('move', { kind: 'move', taskId: 'task-a', status: 'done' })
+
+    // Then the column changes and the execution history stays empty
+    const declared = ledger.state().tasks[0]
+    expect(declared.status).toBe('done')
+    expect(declared.executions).toHaveLength(0)
+    expect(declared.updatedAt).toBe(NOW)
   })
 
   it('cancels an imported interrupted start and preserves an invalid cron as disabled', () => {

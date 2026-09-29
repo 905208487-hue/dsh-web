@@ -339,18 +339,19 @@ function buildManageTool(host: TaskBoardToolHost): ToolDefinition {
     name: 'task_board_manage',
     description: [
       'Move, archive, restore, delete, or settle one task board card.',
-      'move-todo and move-backlog are the manual column moves; a running card cannot be moved.',
+      'move-backlog, move-todo, move-running, move-done and move-failed are the manual column moves and cover every column; a card the runner is executing (one with an open execution) cannot be moved.',
+      'A manual move writes the card column only and never fabricates an execution record, so the card reports a declaration rather than evidence of a run: done/failed declare work finished (or failed) outside a Host-run execution — human work, an external system, a decision made elsewhere — and running says the work is under way without a tracked session. Use task_board_run when the work should actually run in a session here.',
       'settle force-closes the open execution of a card the board can no longer observe (a stuck running card) and records it cancelled with the caller as the reason, so the card returns to the todo column and can be run again.',
       'archive takes the whole subtask tree off the board and is refused while any member has an unsettled execution; restore brings the task, its ancestors and its subtree back; delete removes one card and is refused while it still has subtasks (detach or delete them first) or while it runs.',
       'It cannot confirm a permission binding: the confirmation gate is a human act performed in the board UI.',
-      'Triggers: 任务看板, task board, 看板, 归档, archive, 删除任务, delete task, 移动任务, move task, 卡住, stuck, 强制结算, settle.',
+      'Triggers: 任务看板, task board, 看板, 归档, archive, 删除任务, delete task, 移动任务, move task, 标记进行中, mark in progress, 标记完成, mark done, 标记失败, mark failed, 卡住, stuck, 强制结算, settle.',
     ].join(' '),
     parameters: {
       taskId: { type: 'string', required: true, description: 'The task to act on.' },
       action: {
         type: 'string',
         required: true,
-        enum: ['move-todo', 'move-backlog', 'archive', 'restore', 'delete', 'settle'],
+        enum: ['move-todo', 'move-backlog', 'move-running', 'move-done', 'move-failed', 'archive', 'restore', 'delete', 'settle'],
         description: 'The lifecycle operation to perform.',
       },
     },
@@ -360,6 +361,9 @@ function buildManageTool(host: TaskBoardToolHost): ToolDefinition {
       const actions: Record<string, TaskBoardAction> = {
         'move-todo': { kind: 'move', taskId: args.taskId, status: 'todo' },
         'move-backlog': { kind: 'move', taskId: args.taskId, status: 'backlog' },
+        'move-running': { kind: 'move', taskId: args.taskId, status: 'running' },
+        'move-done': { kind: 'move', taskId: args.taskId, status: 'done' },
+        'move-failed': { kind: 'move', taskId: args.taskId, status: 'failed' },
         archive: { kind: 'archive', taskId: args.taskId },
         settle: { kind: 'settle', taskId: args.taskId },
         restore: { kind: 'restore', taskId: args.taskId },

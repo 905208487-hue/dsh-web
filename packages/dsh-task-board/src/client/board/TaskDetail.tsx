@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import type { BoardController, ControllerSnapshot } from '../../core/controller.ts'
 import { isValidCron } from '../../core/schedule.ts'
-import { MANUAL_STATUSES, TASK_PERMISSIONS, tagTone, type ExecutionRecord, type TaskPermission, type TaskRecord } from '../../core/tasks.ts'
+import { MANUAL_STATUSES, TASK_PERMISSIONS, canMoveTask, hasOpenExecution, tagTone, type ExecutionRecord, type TaskPermission, type TaskRecord } from '../../core/tasks.ts'
 import { canEditTaskContent } from '../../core/use-cases/task-update.ts'
 import { requiresPermissionConfirmation } from '../../core/handover.ts'
 import { DEFAULT_SUBTASK_DEPTH, directSubtasks, taskDepth } from '../../core/subtask.ts'
@@ -388,8 +388,8 @@ function SubtaskSection({ controller, task, pending, archived, snapshot }: {
                   <button
                     type="button"
                     className={css.linkButton}
-                    disabled={pending || child.status === 'running'}
-                    title={child.status === 'running' ? t('detail.subtasks.runningLock') : undefined}
+                    disabled={pending || hasOpenExecution(child)}
+                    title={hasOpenExecution(child) ? t('detail.subtasks.runningLock') : undefined}
                     onClick={() => { void controller.setParent(child.id, null) }}
                   >
                     {t('detail.subtasks.detach')}
@@ -444,7 +444,9 @@ export function TaskDetail({ controller, task }: { controller: BoardController; 
   }, [task.id])
   const current = latest
   const snapshot = controller.getSnapshot()
-  const running = current.status === 'running'
+  // Busy means the runner is executing this card, which is an execution the
+  // detail view can see; the column alone never locks a card.
+  const busy = hasOpenExecution(current)
   const archived = current.archivedAt !== undefined
   const pending = snapshot.pendingTaskIds.includes(current.id)
   const transportError = snapshot.transportError
@@ -600,7 +602,7 @@ export function TaskDetail({ controller, task }: { controller: BoardController; 
                     key={status}
                     type="button"
                     className={css.ghostButton}
-                    disabled={current.status === status || running || pending}
+                    disabled={pending || !canMoveTask(current, status)}
                     onClick={() => { controller.moveTask(current.id, status) }}
                   >
                     {t(`status.move.${status}` as TaskBoardKey)}
@@ -623,7 +625,7 @@ export function TaskDetail({ controller, task }: { controller: BoardController; 
               {t('detail.edit')}
             </button>
           )}
-          {!archived && !canEditTaskContent(current) && current.status !== 'running' && (
+          {!archived && !canEditTaskContent(current) && !busy && (
             <button
               type="button"
               className={css.ghostButton}
@@ -648,7 +650,7 @@ export function TaskDetail({ controller, task }: { controller: BoardController; 
             <button
               type="button"
               className={css.primaryButton}
-              disabled={running || pending}
+              disabled={busy || pending}
               title={subtaskChildren.length > 0
                 ? t('detail.subtasks.runHint', { count: String(subtaskChildren.length) })
                 : undefined}
@@ -719,7 +721,7 @@ export function TaskDetail({ controller, task }: { controller: BoardController; 
         <EditTaskModal controller={controller} task={current} onClose={() => { setShowEdit(false) }} />
       )}
 
-      {showEditTags && !archived && current.status !== 'running' && (
+      {showEditTags && !archived && !busy && (
         <EditTagsModal controller={controller} task={current} onClose={() => { setShowEditTags(false) }} />
       )}
 

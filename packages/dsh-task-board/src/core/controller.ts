@@ -12,7 +12,7 @@
  * owns only the orchestration seam (state, persistence, notify, navigation).
  */
 import type { TaskStore } from './store.ts'
-import { withStatus, type NewTaskInput, type TaskRecord, type TaskStatus } from './tasks.ts'
+import { hasOpenExecution, withStatus, type NewTaskInput, type TaskRecord, type TaskStatus } from './tasks.ts'
 import { applyArchiveTask, applyRestoreTask } from './use-cases/task-archive.ts'
 import { applyCreateTask } from './use-cases/task-create.ts'
 import { applyDeleteTask } from './use-cases/task-delete.ts'
@@ -572,7 +572,9 @@ export class BoardController {
    */
   async runTask(id: string): Promise<boolean> {
     const task = this.tasks.find(candidate => candidate.id === id)
-    if (task === undefined || task.archivedAt !== undefined || task.status === 'running') return false
+    // Only an open execution blocks a second launch; the 'running' column is a
+    // board statement and a card parked there by hand still runs on request.
+    if (task === undefined || task.archivedAt !== undefined || hasOpenExecution(task)) return false
     if (this.deps.transport === undefined) return false
     return await this.commitRemote({ kind: 'run', taskId: id }, id, currentOf(this.deps.sessions))
   }

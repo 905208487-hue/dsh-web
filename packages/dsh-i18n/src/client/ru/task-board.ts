@@ -259,6 +259,9 @@ export const ru: Record<string, string> = {
   'settings.title': 'Доска задач',
   'settings.unsaved': 'Не сохранено',
   'status.move.backlog': 'Переместить в «Бэклог»',
+  'status.move.done': 'Переместить в «Готово»',
+  'status.move.failed': 'Переместить в «Ошибка»',
+  'status.move.running': 'Переместить в «В работе»',
   'status.move.todo': 'Переместить в «К выполнению»',
   'time.justNow': 'только что',
 }

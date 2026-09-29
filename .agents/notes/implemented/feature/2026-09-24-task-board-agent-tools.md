@@ -18,7 +18,7 @@ The board was operable only from its Web GUI. The Host already owned the ledger,
 - `task_board_update` edits content, labels and execution targets; an empty string clears a target and an empty label array clears the labels.
 - `task_board_set_parent` links an existing card under a parent, or detaches it with an empty parent id.
 - `task_board_run` runs a card now, or re-runs a settled one, cascading over its whole subtask tree.
-- `task_board_manage` moves a card between backlog and todo, archives, restores, or deletes it.
+- `task_board_manage` moves a card to any manual column — every column since [manual column switching](2026-09-29-task-board-manual-column-switching.md), where `done`/`failed` declare work that finished outside a run and `running` parks work under way without a session — archives, restores, or deletes it.
 - `task_board_schedule` arms, changes, or disarms the card's cron rule.
 
 ### Registration and failure tolerance

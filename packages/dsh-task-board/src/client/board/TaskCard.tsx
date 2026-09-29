@@ -9,7 +9,7 @@
  */
 import { memo } from 'react'
 import type { TaskRecord } from '../../core/tasks.ts'
-import { executionLabel, tagTone } from '../../core/tasks.ts'
+import { executionLabel, hasOpenExecution, tagTone } from '../../core/tasks.ts'
 import { t } from '../locales.ts'
 import css from '../board.module.css'
 
@@ -85,7 +85,10 @@ function TaskCardInner({
   const latest = task.executions[task.executions.length - 1]
   const runs = task.executions.length
   const archived = task.archivedAt !== undefined
-  const isDraggable = !archived && task.status !== 'running' && !pending
+  // The lock is an open execution, not the column: a card parked in 'running'
+  // by hand stays draggable, and an executing card never is.
+  const busy = hasOpenExecution(task)
+  const isDraggable = !archived && !busy && !pending
 
   return (
     <button
@@ -166,7 +169,7 @@ function TaskCardInner({
         {latest?.sessionId !== undefined && (
           <span className={css.cardSession} title={latest.sessionId}>⌁</span>
         )}
-        {!archived && (task.status === 'running' || pending) && <span className={css.cardSpinner} aria-hidden="true" />}
+        {!archived && (busy || pending) && <span className={css.cardSpinner} aria-hidden="true" />}
       </span>
       {!archived && pending && <span className={css.cardRunningLabel}>{t('board.pending')}…</span>}
       {!archived && latest !== undefined && executionLabel(latest) === 'running' && (
