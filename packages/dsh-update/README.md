@@ -36,7 +36,7 @@ update trigger away.
 
 ## Requirements
 
-- DSH `>= 0.2.0-rc.1`.
+- DSH `>= 0.2.0-rc.2`.
 - The profile must own the family packages through npm: the aggregate
   `@linxin666/dsh-web-all`, or the family packages installed directly. A profile
   whose family is installed with local `link:` specs is reported as **local

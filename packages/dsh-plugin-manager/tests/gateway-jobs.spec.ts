@@ -764,7 +764,7 @@ describe('CliGateway operations on an application-owned profile', () => {
       application: 'failed',
       error: {
         code: 'incompatible-version',
-        incompatible: [{ name: 'dsh-memoir', version: '2.0.0', runtimeVersion: '0.2.0-rc.1' }],
+        incompatible: [{ name: 'dsh-memoir', version: '2.0.0', runtimeVersion: '0.2.0-rc.2' }],
       },
     })
 
@@ -775,7 +775,7 @@ describe('CliGateway operations on an application-owned profile', () => {
     // Then the refusal names the package, its version and the runtime it rejects
     expect(job.phase).toBe('error')
     expect(job.error).toContain('dsh-memoir@2.0.0')
-    expect(job.error).toContain('0.2.0-rc.1')
+    expect(job.error).toContain('0.2.0-rc.2')
   })
 
   it('operator: keeps verifying the profile when the manager reports it applied the run', async () => {
