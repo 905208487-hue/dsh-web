@@ -121,33 +121,42 @@ describe('summarizeDays', () => {
 })
 
 describe('foldHours', () => {
-  it('accumulates per local hour regardless of provider or model', () => {
+  it('operator accumulates each local hour regardless of provider or model', () => {
+    // Given reports from two providers in one hour and one in the next
     const doc = createLedgerDocument()
     const at = new Date(2026, 7, 29, 10, 0, 0).getTime()
+    // When the operator folds them into the hour buckets
     foldHours(doc, at, { ...emptyTotals(), inputTokens: 100, calls: 1 })
     foldHours(doc, at, { ...emptyTotals(), outputTokens: 20, calls: 1 })
     foldHours(doc, at + 3_600_000, { ...emptyTotals(), inputTokens: 5, calls: 1 })
+    // Then each hour totals every provider and model, and no day bucket appears
     expect(doc.hours?.['2026-08-29']?.['10']).toMatchObject({ inputTokens: 100, outputTokens: 20, calls: 2 })
     expect(doc.hours?.['2026-08-29']?.['11']).toMatchObject({ inputTokens: 5, calls: 1 })
     expect(doc.days).toEqual({})
   })
 
-  it('ignores empty reports', () => {
+  it('operator ignores empty hour reports', () => {
+    // Given a report with no tokens and no calls
     const doc = createLedgerDocument()
+    // When the operator folds it
     foldHours(doc, Date.now(), emptyTotals())
+    // Then no hour bucket exists
     expect(doc.hours).toBeUndefined()
   })
 })
 
 describe('pruneLedger hours', () => {
-  it('drops the hour buckets of pruned days', () => {
+  it('operator drops the hour buckets of pruned days', () => {
+    // Given two days, each with day and hour buckets, and a retention window
     const doc = createLedgerDocument()
     const oldAt = new Date(2026, 0, 1, 9, 0, 0).getTime()
     const newAt = new Date(2026, 0, 10, 9, 0, 0).getTime()
     foldUsage(doc, oldAt, 'p', 'm', { ...emptyTotals(), inputTokens: 1, calls: 1 })
     foldHours(doc, oldAt, { ...emptyTotals(), inputTokens: 1, calls: 1 })
     foldHours(doc, newAt, { ...emptyTotals(), inputTokens: 2, calls: 1 })
+    // When the operator prunes past the window
     pruneLedger(doc, '2026-01-10', 8)
+    // Then the old day's hour buckets go with the day; the new day survives
     expect(doc.days['2026-01-01']).toBeUndefined()
     expect(doc.hours?.['2026-01-01']).toBeUndefined()
     expect(doc.hours?.['2026-01-10']?.['9']).toMatchObject({ inputTokens: 2 })
@@ -155,7 +164,11 @@ describe('pruneLedger hours', () => {
 })
 
 describe('deserializeLedger hours', () => {
-  it('revives persisted hour buckets and drops malformed ones', () => {
+  it('operator revives persisted hour buckets and drops malformed ones', () => {
+    // Given a persisted document with a good hour bucket, an out-of-range
+    // hour, and a non-date key
+    // When the operator deserializes it
+    // Then the good bucket revives; the malformed ones drop
     const doc = deserializeLedger({
       version: 1,
       days: { '2026-01-02': { p: { m: { inputTokens: 5, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0, calls: 1, cost: 0 } } } },
@@ -169,8 +182,11 @@ describe('deserializeLedger hours', () => {
     expect(doc.hours?.['not-a-date']).toBeUndefined()
   })
 
-  it('tolerates documents without hours', () => {
+  it('operator tolerates documents without hours', () => {
+    // Given a serialized document that predates the hour heatmap
+    // When the operator deserializes it
     const doc = deserializeLedger({ version: 1, days: {} })
+    // Then no hour map materializes
     expect(doc.hours).toBeUndefined()
   })
 })
@@ -183,8 +199,11 @@ describe('buildScopeView', () => {
   const nextDay = new Date(2026, 1, 1, 8, 0, 0).getTime()
   foldUsage(ledger, nextDay, 'p2', 'm2', { ...emptyTotals(), inputTokens: 7, calls: 1 })
 
-  it('serves one local day with 24 zero-filled hourly buckets', () => {
+  it('operator serves one local day with 24 zero-filled hourly buckets', () => {
+    // Given a ledger with one day of usage and one non-empty hour bucket
+    // When the operator builds the day scope view
     const view = buildScopeView(ledger, 'day', '2026-01-02')
+    // Then the day totals its usage and all 24 hours exist, zero-filled
     expect(view?.kind).toBe('day')
     expect(view?.totals).toMatchObject({ inputTokens: 100, calls: 2 })
     expect(view?.providers).toHaveLength(1)
@@ -193,16 +212,23 @@ describe('buildScopeView', () => {
     expect(view?.hours?.[8]).toMatchObject({ inputTokens: 0, calls: 0 })
   })
 
-  it('serves one natural month with per-day summaries', () => {
+  it('operator serves one natural month with per-day summaries', () => {
+    // Given a ledger spanning the month's second day
+    // When the operator builds the month scope view
     const view = buildScopeView(ledger, 'month', '2026-01')
+    // Then the month totals the day's usage and lists that one day
     expect(view?.kind).toBe('month')
     expect(view?.totals).toMatchObject({ inputTokens: 100, calls: 2 })
     expect(view?.days?.map((day) => day.date)).toEqual(['2026-01-02'])
   })
 
-  it('returns undefined for malformed keys', () => {
+  it('operator returns undefined for malformed scope keys', () => {
+    // Given impossible or truncated keys, and a kind the scope contract
+    // never offers ('week' is a dashboard window elsewhere, not a scope)
+    // When the operator builds a scope view with them
+    // Then the route gets undefined and serves the overview instead
     expect(buildScopeView(ledger, 'day', '2026-13-99')).toBeUndefined()
     expect(buildScopeView(ledger, 'month', '2026-1')).toBeUndefined()
-    expect(buildScopeView(ledger, 'week', '2026-01')).toBeUndefined()
+    expect(buildScopeView(ledger, 'week' as 'day', '2026-01')).toBeUndefined()
   })
 })

@@ -266,11 +266,18 @@ export class UsageService {
     this.snapshotsPath = join(this.persistDir, 'provider-snapshots.json')
   }
 
-  /** Start the listeners, load persisted state, and arm the first poll. */
-  start(): void {
+  /**
+   * Start the listeners, load persisted state, and arm the first poll. The
+   * returned promise resolves when the persisted ledger and snapshots have
+   * been merged, so a caller that must observe loaded state (and every test
+   * that used to guess a delay) can await the load instead of racing it. The
+   * poll is armed synchronously and never waits for the load.
+   */
+  start(): Promise<void> {
     this.sessionListenerDisposer = this.ctx.on('session/event', (session, event) => this.onSessionEvent(session, event))
-    void this.loadPersisted()
+    const loaded = this.loadPersisted()
     this.rearmPoll(2_000)
+    return loaded
   }
 
   /**

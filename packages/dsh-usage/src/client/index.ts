@@ -189,7 +189,7 @@ export function apply(ctx: ClientContext): void {
   // opens the settings panel on the usage section when clicked.
   // Sidebar foot action: the icon trigger seated right next to the Settings
   // trigger, opening the usage dashboard.
-  const disposeFootAction = mountUsageFootAction({
+  const disposeFootAction = mountUsageFootAction(ctx, {
     label: () => t('usage.entry'),
     onOpen: () => { openUsageSettings(() => t('usage.title')) },
   })

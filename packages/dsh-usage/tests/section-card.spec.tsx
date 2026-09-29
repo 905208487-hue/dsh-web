@@ -208,9 +208,124 @@ describe('UsageSectionCard dashboard', () => {
     }
     render(<UsageSectionCard {...cardProps(snapshot)} />)
     fireEvent.click(screen.getByRole('button', { name: '每月' }))
-    // Then the heatmap renders one cell per day, not 24 hours
-    expect(document.querySelectorAll('[aria-label="Token 活动热力图"] > span')).toHaveLength(3)
+    // Then the heatmap renders the whole calendar of that month — a day with
+    // no ledger entry keeps its cell, so the axis cannot renumber — rather
+    // than the 24 hours of the day scope, and the date input is gone
+    const daysInMonth = new Date(Number(monthKey().slice(0, 4)), Number(monthKey().slice(5, 7)), 0).getDate()
+    expect(document.querySelectorAll('[aria-label="Token 活动热力图"] > span')).toHaveLength(daysInMonth)
     expect(screen.queryByLabelText('选择日期')).toBeNull()
+  })
+
+  it('user sees the ranking row for the model that spent the tokens', () => {
+    // Given a day scope whose only model consumed 5M tokens in 7 calls
+    const snapshot = overview([])
+    snapshot.usage.today = { date: todayKey(), totals: emptyTotals(), providers: [] }
+    snapshot.usage.scope = {
+      kind: 'day',
+      key: todayKey(),
+      totals: { ...emptyTotals(), inputTokens: 5_000_000, calls: 7 },
+      providers: [{ provider: 'deepseek', totals: { ...emptyTotals(), inputTokens: 5_000_000, calls: 7 }, models: [{ model: 'deepseek-chat', totals: { ...emptyTotals(), inputTokens: 5_000_000, calls: 7 } }] }],
+      hours: Array.from({ length: 24 }, () => ({ ...emptyTotals(), inputTokens: 5_000_000, calls: 7 })),
+    }
+    // When the ranking table renders that scope
+    render(<UsageSectionCard {...cardProps(snapshot)} />)
+    // Then the row names the model, and the call count stays an exact count
+    // instead of wearing the 12.3k token abbreviation
+    const list = document.querySelector('[data-dsh-part="model-usage-list"]')
+    expect(list?.textContent).toContain('deepseek-chat')
+    expect(list?.textContent).toContain('5M')
+    expect(list?.textContent).toContain('7')
+  })
+})
+
+/**
+ * The activity shades are ABSOLUTE bands, not a share of the window's
+ * maximum: a calm day and a busy day must not paint identically, and one busy
+ * hour must not drag the rest of the day up with it.
+ */
+describe('UsageSectionCard heatmap bands', () => {
+  it('user reads the shade of each hour from its own band', () => {
+    // Given a day whose 9th hour consumed 100k tokens and 23rd hour 5M
+    const snapshot = overview([])
+    snapshot.usage.today = { date: todayKey(), totals: emptyTotals(), providers: [] }
+    snapshot.usage.scope = {
+      kind: 'day',
+      key: todayKey(),
+      totals: emptyTotals(),
+      providers: [],
+      hours: Array.from({ length: 24 }, (_, hour) => ({
+        ...emptyTotals(),
+        inputTokens: hour === 9 ? 100_000 : hour === 23 ? 5_000_000 : 0,
+      })),
+    }
+    // When the heatmap paints those hours
+    render(<UsageSectionCard {...cardProps(snapshot)} />)
+    // Then 100k wears the level-3 shade and 5M the level-5 shade, instead of
+    // both being normalised against the day's 5M maximum
+    const cells = document.querySelectorAll('[aria-label="Token 活动热力图"] > span')
+    expect(cells[9].className).toContain('activityCellLevel3')
+    expect(cells[23].className).toContain('activityCellLevel5')
+  })
+
+  it('user sees the band legend so shades compare across days', () => {
+    // Given the dashboard with no usage in the selected scope
+    // When the heatmap renders
+    render(<UsageSectionCard {...cardProps(overview(mixed))} />)
+    // Then the legend names every band edge beside its swatch, so the shades
+    // can be read as absolute usage rather than a share of one window
+    const legend = screen.getByRole('group', { name: '用量图例（由少到多）' })
+    expect(legend.textContent).toContain('少')
+    expect(legend.textContent).toContain('<10k')
+    expect(legend.textContent).toContain('≥1M')
+    expect(legend.textContent).toContain('≥5M')
+    expect(legend.textContent).toContain('多')
+  })
+})
+
+/**
+ * Every KPI states the window it covers: the retained-ledger range for the
+ * all-time figure, and the trend window that the peak and streak come from.
+ */
+describe('UsageSectionCard summary figures', () => {
+  it('user sees the retained window behind the all-time token figure', () => {
+    // Given a ledger whose retained window is a known range
+    const snapshot = overview([])
+    snapshot.usage.all = { from: '2026-03-12', to: '2026-09-26', totals: emptyTotals(), providers: [] }
+    // When the summary renders
+    render(<UsageSectionCard {...cardProps(snapshot)} />)
+    // Then the card names that range rather than calling itself cumulative
+    const strip = document.querySelector('[data-dsh-part="usage-summary"]')
+    expect(strip?.textContent).toContain('近半年 Token')
+    expect(strip?.textContent).toContain('3月12日 ~ 9月26日')
+  })
+
+  it('user jumps the scope to the peak day from the peak card', () => {
+    // Given a trend whose busiest day is not the selected day
+    const snapshot = overview([])
+    snapshot.usage.days = [
+      { date: '2026-09-11', totals: { ...emptyTotals(), inputTokens: 1_000 } },
+      { date: '2026-09-12', totals: { ...emptyTotals(), inputTokens: 9_000_000 } },
+    ]
+    const setScope = vi.fn()
+    // When the user activates the peak card
+    render(<UsageSectionCard {...cardProps(snapshot, { setScope })} />)
+    const peakCard = screen.getByRole('button', { name: /单日峰值/ })
+    // Then the card carries that date and the click moves the scope to it
+    expect(peakCard.textContent).toContain('9月12日')
+    fireEvent.click(peakCard)
+    expect(setScope).toHaveBeenCalledWith('day', '2026-09-12')
+  })
+
+  it('user sees exact request counts where token totals abbreviate', () => {
+    // Given a retained window holding 12345 requests
+    const snapshot = overview([])
+    snapshot.usage.all = { from: '2026-03-12', to: '2026-09-26', totals: { ...emptyTotals(), calls: 12_345 }, providers: [] }
+    // When the summary renders
+    render(<UsageSectionCard {...cardProps(snapshot)} />)
+    // Then the request figure is the exact grouped count, never the token form
+    const strip = document.querySelector('[data-dsh-part="usage-summary"]')
+    expect(strip?.textContent).toContain('12,345')
+    expect(strip?.textContent).not.toContain('12.3k')
   })
 
   it('falls back to the overview today summary before the host answers the scope query', () => {

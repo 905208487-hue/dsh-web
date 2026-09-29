@@ -3,15 +3,19 @@
 /**
  * The sidebar usage action trigger: one icon-only button seated where the
  * download (self-update) trigger used to sit. It carries the localized
- * usage label and a statistics bar-chart glyph. Given a label and an open
- * callback, when the user taps the trigger, then the dashboard opens once.
+ * usage label and a usage chart glyph. Given a label and an open callback,
+ * when the user taps the trigger, then the dashboard opens once.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { UsageFootAction } from '../src/client/UsageFootAction.tsx'
+import { __test, mountUsageFootAction } from '../src/client/foot-card-mount.tsx'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  document.head.innerHTML = ''
+})
 
 describe('sidebar usage foot action', () => {
   it('user sees one icon trigger with the localized label and the bar glyph', () => {
@@ -21,7 +25,7 @@ describe('sidebar usage foot action', () => {
     // Then the trigger is a button carrying the label and the bar glyph
     expect(getByTitle('Usage').tagName).toBe('BUTTON')
     expect(getByTitle('Usage').getAttribute('aria-label')).toBe('Usage')
-    expect(container.querySelectorAll('button svg path').length).toBe(4)
+    expect(container.querySelectorAll('button svg path').length).toBe(3)
   })
 
   it('user taps the trigger and the dashboard opens once', () => {
@@ -32,6 +36,42 @@ describe('sidebar usage foot action', () => {
     fireEvent.click(getByTitle('Usage'))
     // Then the dashboard opens exactly once and the trigger stays mounted
     expect(onOpen).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('button svg path')).not.toBeNull()
+    expect(container.querySelector('button svg path')).toBeInstanceOf(SVGElement)
+  })
+
+  it('operator contributes Usage as the first entry of the official footer action slot', () => {
+    // Given a slot registry that immediately declares the official footer action slot
+    const props = { label: () => 'Usage', onOpen: () => {} }
+    const disposeRegistration = vi.fn()
+    const disposeWait = vi.fn()
+    const register = vi.fn((_options: { inject: () => typeof props }, _component: unknown) => disposeRegistration)
+    const inject = vi.fn((_key: string, callback: () => () => void) => {
+      const disposeActive = callback()
+      return () => {
+        disposeActive()
+        disposeWait()
+      }
+    })
+
+    // When the usage foot action mounts
+    const dispose = mountUsageFootAction({ slots: { inject, register } as never }, props)
+
+    // Then it registers one real slot entry ordered ahead of Remote access (order 0)
+    expect(inject).toHaveBeenCalledWith(__test.FOOT_ACTION_SLOT, expect.any(Function))
+    expect(register).toHaveBeenCalledWith({
+      name: __test.FOOT_ACTION_SLOT,
+      id: 'dsh-usage',
+      order: __test.FOOT_ACTION_ORDER,
+      inject: expect.any(Function),
+    }, UsageFootAction)
+    expect(__test.FOOT_ACTION_ORDER).toBeLessThan(0)
+    expect(register.mock.calls[0]?.[0].inject()).toBe(props)
+    // And it leaves the aggregate's own foot layout untouched: a second shim
+    // here fought that rule and centred the action cluster.
+    expect(document.head.querySelector('style')).toBeNull()
+
+    dispose()
+    expect(disposeRegistration).toHaveBeenCalledTimes(1)
+    expect(disposeWait).toHaveBeenCalledTimes(1)
   })
 })

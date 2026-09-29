@@ -1,31 +1,51 @@
 /**
  * Sidebar foot action mounting.
  *
- * The foot's only slot (sidebar.footer.action) stacks beside the Settings
- * trigger; the usage action is an icon-only trigger dropped right next to
- * Settings (the former "download/self-update" seat), opening the usage
- * dashboard. It self-heals with the page-wide body-mutation hub: a React
- * re-render that displaces the container re-seats it on the next frame, and
- * a whole-pane rebuild is noticed by the same body-level watcher the family
- * entry rows use.
+ * The shell owns the sidebar footer through the `sidebar.footer.action` list
+ * slot, so the usage action is registered as a normal slot entry rather than
+ * spliced into React's DOM output: an injected sibling node is what the shell
+ * re-renders around, and the aggregate's own foot layout then treats it as a
+ * stray child.
  *
- * The container is a plain div carrying its own React root, so it can never
- * disturb the shell's reconciliation.
+ * No layout shim lives here. The aggregate package (`dsh-web-all`) already
+ * orders the foot for this shell:
+ *
+ *   [class*=footArea]      { flex-flow: wrap; align-items: center }
+ *   [class*=settingsArea]  { flex: auto; order: 1 }
+ *   [class*=footerActions] { flex: none; order: 2; align-items: center }
+ *
+ * A second shim forcing `flex-direction: column` on the same element fought
+ * that rule and left the action cluster centred instead of beside Settings.
+ * The only ordering this package owns is its position INSIDE the cluster,
+ * which the slot `order` below sets: Usage before Remote access.
  * @module @linxin666/dsh-usage/client/foot-card-mount
  */
 
-import { createElement } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { subscribeBodyInvalidations } from './body-mutations.ts'
 import { UsageFootAction, type UsageFootActionProps } from './UsageFootAction.tsx'
+import type { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 
-/** Stable data attribute identifying the injected usage action container. */
-export const FOOT_ACTION_SELECTOR = '[data-dsh-usage-foot-action]'
+// Local contract mirror for the official sidebar-owned slot. dsh-usage does
+// not depend on ui-sidebar at runtime; this typed declaration lets the package
+// register into the shell slot while keeping all imports browser-pure.
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    'sidebar.footer.action': {
+      kind: 'list'
+      scope: 'root'
+      owner: { wide: boolean }
+    }
+  }
+}
 
-/** The shell sidebar's foot area (footer actions + the Settings row), when mounted. */
-function footArea(): HTMLElement | undefined {
-  const column = document.querySelector<HTMLElement>('[data-pane="sidebar"], [class*="sidebarCol"]')
-  return column?.querySelector<HTMLElement>('[class*="footArea"]') ?? undefined
+/** Stable data attribute identifying the usage action trigger. */
+export const FOOT_ACTION_SELECTOR = '[data-dsh-plugin="usage"]'
+
+const FOOT_ACTION_SLOT = 'sidebar.footer.action'
+/** First in the cluster: the official list sorts ascending, Remote access sits at 0. */
+const FOOT_ACTION_ORDER = -100
+
+interface UsageFootActionContext {
+  slots: Pick<SlotRegistry, 'inject' | 'register'>
 }
 
 /**
@@ -74,46 +94,27 @@ export function openUsageSettings(label: () => string): void {
 }
 
 /**
- * Mount the sidebar usage action right next to the Settings trigger.
+ * Mount the sidebar usage action into the official footer action slot.
+ * @param ctx - client context carrying the slot registry.
  * @param props - the label and open-dashboard inputs.
- * @returns disposer removing the container.
+ * @returns disposer removing the slot contribution.
  */
-export function mountUsageFootAction(props: UsageFootActionProps): () => void {
-  // DOM-level idempotency: whatever path mounted an action before this call (a
-  // duplicated apply, an HMR re-injection), never mount a second one.
-  if (typeof document !== 'undefined' && document.querySelector(FOOT_ACTION_SELECTOR) !== null) {
-    return () => {}
-  }
-  const container = document.createElement('div')
-  container.setAttribute('data-dsh-usage-foot-action', '')
-  // Flow the trigger as an inline seat item beside the Settings trigger.
-  container.style.display = 'contents'
-  const root: Root = createRoot(container)
-  root.render(createElement(UsageFootAction, props))
-
-  /** Keep the trigger inside the action cluster: right of Settings, left of Remote access. */
-  const place = (): void => {
-    const foot = footArea()
-    if (foot === undefined) return
-    const seat = foot.querySelector<HTMLElement>('[data-slot="sidebar.footer.action"]')
-    if (seat !== null) {
-      if (seat.firstChild !== container) seat.insertBefore(container, seat.firstChild)
-      return
+export function mountUsageFootAction(ctx: UsageFootActionContext, props: UsageFootActionProps): () => void {
+  return ctx.slots.inject(FOOT_ACTION_SLOT, () => {
+    try {
+      return ctx.slots.register({
+        name: FOOT_ACTION_SLOT,
+        id: 'dsh-usage',
+        order: FOOT_ACTION_ORDER,
+        inject: () => props,
+      }, UsageFootAction)
+    } catch {
+      return () => {}
     }
-    // No action cluster (shell change): keep the usage trigger immediately after Settings.
-    const settings = foot.querySelector<HTMLElement>('[class*="settingsArea"]')
-    if (settings !== null) {
-      if (container.previousElementSibling !== settings) settings.insertAdjacentElement('afterend', container)
-      return
-    }
-    if (container.parentElement !== foot) foot.append(container)
-  }
-  place()
-  const unsubscribeBody = subscribeBodyInvalidations(place)
+  })
+}
 
-  return () => {
-    unsubscribeBody()
-    root.unmount()
-    container.remove()
-  }
+export const __test = {
+  FOOT_ACTION_SLOT,
+  FOOT_ACTION_ORDER,
 }

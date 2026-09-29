@@ -11,17 +11,20 @@
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 2px 2px 0;
 }
 
 .headerMeta {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
-  flex: none;
+  min-width: 0;
 }
 
 .currentProvider {
@@ -76,25 +79,6 @@
   box-shadow: 0 1px 0 color-mix(in srgb, currentColor 5%, transparent);
 }
 
-.todayCard {
-  gap: 12px;
-}
-
-.cardHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.cardTitle {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.56;
-}
-
 .peakStatus {
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
   border-radius: 999px;
@@ -104,58 +88,6 @@
   line-height: 1.2;
   opacity: 0.72;
   white-space: nowrap;
-}
-
-.statRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
-  gap: 8px;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  border: 1px solid color-mix(in srgb, currentColor 8%, transparent);
-  border-radius: 12px;
-  padding: 10px 11px;
-  background: color-mix(in srgb, currentColor 4%, transparent);
-}
-
-.stat:first-child {
-  background:
-    radial-gradient(circle at 18% 0%, color-mix(in srgb, currentColor 11%, transparent), transparent 42%),
-    color-mix(in srgb, currentColor 6%, transparent);
-}
-
-.statValue {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 19px;
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.statLabel {
-  font-size: 11px;
-  line-height: 1.2;
-  opacity: 0.58;
-}
-
-@media (min-width: 680px) {
-  .stat:first-child {
-    grid-column: span 2;
-  }
-}
-
-.providerList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 .providerRow {
@@ -169,10 +101,6 @@
   border-radius: 11px;
   background: color-mix(in srgb, currentColor 3%, transparent);
   font-size: 13px;
-}
-
-.costRow {
-  background: color-mix(in srgb, currentColor 6%, transparent);
 }
 
 .providerName {
@@ -213,115 +141,6 @@
   flex: none;
 }
 
-/* 近 30 天提供方/模型条形图：provider 行主导（条宽按窗口内最大 provider
-   归一），模型子行缩进细条（行内归一）。 */
-.chart {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chartProvider {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 11px;
-  border: 1px solid color-mix(in srgb, currentColor 8%, transparent);
-  border-radius: 13px;
-  background: color-mix(in srgb, currentColor 3%, transparent);
-}
-
-.chartProviderCurrent {
-  border-color: color-mix(in srgb, currentColor 18%, transparent);
-  background:
-    linear-gradient(90deg, color-mix(in srgb, currentColor 6%, transparent), transparent 70%),
-    color-mix(in srgb, currentColor 3%, transparent);
-}
-
-.chartHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 13px;
-}
-
-.chartTokens {
-  flex: none;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.64;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.chartBar {
-  display: block;
-  height: 9px;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 7%, transparent);
-  overflow: hidden;
-}
-
-.chartFill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, color-mix(in srgb, currentColor 62%, transparent), color-mix(in srgb, currentColor 34%, transparent));
-  transition: width 300ms ease;
-}
-
-.chartModel {
-  display: grid;
-  grid-template-columns: minmax(96px, 34%) 1fr 52px;
-  align-items: center;
-  gap: 8px;
-  padding-left: 10px;
-  font-size: 11px;
-  opacity: 0.76;
-}
-
-.chartModelName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.82;
-}
-
-.chartModelBar {
-  display: block;
-  height: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 5%, transparent);
-  overflow: hidden;
-}
-
-.chartModelFill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 30%, transparent);
-  transition: width 300ms ease;
-}
-
-.chartMore {
-  align-self: flex-start;
-  margin-left: 10px;
-  border-radius: 999px;
-  padding: 2px 7px;
-  background: color-mix(in srgb, currentColor 6%, transparent);
-  font-size: 10px;
-  line-height: 1.2;
-  opacity: 0.58;
-}
-
-.trendAxis {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  opacity: 0.5;
-  font-variant-numeric: tabular-nums;
-}
-
 .muted {
   font-size: 12px;
   opacity: 0.6;
@@ -350,18 +169,41 @@
   gap: 8px;
 }
 
+/* KPI cards read left-aligned like every other card in the section: one
+   alignment axis per page, and a centred strip beside left-aligned detail
+   cards looked like two different designs. */
 .kpiCard {
+  appearance: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
   min-height: 64px;
-  padding: 10px 8px;
+  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, currentColor 9%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, currentColor 2.5%, transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+/* Only a card that navigates somewhere gets the affordance. */
+.kpiCardAction {
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.kpiCardAction:hover {
+  border-color: color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.kpiCardAction:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
 }
 
 .kpiValue {
@@ -379,10 +221,20 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
   font-size: 11px;
   line-height: 1.25;
   color: color-mix(in srgb, currentColor 56%, transparent);
+}
+
+/* The window a KPI actually covers (the peak's date, the retained range). */
+.kpiHint {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  line-height: 1.2;
+  color: color-mix(in srgb, currentColor 44%, transparent);
+  font-variant-numeric: tabular-nums;
 }
 
 .activityCard,
@@ -478,41 +330,99 @@
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
-.activityCell:hover {
+.activityCell:hover,
+.activityCell:focus-visible {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px color-mix(in srgb, currentColor 14%, transparent);
 }
 
-.activityCellEmpty {
+.activityCell:focus-visible {
+  outline: 2px solid color-mix(in srgb, currentColor 55%, transparent);
+  outline-offset: 1px;
+}
+
+/* Heat scale: the empty shade and five absolute bands. Shared by the cells
+   and by the legend swatches, so a swatch can never drift from the shade it
+   claims to explain. */
+.activityCellEmpty,
+.heatSwatchEmpty {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
-.activityCellLevel1 {
+.activityCellLevel1,
+.heatSwatchLevel1 {
   background: #bfdbfe;
 }
 
-.activityCellLevel2 {
+.activityCellLevel2,
+.heatSwatchLevel2 {
   background: #93c5fd;
 }
 
-.activityCellLevel3 {
+.activityCellLevel3,
+.heatSwatchLevel3 {
   background: #60a5fa;
 }
 
-.activityCellLevel4 {
+.activityCellLevel4,
+.heatSwatchLevel4 {
   background: #3b82f6;
 }
 
-.activityCellLevel5 {
+.activityCellLevel5,
+.heatSwatchLevel5 {
   background: #1d4ed8;
 }
 
-.activityAxis {
+/* Axis labels sit in a flex row with the SAME gap and flex tracks as the
+   cells, so a tick lands under the cell it names instead of drifting with
+   the label's own text width. */
+.heatAxis {
   display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: color-mix(in srgb, currentColor 54%, transparent);
+  gap: 4px;
+  width: 100%;
+  font-size: 10px;
+  color: color-mix(in srgb, currentColor 50%, transparent);
   font-variant-numeric: tabular-nums;
+}
+
+.heatAxisLabel {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Absolute-band legend: the five shades plus the empty cell, then the band
+   edges in text, so the colours mean the same thing on every day and month. */
+.heatLegend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 10px;
+  color: color-mix(in srgb, currentColor 50%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.heatLegendSwatch {
+  display: block;
+  width: 12px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.heatLegendEnd {
+  white-space: nowrap;
+}
+
+.heatLegendStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 /* Hover tooltip: anchored under the hovered cell (upward pops collide with
@@ -702,6 +612,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The absolute figures behind the percentage: a hit rate is only actionable
+   if the reader can see how much input it was measured against. */
+.cacheDetail {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  line-height: 1.3;
+  color: color-mix(in srgb, currentColor 50%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
 .cacheTrack {
   height: 10px;
   overflow: hidden;
@@ -840,37 +760,48 @@
    the 56px rail (the frame carries data-sidebar-collapsed).
    --------------------------------------------------------------------------- */
 
-/* Seated above the Settings row as a native sidebar row: the shell's row
-   radius and hover fill, with none of the card chrome that made it read as a
-   pill pasted onto the foot. Only the expanded body keeps a faint surface to
-   hold its four lines together; the collapsed strip is a plain 36px row. */
+/* Seated in the sidebar footer action cluster beside the Remote access
+   trigger. It mirrors that trigger's box exactly (36px circle, transparent,
+   label-secondary, same hover/active/focus), so the two icon buttons read as
+   one control group instead of two different button styles. */
 .footAction {
   appearance: none;
   box-sizing: border-box;
-  width: 26px;
-  height: 26px;
-  color: inherit;
+  width: 36px;
+  height: 36px;
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   font: inherit;
-  background: transparent;
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  border-radius: 8px;
+  background: 0 0;
+  border: none;
+  border-radius: 50%;
+  flex: none;
   justify-content: center;
   align-items: center;
   gap: 4px;
   padding: 0;
   display: inline-flex;
-  transition: opacity 0.12s, background-color 0.12s;
+  position: relative;
+  transition: background-color 0.12s, color 0.12s, box-shadow 0.12s;
 }
 
-.footAction:hover {
-  opacity: 1;
-  background: color-mix(in srgb, currentColor 8%, transparent);
+.footAction:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.footAction:active:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-active);
 }
 
 .footAction:focus-visible {
-  outline: 2px solid color-mix(in srgb, currentColor 45%, transparent);
-  outline-offset: -1px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--dsw-alias-bg-layer-2), 0 0 0 4px var(--dsw-alias-brand-primary);
+}
+
+.footAction:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .footAction svg {

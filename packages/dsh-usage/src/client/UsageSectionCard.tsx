@@ -45,6 +45,17 @@ export interface UsageSectionProps extends UsageSectionFace {
 /** Poll cadence while the section is open. */
 const SECTION_POLL_MS = 10_000
 
+/** How many model rows the ranking table renders before the shown/total line. */
+const MODEL_ROWS_SHOWN = 12
+
+/**
+ * Absolute heatmap bands (tokens, upper bound exclusive). Level 0 is the
+ * empty cell; levels 1..5 index `activityCellLevel1..5`. Absolute bands, not
+ * a share of the window's maximum: cells stay comparable across days and
+ * months, and a lone busy hour can no longer paint the whole day dark.
+ */
+const HEAT_BANDS: readonly number[] = [10_000, 100_000, 1_000_000, 5_000_000, Number.POSITIVE_INFINITY]
+
 /** Compact token count: 12345 -> 12.3k, 1234567 -> 1.23M. */
 export function formatTokens(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return '0'
@@ -54,8 +65,28 @@ export function formatTokens(value: number): string {
   return trim(value / 1_000_000_000) + 'B'
 }
 
+/**
+ * A call/request count: exact with grouping below 100k (a count is what the
+ * user cross-checks against the detail card, so it never wears the token
+ * abbreviation), compact above it where the digits stop being readable.
+ */
+export function formatCount(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '0'
+  if (value < 100_000) return value.toLocaleString()
+  return formatTokens(value)
+}
+
 function trim(value: number): string {
   return value >= 100 ? String(Math.round(value)) : value.toFixed(value >= 10 ? 1 : 2).replace(/\.?0+$/, '')
+}
+
+/** The heatmap band index (1..5) one cell's token total falls into. */
+function heatLevel(tokens: number): number {
+  if (!Number.isFinite(tokens) || tokens <= 0) return 0
+  for (let index = 0; index < HEAT_BANDS.length; index += 1) {
+    if (tokens < HEAT_BANDS[index]) return index + 1
+  }
+  return HEAT_BANDS.length
 }
 
 function formatTime(ms: number): string {
@@ -87,7 +118,28 @@ function zeroTotals(): UsageTokenTotals {
 /** `2026-09-26` -> `9月26日` (tooltip and axis labels). */
 function dayLabel(key: string): string {
   const parts = key.split('-')
-  return `${Number(parts[1])}月${Number(parts[2])}日` // i18n-allow: usage dashboard labels (zh on purpose)
+  return t('usage.dash.dayLabel', { m: Number(parts[1]), d: Number(parts[2]) })
+}
+
+/** `2026-09` -> `2026年9月`. */
+function monthLabel(key: string): string {
+  const parts = key.split('-')
+  return t('usage.dash.monthLabel', { y: Number(parts[0]), m: Number(parts[1]) })
+}
+
+/** `9` -> `09时`. */
+function hourLabel(hour: number): string {
+  return t('usage.dash.hour', { h: String(hour).padStart(2, '0') })
+}
+
+/** Every local date key of the natural month `YYYY-MM`, ascending. */
+function monthDateKeys(key: string): string[] {
+  const [year, month] = key.split('-').map(Number)
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return []
+  const days = new Date(year, month, 0).getDate()
+  const keys: string[] = []
+  for (let day = 1; day <= days; day += 1) keys.push(`${key}-${String(day).padStart(2, '0')}`)
+  return keys
 }
 
 /** A provider row backed by a configured credential (api key, env key, or OAuth grant). */
@@ -219,6 +271,13 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
             : t('usage.noData')}
         </span>
         <span className={styles.headerMeta}>
+          {/* Pricing rule, not a detail figure: it belongs beside the live
+              route and timestamp, not inside the usage-detail card. */}
+          {deepseekVisible && (
+            <span className={styles.peakStatus} data-dsh-part="peak-status">
+              {t(deepseekPeriod.peak ? 'usage.peak.on' : 'usage.peak.off', { time: formatClock(deepseekPeriod.boundaryMs) })}
+            </span>
+          )}
           <span className={styles.muted}>{t('usage.updated', { time: formatTime(snapshot.updatedAt) })}</span>
           <button type="button" className={styles.refreshBtn} onClick={onRefresh} disabled={refreshing}>
             {refreshing ? t('usage.refreshing') : t('usage.refresh')}
@@ -232,9 +291,6 @@ export function UsageSectionCard(props: UsageSectionProps): ReactNode {
         onScopeChange={onScopeChange}
         currentProvider={current.provider}
         currentModel={current.model}
-        deepseekVisible={deepseekVisible}
-        deepseekPeak={deepseekPeriod.peak}
-        deepseekBoundary={formatClock(deepseekPeriod.boundaryMs)}
         pollIntervalSec={typeof settingsValue.pollIntervalSec === 'number' ? settingsValue.pollIntervalSec : 60}
         onRefresh={onRefresh}
         refreshing={refreshing}
@@ -249,19 +305,18 @@ function UsageDashboard(props: {
   onScopeChange: (kind: 'day' | 'month', key: string) => void
   currentProvider?: string
   currentModel?: string
-  deepseekVisible: boolean
-  deepseekPeak: boolean
-  deepseekBoundary: string
   pollIntervalSec: number
   onRefresh: () => void
   refreshing: boolean
 }): ReactNode {
-  const { snapshot, scope, onScopeChange, currentProvider, currentModel, deepseekVisible, deepseekPeak, deepseekBoundary, pollIntervalSec, onRefresh, refreshing } = props
+  const { snapshot, scope, onScopeChange, currentProvider, currentModel, pollIntervalSec, onRefresh, refreshing } = props
   const retained: UsageWindowSummary | undefined = snapshot.usage.all ?? snapshot.usage.range
   const totals = retained?.totals ?? snapshot.usage.today.totals
+  // The peak day and the streak are computed from the overview's trend window
+  // (host TREND_DAYS, 30), not the whole retained ledger — the KPI labels say
+  // so rather than implying an all-time record.
   const peak = peakDay(snapshot.usage.days)
-  const streak = dayStreaks(snapshot.usage.days)
-  const cachePercent = cacheHitPercent(totals)
+  const streak = dayStreaks(snapshot.usage.days, snapshot.usage.today.date)
   const configuredBalanceRows = snapshot.providers
     .filter(isConfigured)
     .filter((provider) => provider.balanceSupported === true || provider.balanceSupported === false || (provider.balanceSupported === undefined && provider.supported))
@@ -279,24 +334,43 @@ function UsageDashboard(props: {
   const scopeEmpty = totalOf(selected.totals) === 0 && selected.totals.calls === 0
   const earliestKey = snapshot.usage.all?.from ?? snapshot.usage.days[0]?.date
   const today = snapshot.usage.today.date
+  // Kept-ledger window for the all-time figure. The wire carries no
+  // retainDays, but it does carry the window it actually kept, which is the
+  // honest thing to print and survives a non-default retention setting.
+  const windowFrom = snapshot.usage.all?.from
+  const windowTo = snapshot.usage.all?.to
 
   return (
     <div className={styles.usageDashboard}>
       <div className={styles.kpiStrip} data-dsh-part="usage-summary">
-        <MetricCard value={formatTokens(totalOf(totals))} label="累计 Token 数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-        <MetricCard value={formatTokens(peak.tokens)} label="峰值 Token 数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-        <MetricCard value={formatTokens(totals.calls)} label="总请求数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-        <MetricCard value={`${streak.current} 天`} label="当前连续天数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-        <MetricCard value={`${streak.longest} 天`} label="最长连续天数" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        <MetricCard
+          value={formatTokens(totalOf(totals))}
+          label={t('usage.dash.kpi.total')}
+          hint={windowFrom !== undefined && windowTo !== undefined
+            ? t('usage.dash.kpi.window', { from: dayLabel(windowFrom), to: dayLabel(windowTo) })
+            : t('usage.dash.kpi.none')}
+        />
+        <MetricCard
+          value={formatTokens(peak.tokens)}
+          label={t('usage.dash.kpi.peak')}
+          hint={peak.date !== '' ? dayLabel(peak.date) : t('usage.dash.kpi.none')}
+          onClick={peak.date !== '' && peak.date !== scope.key
+            ? () => onScopeChange('day', peak.date)
+            : undefined}
+          title={peak.date !== '' ? t('usage.dash.kpi.peakOpen', { date: dayLabel(peak.date) }) : undefined}
+        />
+        <MetricCard value={formatCount(totals.calls)} label={t('usage.dash.kpi.calls')} />
+        <MetricCard value={t('usage.dash.days', { n: streak.current })} label={t('usage.dash.kpi.streak')} />
+        <MetricCard value={t('usage.dash.days', { n: streak.longest })} label={t('usage.dash.kpi.streakLongest')} />
       </div>
 
       <div className={styles.scopeBar} data-dsh-part="scope-bar">
-        <div className={styles.scopeSeg} role="group" aria-label="统计维度">{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+        <div className={styles.scopeSeg} role="group" aria-label={t('usage.dash.scope.aria')}>
           <button type="button" className={scope.kind === 'day' ? `${styles.scopeSegBtn} ${styles.scopeSegBtnActive}` : styles.scopeSegBtn} onClick={() => onScopeChange('day', today)}>
-            每日{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+            {t('usage.dash.scope.day')}
           </button>
           <button type="button" className={scope.kind === 'month' ? `${styles.scopeSegBtn} ${styles.scopeSegBtnActive}` : styles.scopeSegBtn} onClick={() => onScopeChange('month', scope.kind === 'day' ? scope.key.slice(0, 7) : scope.key)}>
-            每月{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+            {t('usage.dash.scope.month')}
           </button>
         </div>
         {scope.kind === 'day'
@@ -307,7 +381,7 @@ function UsageDashboard(props: {
               value={scope.key}
               min={earliestKey}
               max={today}
-              aria-label="选择日期" // i18n-allow: usage dashboard labels (zh on purpose)
+              aria-label={t('usage.dash.scope.pickDay')}
               onChange={(event) => { if (event.target.value !== '') onScopeChange('day', event.target.value) }}
             />
           )
@@ -318,7 +392,7 @@ function UsageDashboard(props: {
               value={scope.key}
               min={earliestKey !== undefined ? earliestKey.slice(0, 7) : undefined}
               max={today.slice(0, 7)}
-              aria-label="选择月份" // i18n-allow: usage dashboard labels (zh on purpose)
+              aria-label={t('usage.dash.scope.pickMonth')}
               onChange={(event) => { if (event.target.value !== '') onScopeChange('month', event.target.value) }}
             />
           )}
@@ -326,47 +400,46 @@ function UsageDashboard(props: {
 
       <section className={`${styles.card} ${styles.activityCard}`} data-dsh-part="activity-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />Token 活动</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <span className={styles.rangePill}>{scope.kind === 'day' ? dayLabel(selected.key) : selected.key}</span>
+          <span className={styles.dashboardTitle}><span className={styles.dotBlue} />{t('usage.dash.activity.title')}</span>
+          <span className={styles.rangePill}>{scope.kind === 'day' ? dayLabel(selected.key) : monthLabel(selected.key)}</span>
         </div>
         <ActivityHeatmap scope={selected} />
       </section>
 
       <section className={`${styles.card} ${styles.detailCard}`} data-dsh-part="detail-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />用量明细</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <span className={styles.dashboardTitle}><span className={styles.dotGreen} />{t('usage.dash.detail.title')}</span>
           <span className={styles.detailToolbar}>
-            <span className={styles.rangePill}>{scope.kind === 'day' ? '按日' : '按月'} · {selected.key}</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-            <span className={styles.autoRefreshPill}>{Math.max(10, Math.round(pollIntervalSec))}s 自动刷新</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+            <span className={styles.rangePill}>
+              {t('usage.dash.detail.byDay')} · {dayLabel(selected.key)}
+            </span>
+            <span className={styles.autoRefreshPill}>{t('usage.dash.detail.autoRefresh', { sec: Math.max(10, Math.round(pollIntervalSec)) })}</span>
           </span>
         </div>
 
         <div className={styles.detailStats}>
-          <DetailStat value={formatTokens(totalOf(selected.totals))} label="真实消耗 Tokens" hint="输入 + 输出 + 缓存" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <DetailStat value={formatTokens(selected.totals.calls)} label="总请求数" hint="所有模型调用" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <DetailStat value={formatPercent(cacheHitPercent(selected.totals))} label="缓存命中" hint="cache read token" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <DetailStat value={formatTokens(selected.totals.reasoningTokens)} label="推理 Tokens" hint="reasoning tokens" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <DetailStat value={formatTokens(totalOf(selected.totals))} label={t('usage.dash.stat.consumed')} hint={t('usage.dash.stat.consumedHint')} />
+          <DetailStat value={formatCount(selected.totals.calls)} label={t('usage.dash.stat.calls')} hint={t('usage.dash.stat.callsHint')} />
+          <DetailStat value={formatPercent(cacheHitPercent(selected.totals))} label={t('usage.dash.stat.cache')} hint={t('usage.dash.stat.cacheHint')} />
+          <DetailStat value={formatTokens(selected.totals.reasoningTokens)} label={t('usage.dash.stat.reasoning')} hint={t('usage.dash.stat.reasoningHint')} />
         </div>
 
         <div className={styles.cacheMeter}>
-          <span className={styles.cacheLabel}>缓存命中率 <strong>{formatPercent(cacheHitPercent(selected.totals))}</strong></span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <span className={styles.cacheLabel}>{t('usage.dash.cache.label')} <strong>{formatPercent(cacheHitPercent(selected.totals))}</strong></span>
           <span className={styles.cacheTrack}><span className={styles.cacheFill} style={{ width: `${Math.max(0, Math.min(100, cacheHitPercent(selected.totals)))}%` }} /></span>
+          <span className={styles.cacheDetail}>
+            {t('usage.dash.cache.detail', { input: formatTokens(inputOf(selected.totals)), read: formatTokens(selected.totals.cacheReadTokens) })}
+          </span>
         </div>
 
-        {deepseekVisible && (
-          <span className={styles.peakStatus} data-dsh-part="peak-status">
-            {t(deepseekPeak ? 'usage.peak.on' : 'usage.peak.off', { time: deepseekBoundary })}
-          </span>
-        )}
-
         {scopeEmpty
-          ? <span className={styles.muted}>{scope.kind === 'day' ? '该日期暂无用量记录' : '该月份暂无用量记录'}</span> // i18n-allow: usage dashboard labels (zh on purpose)
+          ? <span className={styles.muted}>{t(scope.kind === 'day' ? 'usage.dash.detail.emptyDay' : 'usage.dash.detail.emptyMonth')}</span>
           : <ModelUsageTable rows={modelUsageRows(selected.providers, snapshot.providers, currentProvider, currentModel)} />}
       </section>
 
       <section className={`${styles.card} ${styles.balanceOverview}`} data-dsh-part="balance-card">
         <div className={styles.dashboardCardHead}>
-          <span className={styles.dashboardTitle}>余额概览</span>{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          <span className={styles.dashboardTitle}>{t('usage.dash.balance.title')}</span>
         </div>
         {configuredBalanceRows.length === 0
           ? <span className={styles.muted}>{t(snapshot.providers.some(isConfigured) ? 'usage.balance.unsupported' : 'usage.balance.noneConfigured')}</span>
@@ -385,12 +458,21 @@ function UsageDashboard(props: {
   )
 }
 
-function MetricCard(props: { value: string; label: string }): ReactNode {
-  return (
-    <div className={styles.kpiCard}>
+function MetricCard(props: { value: string; label: string; hint?: string; onClick?: () => void; title?: string }): ReactNode {
+  const body = (
+    <>
       <span className={styles.kpiValue}>{props.value}</span>
       <span className={styles.kpiLabel}>{props.label}</span>
-    </div>
+      {props.hint !== undefined && <span className={styles.kpiHint}>{props.hint}</span>}
+    </>
+  )
+  // Only a card with a destination is a button; a decorative control that
+  // does nothing on click is worse than a plain figure.
+  if (props.onClick === undefined) return <div className={styles.kpiCard}>{body}</div>
+  return (
+    <button type="button" className={`${styles.kpiCard} ${styles.kpiCardAction}`} onClick={props.onClick} title={props.title}>
+      {body}
+    </button>
   )
 }
 
@@ -408,8 +490,11 @@ type HeatCell = { key: string; label: string; tipTitle: string; totals: UsageTok
 
 /**
  * The token-activity heatmap. Day scope: 24 hourly cells of the selected
- * date. Month scope: one cell per natural-month day. Hovering a cell shows
- * its date (and hour) plus the tokens and calls it consumed.
+ * date. Month scope: one cell per natural-month day (future days included, so
+ * a month is always as wide as its calendar). Hovering a cell shows its date
+ * (and hour) plus the tokens and calls it consumed; every cell carries the
+ * same fact as an accessible name, so a keyboard user is not shut out of the
+ * only per-hour figures on the page.
  */
 function ActivityHeatmap(props: { scope: UsageScopeView }): ReactNode {
   const { scope } = props
@@ -417,52 +502,96 @@ function ActivityHeatmap(props: { scope: UsageScopeView }): ReactNode {
   const cells: HeatCell[] = scope.kind === 'day'
     ? (scope.hours ?? Array.from({ length: 24 }, () => zeroTotals())).map((totals, hour) => ({
         key: String(hour),
-        label: `${String(hour).padStart(2, '0')}时`, // i18n-allow: usage dashboard labels (zh on purpose)
-        tipTitle: `${dayLabel(scope.key)} ${String(hour).padStart(2, '0')}时`, // i18n-allow: usage dashboard labels (zh on purpose)
+        label: hourLabel(hour),
+        tipTitle: `${dayLabel(scope.key)} ${hourLabel(hour)}`,
         totals,
       }))
-    : (scope.days ?? []).map((day) => ({
-        key: day.date,
-        label: `${Number(day.date.slice(8))}日`, // i18n-allow: usage dashboard labels (zh on purpose)
-        tipTitle: dayLabel(day.date),
-        totals: day.totals,
-      }))
-  const max = Math.max(1, ...cells.map((cell) => totalOf(cell.totals)))
+    : (() => {
+        // The wire sends only retained days; a month still needs its full
+        // calendar so a gap does not silently renumber the axis.
+        const recorded = new Map((scope.days ?? []).map((day) => [day.date, day.totals]))
+        return monthDateKeys(scope.key).map((date) => ({
+          key: date,
+          label: t('usage.dash.dayOfMonth', { d: Number(date.slice(8)) }),
+          tipTitle: dayLabel(date),
+          totals: recorded.get(date) ?? zeroTotals(),
+        }))
+      })()
+  const axisTicks = heatAxisTicks(cells.length)
+  const empty = cells.every((cell) => totalOf(cell.totals) === 0)
   return (
     <div className={styles.activityBody}>
-      <div className={styles.heatmapGrid} aria-label="Token 活动热力图">{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+      <div className={styles.heatmapGrid} aria-label={t('usage.dash.activity.aria')}>
         {cells.map((cell, index) => {
           const tokens = totalOf(cell.totals)
-          const level = tokens <= 0 ? 0 : Math.max(1, Math.min(5, Math.ceil((tokens / max) * 5)))
+          const level = heatLevel(tokens)
           const levelClass = level === 0 ? styles.activityCellEmpty : styles[`activityCellLevel${level}`]
+          const tip = t('usage.dash.activity.tip', { tokens: formatTokens(tokens), calls: formatCount(cell.totals.calls) })
           return (
             <span
               key={cell.key}
               className={`${styles.activityCell} ${levelClass}`}
+              tabIndex={0}
+              aria-label={`${cell.tipTitle} ${tip}`}
               onMouseEnter={() => setHovered(index)}
               onMouseLeave={() => setHovered(null)}
+              onFocus={() => setHovered(index)}
+              onBlur={() => setHovered(null)}
             >
               {hovered === index && (
                 <span className={styles.heatTip} role="tooltip">
                   <strong>{cell.tipTitle}</strong>
-                  {formatTokens(tokens)} tokens · {cell.totals.calls} 次调用{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+                  {tip}
                 </span>
               )}
             </span>
           )
         })}
       </div>
-      <span className={styles.activityAxis}>
-        <span>{cells[0]?.label ?? ''}</span>
-        <span>{cells[cells.length - 1]?.label ?? ''}</span>
-      </span>
-      {cells.every((cell) => totalOf(cell.totals) === 0) && (
+      <div className={styles.heatAxis} aria-hidden="true">
+        {cells.map((cell, index) => (
+          <span key={cell.key} className={styles.heatAxisLabel}>
+            {axisTicks.has(index) ? cell.label : ''}
+          </span>
+        ))}
+      </div>
+      <div className={styles.heatLegend} role="group" aria-label={t('usage.dash.legend.aria')}>
+        <span className={styles.heatLegendEnd}>{t('usage.dash.legend.less')}</span>
+        <span className={styles.heatLegendStep}>
+          <span className={`${styles.heatLegendSwatch} ${styles.heatSwatchEmpty}`} />
+          <span>0</span>
+        </span>
+        {HEAT_BANDS.map((band, index) => (
+          <span key={band} className={styles.heatLegendStep}>
+            <span className={`${styles.heatLegendSwatch} ${styles[`heatSwatchLevel${index + 1}`]}`} />
+            {/* Each band is labelled by its own lower edge: the thresholds are
+                what make the shades comparable between days. */}
+            <span>{index === 0 ? `<${formatTokens(band)}` : `≥${formatTokens(HEAT_BANDS[index - 1])}`}</span>
+          </span>
+        ))}
+        <span className={styles.heatLegendEnd}>{t('usage.dash.legend.more')}</span>
+      </div>
+      {empty && (
         <span className={styles.muted}>
-          {scope.kind === 'day' ? '本日暂无小时用量（小时数据自本版本启用起记录）' : '本月暂无用量记录'}{/* i18n-allow: usage dashboard labels (zh on purpose) */}
+          {t(scope.kind === 'day' ? 'usage.dash.activity.emptyDay' : 'usage.dash.activity.emptyMonth')}
         </span>
       )}
     </div>
   )
+}
+
+/**
+ * Indices inside a 24-cell (hourly) or 28..31-cell (daily) strip that get an
+ * axis label. Sparse on purpose: 31 labels in a settings panel would collide
+ * long before they helped.
+ */
+function heatAxisTicks(count: number): Set<number> {
+  if (count === 0) return new Set()
+  if (count <= 24) return new Set([0, 6, 12, 18, count - 1])
+  const ticks = new Set<number>([0])
+  for (let day = 5; day < count; day += 5) ticks.add(day - 1)
+  ticks.add(count - 1)
+  return ticks
 }
 
 type ModelUsageRow = {
@@ -475,24 +604,36 @@ type ModelUsageRow = {
 }
 
 function ModelUsageTable(props: { rows: ModelUsageRow[] }): ReactNode {
-  const rows = props.rows.slice(0, 12)
+  const all = props.rows
+  const rows = all.slice(0, MODEL_ROWS_SHOWN)
   if (rows.length === 0) return <span className={styles.muted}>{t('usage.noData')}</span>
   return (
     <div className={styles.modelTable} data-dsh-part="model-usage-list">
-      {rows.map((row) => (
-        <div key={row.key} className={row.current ? `${styles.modelRow} ${styles.modelRowCurrent}` : styles.modelRow}>
-          <span className={styles.modelIdentity}>
-            <strong>{row.model}</strong>
-            <span>{row.providerName}</span>
-          </span>
-          <ModelCell value={formatTokens(totalOf(row.totals))} label="总 token" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <ModelCell value={formatTokens(row.totals.calls)} label="调用" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <ModelCell value={formatTokens(inputOf(row.totals))} label="输入" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <ModelCell value={formatTokens(row.totals.outputTokens)} label="输出" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <ModelCell value={formatTokens(row.totals.reasoningTokens)} label="推理" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-          <ModelCell value={row.totals.cost > 0 ? formatCost(row.totals.cost) : '—'} label="成本消耗" />{/* i18n-allow: usage dashboard labels (zh on purpose) */}
-        </div>
-      ))}
+      {rows.map((row) => {
+        // Only the DeepSeek official family is priced (its public price book);
+        // every other provider stays unpriced rather than guessed at, and the
+        // dash says which case the reader is looking at.
+        const priced = row.totals.cost > 0
+        return (
+          <div key={row.key} className={row.current ? `${styles.modelRow} ${styles.modelRowCurrent}` : styles.modelRow}>
+            <span className={styles.modelIdentity}>
+              <strong>{row.model}</strong>
+              <span>{row.providerName}</span>
+            </span>
+            <ModelCell value={formatTokens(totalOf(row.totals))} label={t('usage.dash.model.total')} />
+            <ModelCell value={formatCount(row.totals.calls)} label={t('usage.dash.model.calls')} />
+            <ModelCell value={formatTokens(inputOf(row.totals))} label={t('usage.dash.model.input')} />
+            <ModelCell value={formatTokens(row.totals.outputTokens)} label={t('usage.dash.model.output')} />
+            <ModelCell value={formatTokens(row.totals.reasoningTokens)} label={t('usage.dash.model.reasoning')} />
+            <ModelCell value={priced ? formatCost(row.totals.cost) : '—'} label={t('usage.dash.model.cost')} />
+          </div>
+        )
+      })}
+      {all.length > rows.length && (
+        <span className={styles.muted}>
+          {t('usage.dash.model.shown', { shown: rows.length, total: all.length })}
+        </span>
+      )}
     </div>
   )
 }
@@ -534,22 +675,30 @@ function peakDay(days: UsageOverviewView['usage']['days']): { date: string; toke
   return best
 }
 
-function dayStreaks(days: UsageOverviewView['usage']['days']): { current: number; longest: number } {
+/**
+ * Current and longest run of usage days. The current run is anchored to
+ * `todayKey`, not to the newest recorded day: reading the newest day would
+ * report an unbroken streak for a ledger whose last entry was a week ago.
+ * Only the latest month of days is visible in the wire document, which is why
+ * the KPI labels say the window out loud.
+ */
+function dayStreaks(days: UsageOverviewView['usage']['days'], todayKey: string): { current: number; longest: number } {
   const active = new Set(days.filter((day) => totalOf(day.totals) > 0).map((day) => day.date))
+  const fallback = days[days.length - 1]?.date ?? todayKey
+  const ordered = recentDateKeys(fallback > todayKey ? fallback : todayKey, Math.max(30, days.length))
   let longest = 0
-  let currentRun = 0
-  const ordered = recentDateKeys(days[days.length - 1]?.date ?? todayKey(), Math.max(30, days.length))
-  for (const key of ordered) {
-    if (active.has(key)) {
-      currentRun += 1
-      longest = Math.max(longest, currentRun)
+  let run = 0
+  for (let index = 0; index < ordered.length; index += 1) {
+    if (active.has(ordered[index])) {
+      run += 1
+      longest = Math.max(longest, run)
     } else {
-      currentRun = 0
+      run = 0
     }
   }
   let current = 0
-  for (let i = ordered.length - 1; i >= 0; i -= 1) {
-    if (!active.has(ordered[i])) break
+  for (let index = ordered.length - 1; index >= 0; index -= 1) {
+    if (!active.has(ordered[index])) break
     current += 1
   }
   return { current, longest }

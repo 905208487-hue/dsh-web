@@ -3,11 +3,11 @@
  * (self-update) trigger used to sit, beside the remote-control phone icon.
  * It opens the usage statistics dashboard (settings page, usage section).
  *
- * The glyph is a statistics bar chart adapted from the open-source Lucide
- * "bar-chart-3" icon (https://lucide.dev/icons/bar-chart-3, ISC license),
+ * The glyph is a usage chart adapted from the open-source Lucide
+ * "chart-no-axes-column-increasing" icon
+ * (https://lucide.dev/icons/chart-no-axes-column-increasing, ISC license),
  * redrawn on the 16px grid with the same stroke format as the official
- * download primitives (stroke 1.3, round caps/joins, currentColor) so it
- * matches the removed download trigger's look.
+ * download primitive (fill none, currentColor stroke, round caps/joins).
  * @module @linxin666/dsh-usage/client/UsageFootAction
  */
 
@@ -37,10 +37,9 @@ export function UsageFootAction({ label, onOpen }: UsageFootActionProps) {
       onClick={onOpen}
     >
       <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M2.25 13.25h11.5" />
-        <path d="M4.5 13.25V10.75" />
-        <path d="M8 13.25V7.25" />
-        <path d="M11.5 13.25V3.75" />
+        <path d="M3.5 13.5V9.75" />
+        <path d="M8 13.5V6.25" />
+        <path d="M12.5 13.5V2.5" />
       </svg>
     </button>
   )
