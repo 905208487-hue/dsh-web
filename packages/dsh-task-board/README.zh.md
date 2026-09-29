@@ -32,7 +32,7 @@
 - **实时同步**：变更返回完整 revision snapshot；SSE 只提示 revision、scheduler 与 power 变化，重连和页面恢复可见时重新拉完整 snapshot。
 - **可选空闲睡眠保护**：默认关闭；开启后覆盖全部运行中的 DSH 会话、已启用且未归档的任务计划和未知会话状态。
 - **系统提示词注入**：Host 通过 `SystemPrompt.section` 注册 order 200 的 `plugin:task-board` 段；任务看板设置可单独关闭声明而不关闭看板。该提示也会提醒 agent 在最终回复前收尾可见的 `todo_write` 计划列表。
-- **Agent 工具**：每个会话都可使用八个面向模型的工具（`task_board_list`、`task_board_get`、`task_board_create`、`task_board_update`、`task_board_set_parent`、`task_board_run`、`task_board_manage`、`task_board_schedule`），它们驱动与浏览器完全相同的 Host 账本，因此 agent 可以在对话里列出看板、创建子任务、关联或解除关联、执行级联、移动/归档/恢复/删除卡片，以及为卡片配置 cron 计划。
+- **Agent 工具**：每个会话都可使用八个面向模型的工具（`task_board_list`、`task_board_get`、`task_board_create`、`task_board_update`、`task_board_set_parent`、`task_board_run`、`task_board_manage`、`task_board_schedule`），它们驱动与浏览器完全相同的 Host 账本，因此 agent 可以在对话里列出看板、创建子任务、关联或解除关联、执行级联、移动/归档/恢复/删除卡片、对看板已无法观察的卡片强制结算，以及为卡片配置 cron 计划。
 
 ## 架构与协议
 
@@ -56,7 +56,7 @@
 - `task_board_update`：修改内容、标签与执行目标；空字符串清除某个目标，空标签数组清除全部标签。
 - `task_board_set_parent`：把现有卡片挂到某个父任务下，或用空 parentId 解除关联。
 - `task_board_run`：立即执行一张卡片（可选择重跑已结算的卡片），并级联执行它整棵子任务树；会消耗真实 API 额度，且未确认的高于默认权限的绑定会以 `confirmation-required` 被拒绝。
-- `task_board_manage`：在待办与待规划之间移动卡片、归档或恢复、删除，同样受 Host 的运行中子任务与父子关系护栏约束。
+- `task_board_manage`：在待办与待规划之间移动卡片、归档或恢复、删除，或对看板已无法观察的运行中卡片强制结算（记为 cancelled 并记录调用者原因，卡片回到待办），同样受 Host 的运行中子任务与父子关系护栏约束。
 - `task_board_schedule`：启用、修改或关闭卡片的 cron 计划，包括其 IANA 时区（`timeZone` 传空字符串即清除，回退到 Host 时区）。
 
 这里刻意没有「确认权限」工具：该门禁存在的意义就是由人工放行高于默认值的权限，若 agent 能自行盖章，这道门就形同虚设。遇到 `confirmation-required` 的 agent 应当请用户在界面确认该卡片。工具调用带归属：执行会把发起会话记为 initiator，创建/更新则会把发起会话写进续接卡片快照。

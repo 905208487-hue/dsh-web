@@ -104,6 +104,7 @@ export type TaskBoardAction =
   | { kind: 'move'; taskId: string; status: TaskStatus }
   | { kind: 'archive'; taskId: string }
   | { kind: 'restore'; taskId: string }
+  | { kind: 'settle'; taskId: string }
   | { kind: 'set-schedule'; taskId: string; patch: { enabled?: boolean; cron?: string; timeZone?: string | null } }
   | { kind: 'run'; taskId: string }
   | { kind: 'rerun'; taskId: string }
@@ -381,6 +382,7 @@ function parseEnvelopeAction(value: unknown): TaskBoardActionEnvelope | undefine
     case 'delete':
     case 'archive':
     case 'restore':
+    case 'settle':
     case 'run':
     case 'rerun':
       if (!exactKeys(action, ['kind', 'taskId'])) return undefined

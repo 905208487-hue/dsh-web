@@ -32,7 +32,7 @@ A hot-pluggable DeepSeek Harness (DSH) Web GUI plugin with a Host-authoritative 
 - **Live synchronization**: mutations return a full revisioned snapshot; SSE announces revision, scheduler, and power changes, while reconnect and page visibility recovery fetch a full snapshot.
 - **Optional idle-sleep protection**: off by default; when enabled it covers every running DSH session, enabled non-archived task-board schedules, and unknown session state.
 - **System-prompt injection**: the Host registers a `plugin:task-board` section (order 200) through `SystemPrompt.section`, and the task-board settings can disable the announcement without disabling the board. The guidance also reminds agents to close any visible `todo_write` plan before the final answer.
-- **Agent tools**: every session gets eight model-facing tools (`task_board_list`, `task_board_get`, `task_board_create`, `task_board_update`, `task_board_set_parent`, `task_board_run`, `task_board_manage`, `task_board_schedule`) that drive the same Host ledger the browser drives, so an agent can list the board, create subtasks, link or detach them, run a cascade, move/archive/restore/delete a card, and arm its cron schedule from the conversation.
+- **Agent tools**: every session gets eight model-facing tools (`task_board_list`, `task_board_get`, `task_board_create`, `task_board_update`, `task_board_set_parent`, `task_board_run`, `task_board_manage`, `task_board_schedule`) that drive the same Host ledger the browser drives, so an agent can list the board, create subtasks, link or detach them, run a cascade, move/archive/restore/delete a card, settle a card the board can no longer observe, and arm its cron schedule from the conversation.
 
 ## Architecture and protocol
 
@@ -56,7 +56,7 @@ The board is operable from a conversation, not only from the GUI. Each tool driv
 - `task_board_update` edits content, labels, and execution targets; an empty string clears a target and an empty label array clears the labels.
 - `task_board_set_parent` links an existing card under a parent, or detaches it with an empty parent id.
 - `task_board_run` runs a card now (optionally re-running a settled one), cascading over its whole subtask tree; it consumes real API quota and refuses an unconfirmed above-default permission with `confirmation-required`.
-- `task_board_manage` moves a card between backlog and todo, archives or restores it, or deletes it, with the Host's running-task and subtask guards.
+- `task_board_manage` moves a card between backlog and todo, archives or restores it, deletes it, or settles a running card the board can no longer observe (recording a cancelled verdict with the caller as the reason and returning the card to todo), with the Host's running-task and subtask guards.
 - `task_board_schedule` arms, changes, or disarms a card's cron schedule, including its IANA time zone (an empty `timeZone` clears it back to the Host zone).
 
 There is deliberately no tool that confirms a permission binding: that gate exists so a human lifts an above-default permission, and an agent able to stamp it would make the gate decorative. An agent that hits `confirmation-required` asks the user to confirm the card in the board UI. Tool calls are attributed: a run records the calling session as its initiator, and a create/update stamps it into a continuation card's snapshot.

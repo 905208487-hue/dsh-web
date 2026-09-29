@@ -145,6 +145,8 @@ describe('agent tool definitions', () => {
     // Then neither the surface nor the lifecycle action enum carries one
     expect(names).not.toContain('confirm')
     expect(actions).not.toContain('confirm')
+    // The manage tool also owns the manual escape hatch for a stuck running card
+    expect(actions).toContain('settle')
   })
 })
 

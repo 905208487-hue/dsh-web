@@ -832,6 +832,34 @@ export class HostTaskLedger {
         this.document.tasks = [...result.tasks]
         break
       }
+      case 'settle': {
+        const task = this.document.tasks.find(item => item.id === action.taskId)
+        if (task === undefined) throw new Error('task not found')
+        if (task.archivedAt !== undefined) throw new Error('archived task is read-only')
+        if (!task.executions.some(entry => entry.endedAt === undefined)) throw new Error('task has no open execution')
+        // Force-close the executions this card governs. The verdict is
+        // 'cancelled', never 'succeeded': a card whose execution produced no
+        // evidence of a completed turn must not be recorded as finished work,
+        // and a cancelled settlement returns the card to the todo column so the
+        // operator can run it again. Nothing else clears a running card: move,
+        // archive and delete all refuse one, which is what made a stuck card
+        // unrecoverable from the board.
+        const reason = 'execution closed manually by '
+          + (initiator === undefined || initiator === '' ? 'the operator' : initiator)
+          + ': no verdict was recorded'
+        for (const member of cascadeTargets(this.document.tasks, action.taskId, this.maxSubtaskDepth)) {
+          for (const execution of member.executions) {
+            if (execution.endedAt !== undefined) continue
+            this.document.tasks = this.document.tasks.map(item => item.id !== member.id
+              ? item
+              : settleExecution(item, execution.id, 'cancelled', now, reason))
+          }
+        }
+        // Fold whatever became ready in the same action: an ancestor whose last
+        // member this closed leaves the running column with it.
+        this.finalizeReadyRuns(false)
+        break
+      }
       case 'restore': {
         if (this.subtreeHasOpenExecution(action.taskId)) throw new Error('running task cannot be restored')
         const result = applyRestoreTask(this.document.tasks, action.taskId, now, this.maxSubtaskDepth)

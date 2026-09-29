@@ -338,18 +338,19 @@ function buildManageTool(host: TaskBoardToolHost): ToolDefinition {
   return defineTool({
     name: 'task_board_manage',
     description: [
-      'Move, archive, restore, or delete one task board card.',
+      'Move, archive, restore, delete, or settle one task board card.',
       'move-todo and move-backlog are the manual column moves; a running card cannot be moved.',
+      'settle force-closes the open execution of a card the board can no longer observe (a stuck running card) and records it cancelled with the caller as the reason, so the card returns to the todo column and can be run again.',
       'archive takes the whole subtask tree off the board and is refused while any member has an unsettled execution; restore brings the task, its ancestors and its subtree back; delete removes one card and is refused while it still has subtasks (detach or delete them first) or while it runs.',
       'It cannot confirm a permission binding: the confirmation gate is a human act performed in the board UI.',
-      'Triggers: 任务看板, task board, 看板, 归档, archive, 删除任务, delete task, 移动任务, move task.',
+      'Triggers: 任务看板, task board, 看板, 归档, archive, 删除任务, delete task, 移动任务, move task, 卡住, stuck, 强制结算, settle.',
     ].join(' '),
     parameters: {
       taskId: { type: 'string', required: true, description: 'The task to act on.' },
       action: {
         type: 'string',
         required: true,
-        enum: ['move-todo', 'move-backlog', 'archive', 'restore', 'delete'],
+        enum: ['move-todo', 'move-backlog', 'archive', 'restore', 'delete', 'settle'],
         description: 'The lifecycle operation to perform.',
       },
     },
@@ -360,6 +361,7 @@ function buildManageTool(host: TaskBoardToolHost): ToolDefinition {
         'move-todo': { kind: 'move', taskId: args.taskId, status: 'todo' },
         'move-backlog': { kind: 'move', taskId: args.taskId, status: 'backlog' },
         archive: { kind: 'archive', taskId: args.taskId },
+        settle: { kind: 'settle', taskId: args.taskId },
         restore: { kind: 'restore', taskId: args.taskId },
         delete: { kind: 'delete', taskId: args.taskId },
       }

@@ -297,6 +297,26 @@ describe('Agent Team runs', () => {
     expect(tasks.find(task => task.id === 'a')?.executions.at(-1)?.result).toBe('succeeded')
   })
 
+  it('operator settles a stuck running card and it returns to the todo column', () => {
+    // Given a cascade whose executions the Host can no longer observe
+    const ledger = new HostTaskLedger(tempRoot(), () => NOW)
+    seedTree(ledger)
+    const runs = ledger.applyRequest('run-1', { kind: 'run', taskId: 'root' }).runs ?? []
+    expect(runs).toHaveLength(3)
+
+    // When the operator force-closes the run
+    ledger.applyRequest('settle-1', { kind: 'settle', taskId: 'root' }, 'session-operator')
+
+    // Then nothing is left running, the verdict is cancelled rather than
+    // succeeded, the manual reason is recorded, and the cards can run again
+    const tasks = ledger.state().tasks
+    expect(tasks.every(task => task.status !== 'running')).toBe(true)
+    expect(tasks.find(task => task.id === 'root')?.status).toBe('todo')
+    expect(tasks.find(task => task.id === 'a')?.executions.at(-1)?.result).toBe('cancelled')
+    expect(tasks.find(task => task.id === 'root')?.executions.at(-1)?.error).toContain('closed manually by session-operator')
+    expect(() => ledger.applyRequest('rerun-1', { kind: 'rerun', taskId: 'root' })).not.toThrow()
+  })
+
   it('operator plain run keeps every member on its own independent session', () => {
     // Given a root without the opt-in
     const ledger = new HostTaskLedger(tempRoot(), () => NOW)
