@@ -22,12 +22,20 @@ test('copies cover the settings trio for all consumers plus host and http helper
   // the copy-count buckets below match on forward slashes.
   const entries = copyEntries().map(entry => ({ ...entry, target: entry.target.replaceAll('\\', '/') }))
   // The total is every generated copy in the manifest; the single-instance
-  // guard alone contributes one mount-once.ts per host half (15 today). The
+  // guard alone contributes one mount-once.ts per host half (13 today). The
   // buckets below split the same set by target location, and what neither
-  // bucket holds is the package-root test setup (4 today).
+  // bucket holds is the package-root test setup (5 today) plus the per-package
+  // http.ts and console-output.ts copies. The settings bucket is the card trio
+  // plus the entry-bound form fallback, the latter one per package whose card
+  // binds a family namespace (6 today). Every family panel now renders through
+  // the native layout seats, so the panel-mount-core and sidebar-entry-core
+  // copies are gone and body-mutations serves only the aggregate shell and the
+  // usage card. run-guarded.ts is not synced here: no in-repo package imports
+  // it (the satellite repositories that do carry their own copies), so only the
+  // shared source and its spec remain in this repository.
   assert.equal(entries.length, 96)
   const clientTrio = entries.filter(entry => entry.target.includes('/src/client/'))
-  assert.equal(clientTrio.length, 40)
+  assert.equal(clientTrio.length, 39)
   const hostCopies = entries.filter(entry => entry.target.includes('/src/host/')
     || entry.target.includes('/src/dsh-home.ts')
     || entry.target.includes('/src/mount-once.ts')
@@ -35,7 +43,7 @@ test('copies cover the settings trio for all consumers plus host and http helper
     || entry.target.includes('/src/pair-access.ts')
     || entry.target.includes('/src/agent/')
     || entry.target.endsWith('/packages/dsh-task-board/src/http.ts'))
-  assert.equal(hostCopies.length, 46)
+  assert.equal(hostCopies.length, 45)
 })
 
 test('checkSync detects drift and applySync repairs it', async () => {
@@ -48,10 +56,9 @@ test('checkSync detects drift and applySync repairs it', async () => {
     await writeFile(join(sourceDir, 'PluginSettingsCard.tsx'), 'export const card = 1' + String.fromCharCode(10))
     await writeFile(join(sourceDir, 'settings-card.module.css'), '.card { color: red }' + String.fromCharCode(10))
     await writeFile(join(sourceDir, 'plugin-card-seat.ts'), 'export const seat = 1' + String.fromCharCode(10))
+    await writeFile(join(sourceDir, 'settings-entry-form.ts'), 'export const entry = 1' + String.fromCharCode(10))
     await writeFile(join(root, 'shared', 'client', 'telemetry.ts'), 'export const beat = 1' + String.fromCharCode(10))
     await writeFile(join(root, 'shared', 'client', 'sse-leader.ts'), 'export const leader = 1' + String.fromCharCode(10))
-    await writeFile(join(root, 'shared', 'client', 'sidebar-entry-core.ts'), 'export const sidecore = 1' + String.fromCharCode(10))
-    await writeFile(join(root, 'shared', 'client', 'panel-mount-core.ts'), 'export const panelcore = 1' + String.fromCharCode(10))
     await writeFile(join(root, 'shared', 'client', 'body-mutations.ts'), 'export const hub = 1' + String.fromCharCode(10))
     await writeFile(join(root, 'shared', 'client', 'main-session.ts'), 'export const main = 1' + String.fromCharCode(10))
     const hostDir = join(root, 'shared', 'host')

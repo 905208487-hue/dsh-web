@@ -1,15 +1,18 @@
 import type { TaskUpdatePatch } from './core/use-cases/task-update.ts'
 import { isTaskPermission, isTaskStatus, isTaskTagList, type NewTaskInput, type TaskPermission, type TaskRecord, type TaskStatus } from './core/tasks.ts'
 import { parseLedger } from './core/store.ts'
+import { isValidTimeZone } from './core/schedule.ts'
 import { sanitizeFreezeSnapshot, type FreezeSnapshot } from './core/freeze-snapshot.ts'
 import { sanitizeHandover, type TaskHandoverInput } from './core/handover.ts'
 
 /** Freeze payload carried by create/update actions after the gate (redacted in place). */
 type FreezePayload = FreezeSnapshot & { redacted?: boolean; frozenBy?: string }
 
-export const TASK_BOARD_SCHEMA_VERSION = 3 as const
-/** Ledger documents written before v3; loaded once and migrated on startup. */
-export const TASK_BOARD_LEGACY_SCHEMA_VERSION = 2 as const
+export const TASK_BOARD_SCHEMA_VERSION = 4 as const
+/** Ledger documents written before v4; loaded once and migrated on startup. */
+export const TASK_BOARD_LEGACY_SCHEMA_VERSION = 3 as const
+/** Ledger documents written before v3; migrated through the v3 normalization too. */
+export const TASK_BOARD_OLDER_SCHEMA_VERSION = 2 as const
 export const TASK_BOARD_API_PREFIX = '/api/task-board'
 
 export type PowerPhase = 'disabled' | 'idle' | 'acquiring' | 'active' | 'error' | 'unsupported'
@@ -101,7 +104,8 @@ export type TaskBoardAction =
   | { kind: 'move'; taskId: string; status: TaskStatus }
   | { kind: 'archive'; taskId: string }
   | { kind: 'restore'; taskId: string }
-  | { kind: 'set-schedule'; taskId: string; patch: { enabled?: boolean; cron?: string } }
+  | { kind: 'settle'; taskId: string }
+  | { kind: 'set-schedule'; taskId: string; patch: { enabled?: boolean; cron?: string; timeZone?: string | null } }
   | { kind: 'run'; taskId: string }
   | { kind: 'rerun'; taskId: string }
   | { kind: 'confirm-permission'; taskId: string }
@@ -154,6 +158,8 @@ function validImportedKnownFields(value: Record<string, unknown>): boolean {
     const schedule = record(value.schedule)
     if (schedule === undefined || typeof schedule.enabled !== 'boolean' || typeof schedule.cron !== 'string') return false
     if (!optionalFiniteNumber(schedule.nextRunAt) || !optionalFiniteNumber(schedule.lastTriggeredAt)) return false
+    if (schedule.timeZone !== undefined
+      && (typeof schedule.timeZone !== 'string' || !isValidTimeZone(schedule.timeZone))) return false
   }
   if (value.executions !== undefined) {
     if (!Array.isArray(value.executions)) return false
@@ -199,6 +205,7 @@ function importedTask(value: unknown): TaskRecord | undefined {
       schedule: {
         enabled: task.schedule.enabled,
         cron: task.schedule.cron,
+        ...(task.schedule.timeZone === undefined ? {} : { timeZone: task.schedule.timeZone }),
         nextRunAt: task.schedule.nextRunAt,
         lastTriggeredAt: task.schedule.lastTriggeredAt,
       },
@@ -210,6 +217,7 @@ function importedTask(value: unknown): TaskRecord | undefined {
     ...(task.mode === undefined ? {} : { mode: task.mode }),
     ...(task.permission === undefined ? {} : { permission: task.permission }),
     ...(task.reuseSession === undefined ? {} : { reuseSession: task.reuseSession }),
+    ...(task.goalRun === undefined ? {} : { goalRun: task.goalRun }),
     ...(task.archivedAt === undefined ? {} : { archivedAt: task.archivedAt }),
     ...(task.freeze === undefined ? {} : { freeze: task.freeze }),
     ...(task.handover === undefined ? {} : { handover: task.handover }),
@@ -247,30 +255,36 @@ function handoverPayload(value: unknown): TaskHandoverInput | undefined {
 
 function createInput(value: unknown): value is NewTaskInput {
   const input = record(value)
-  if (input === undefined || !exactKeys(input, ['title', 'description', 'prompt', 'parentId', 'workspaceId', 'mode', 'permission', 'schedule', 'freeze', 'handover', 'model', 'reuseSession', 'teamRun', 'tags'])) return false
+  if (input === undefined || !exactKeys(input, ['title', 'description', 'prompt', 'parentId', 'workspaceId', 'mode', 'permission', 'schedule', 'freeze', 'handover', 'model', 'reuseSession', 'teamRun', 'goalRun', 'tags'])) return false
   if (input.parentId !== undefined && (typeof input.parentId !== 'string' || input.parentId.trim() === '')) return false
   if (typeof input.title !== 'string' || typeof input.description !== 'string' || typeof input.prompt !== 'string') return false
   if (!optionalString(input.workspaceId) || !optionalString(input.mode) || !optionalString(input.model)) return false
   if (input.reuseSession !== undefined && typeof input.reuseSession !== 'boolean') return false
   if (input.teamRun !== undefined && typeof input.teamRun !== 'boolean') return false
+  if (input.goalRun !== undefined && typeof input.goalRun !== 'boolean') return false
   if (input.permission !== undefined && !isTaskPermission(input.permission)) return false
   if (input.tags !== undefined && !isTaskTagList(input.tags)) return false
   if (input.freeze !== undefined && freezePayload(input.freeze) === undefined) return false
   if (input.handover !== undefined && handoverPayload(input.handover) === undefined) return false
   if (input.schedule !== undefined) {
     const schedule = record(input.schedule)
-    if (schedule === undefined || !exactKeys(schedule, ['enabled', 'cron'])) return false
+    if (schedule === undefined || !exactKeys(schedule, ['enabled', 'cron', 'timeZone'])) return false
     if (typeof schedule.enabled !== 'boolean' || typeof schedule.cron !== 'string') return false
+    if (schedule.timeZone !== undefined
+      && (typeof schedule.timeZone !== 'string' || !isValidTimeZone(schedule.timeZone))) return false
   }
   return true
 }
 
 function updatePatch(value: unknown): boolean {
   const patch = record(value)
-  if (patch === undefined || !exactKeys(patch, ['title', 'description', 'prompt', 'workspaceId', 'mode', 'permission', 'freeze', 'handover', 'model', 'reuseSession', 'teamRun', 'tags'])) return false
+  if (patch === undefined || !exactKeys(patch, ['title', 'description', 'prompt', 'workspaceId', 'mode', 'permission', 'freeze', 'handover', 'model', 'reuseSession', 'teamRun', 'goalRun', 'tags'])) return false
   // null (or false) clears the reuse opt-in; only a real boolean is accepted.
   if (patch.reuseSession !== undefined && patch.reuseSession !== null && typeof patch.reuseSession !== 'boolean') return false
   if (patch.teamRun !== undefined && patch.teamRun !== null && typeof patch.teamRun !== 'boolean') return false
+  // The goal opt-in is tri-state: null/true return the card to its default
+  // (goal run), false pins a single plain turn.
+  if (patch.goalRun !== undefined && patch.goalRun !== null && typeof patch.goalRun !== 'boolean') return false
   for (const key of ['title', 'description', 'prompt', 'workspaceId', 'mode', 'model'] as const) {
     if (!optionalString(patch[key])) return false
   }
@@ -286,9 +300,13 @@ function updatePatch(value: unknown): boolean {
 function schedulePatch(value: unknown): boolean {
   const patch = record(value)
   return patch !== undefined
-    && exactKeys(patch, ['enabled', 'cron'])
+    && exactKeys(patch, ['enabled', 'cron', 'timeZone'])
     && (patch.enabled === undefined || typeof patch.enabled === 'boolean')
     && (patch.cron === undefined || typeof patch.cron === 'string')
+    // `null` clears the stored zone back to the Host zone; an unknown name is
+    // rejected here so the Host never has to guess at an unusable zone.
+    && (patch.timeZone === undefined || patch.timeZone === null
+      || (typeof patch.timeZone === 'string' && isValidTimeZone(patch.timeZone)))
 }
 
 export function parseActionEnvelope(value: unknown): TaskBoardActionEnvelope | undefined {
@@ -364,6 +382,7 @@ function parseEnvelopeAction(value: unknown): TaskBoardActionEnvelope | undefine
     case 'delete':
     case 'archive':
     case 'restore':
+    case 'settle':
     case 'run':
     case 'rerun':
       if (!exactKeys(action, ['kind', 'taskId'])) return undefined

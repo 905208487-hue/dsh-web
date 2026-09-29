@@ -690,4 +690,76 @@ describe('startMobileAdapt', () => {
       vi.useRealTimers()
     }
   })
+
+  it('user gets an overlay arriving while the layer is active picked up on the next tick', async () => {
+    // Given an active portrait layer with the sidebar collapsed, so the whale
+    // (the only portrait sidebar entry) is showing.
+    vi.useFakeTimers()
+    try {
+      media.portrait = true
+      media.coarse = true
+      setWidth(390)
+      const frame = document.createElement('div')
+      frame.className = 'app_frame'
+      frame.setAttribute('data-dsh-frame', '')
+      frame.setAttribute('data-sidebar-collapsed', '')
+      document.body.appendChild(frame)
+      const start = await freshStart()
+      start()
+      const whale = document.getElementById('dshRemoteWhale') as HTMLElement
+      await vi.advanceTimersByTimeAsync(600)
+      expect(whale.style.display).not.toBe('none')
+
+      // When an official overlay appears (a class whose token ends in _overlay).
+      const overlay = document.createElement('div')
+      overlay.className = 'pI_x6G_overlay'
+      document.body.appendChild(overlay)
+
+      // Then the whale yields to it within one tick, not after a TTL.
+      await vi.advanceTimersByTimeAsync(600)
+      expect(whale.style.display).toBe('none')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('user gets a header that appeared while the layer was reverted seated on the first tick back', async () => {
+    // Given an active layer whose tick has already learned that no header
+    // exists (a session that has not rendered one yet caches the miss).
+    vi.useFakeTimers()
+    try {
+      media.portrait = true
+      media.coarse = true
+      setWidth(390)
+      const start = await freshStart()
+      start()
+      await vi.advanceTimersByTimeAsync(600)
+      expect(document.body.classList.contains('dsh-remote-header-seated')).toBe(false)
+      const adapt = (window as unknown as { __dshRemoteAdapt?: { setEnabled: (on: boolean) => void } }).__dshRemoteAdapt
+
+      // When the layer is reverted — nothing observes the document from here on
+      // — and the header then appears inside that blind window.
+      adapt?.setEnabled(false)
+      const header = document.createElement('div')
+      header.className = 'chat_header'
+      const cluster = document.createElement('div')
+      cluster.className = 'chat_titleCluster'
+      const actions = document.createElement('div')
+      actions.className = 'chat_headerActions'
+      cluster.appendChild(actions)
+      const tabs = document.createElement('div')
+      tabs.className = 'chat_tabs'
+      tabs.innerHTML = '<button class="chat_tab">Chat</button>'
+      header.append(cluster, tabs)
+      document.body.appendChild(header)
+
+      // Then re-enabling seats it on the first tick rather than serving the
+      // absent verdict recorded before the observer gap.
+      adapt?.setEnabled(true)
+      await vi.advanceTimersByTimeAsync(600)
+      expect(document.body.classList.contains('dsh-remote-header-seated')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

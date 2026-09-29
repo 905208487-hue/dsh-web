@@ -63,6 +63,32 @@ describe('aggregate responsive compat contract', () => {
     expect(RESPONSIVE_CSS).not.toMatch(/#root\b/)
   })
 
+  it('user on the macOS desktop keeps window dragging and double-click zoom', () => {
+    // The official base stylesheet marks every direct body child as
+    // `-webkit-app-region: no-drag` ("html[data-platform=darwin]
+    // body>:not(#root)"). A body-level element spanning the viewport therefore
+    // subtracts the whole window from the macOS draggable region and cancels the
+    // official [data-window-drag] chrome rows along with it - the window stops
+    // dragging by its title bar and macOS stops running the system double-click
+    // action (zoom to fit the screen). `pointer-events: none` does not exempt an
+    // element from that computation, so the family's non-interactive body-level
+    // decorations (the skin center's fixed decoration layers and backdrop-blur
+    // veil, the aggregate's boot splash) must opt out declaratively.
+    // Given the aggregate compat stylesheet, when it is served on the desktop,
+    // then every non-interactive family overlay directly under body leaves the
+    // app-region computation alone.
+    const rule = RESPONSIVE_CSS.match(/html\[data-platform="darwin"\] body > :is\(([\s\S]*?)\)\s*\{([^}]*)\}/)
+    const selectors = rule?.[1] ?? ''
+    const declarations = rule?.[2] ?? ''
+    expect(selectors).toContain('[data-dsh-skin-layer]')
+    expect(selectors).toContain('[data-dsh-boot-splash]')
+    expect(selectors).toContain('[aria-hidden="true"]')
+    expect(declarations).toContain('-webkit-app-region: initial !important')
+    // Desktop-only: every other platform keeps the official computation.
+    expect(RESPONSIVE_CSS.match(/body > :is\(/g)).toHaveLength(1)
+    expect(RESPONSIVE_CSS).toContain('html[data-platform="darwin"] body > :is(')
+  })
+
   it('user on a phone with a home indicator keeps the frame inside the viewport', () => {
     // Given env(safe-area-inset-bottom) is content-box padding by default, when
     // it is non-zero, then 100dvh of CONTENT plus the inset would overflow the
@@ -187,6 +213,56 @@ describe('aggregate responsive compat contract', () => {
     document.querySelector('[data-dsh-frame]')?.removeAttribute('data-sidebar-collapsed')
     toggle.click()
     expect(clicked).toHaveBeenCalledTimes(2)
+    cleanup?.()
+  })
+
+  // #1716: a workspace group row and its row-actions menu are not selections.
+  // The group row toggles aria-expanded in place, so folding the drawer on that
+  // click reads as "the group will not open"; the same click on the row's
+  // ellipsis discarded the menu before it could be used.
+  it('operator tapping a group row or its actions keeps the mobile drawer open', () => {
+    document.body.innerHTML = `<main data-dsh-frame><aside data-pane="sidebar"><div data-slot="sidebar"><div><div><button data-dsh-responsive-part="sidebar-toggle">toggle</button></div></div>
+      <div class="hash_projectRow" role="treeitem" aria-expanded="true"><span>workspace</span>
+        <span class="hash_rowActions"><button aria-label="actions">dots</button><button aria-label="new session">plus</button></span>
+        <button class="hash_sessionRow" role="treeitem"><span>session inside</span></button>
+      </div>
+      <button class="hash_sessionRow" role="treeitem">session</button>
+    </div></aside><section data-pane="conversation"></section></main>`
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { callback(0); return 1 })
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const frame = document.querySelector<HTMLElement>('[data-dsh-frame]')!
+    const toggle = document.querySelector<HTMLButtonElement>('[data-dsh-responsive-part="sidebar-toggle"]')!
+    toggle.addEventListener('click', () => { frame.setAttribute('data-sidebar-collapsed', '') })
+    let cleanup: (() => void) | undefined
+    apply({ effect: (effect: () => (() => void) | void) => { cleanup = effect() ?? undefined } } as never)
+
+    // Given the drawer open on a narrow viewport with a group row that has a
+    // menu trigger and a new-session button beside its label
+    // When the operator taps the group row to expand it
+    document.querySelector<HTMLElement>('[class*="projectRow"] > span')!.click()
+    // Then the drawer stays open for the rows the expansion just revealed
+    expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(false)
+
+    // When the operator taps the row-actions menu trigger
+    document.querySelector<HTMLElement>('[class*="rowActions"] button')!.click()
+    // Then the drawer stays open so the menu can be used
+    expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(false)
+
+    // When the operator taps the group's new-session button
+    document.querySelectorAll<HTMLElement>('[class*="rowActions"] button')[1]!.click()
+    // Then the drawer folds, because that tap leaves this list for a new session
+    expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
+    frame.removeAttribute('data-sidebar-collapsed')
+
+    // When the operator taps a session row inside the group, the selection still folds
+    document.querySelector<HTMLElement>('[class*="projectRow"] [class*="sessionRow"]')!.click()
+    expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
+
+    // When the operator taps a top-level session row, the selection still folds
+    frame.removeAttribute('data-sidebar-collapsed')
+    document.querySelector<HTMLElement>('[class*="projectRow"] + [class*="sessionRow"]')!.click()
+    expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
     cleanup?.()
   })
 

@@ -679,11 +679,11 @@ html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] .orca-ch-dshWordmar
   transform: scale(1);
 }
 
-html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > :first-child:after {
+html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-orca-logo-row]:after {
   animation: .36s cubic-bezier(.22, 1, .36, 1) both orca-ch-orcaWordmarkScan;
 }
 
-html[data-dsh-skin="orca-link"] body:not([data-orca-sidebar-wide]) [data-dsh-surface="sidebar"] > :first-child > :first-child > button:first-of-type > svg, html[data-dsh-skin="orca-link"] body:not([data-orca-sidebar-wide]) [data-dsh-surface="sidebar"] > :first-child > :first-child > button:first-of-type [data-slot="sidebar.brand.mark"] svg {
+html[data-dsh-skin="orca-link"] body:not([data-orca-sidebar-wide]) [data-orca-logo-row] > button:first-of-type > svg, html[data-dsh-skin="orca-link"] body:not([data-orca-sidebar-wide]) [data-orca-logo-row] > button:first-of-type [data-slot="sidebar.brand.mark"] svg {
   opacity: 0;
 }
 
@@ -724,12 +724,25 @@ html[data-dsh-skin="orca-link"] :is([data-pane="sidebar"], [data-dsh-surface="si
   position: relative;
 }
 
-html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button[data-dsh-part="sidebar-entry"] {
+/* The shell's own panel list (nav: the official Plugins row and every
+   registered plugin row alike) is the one row container the sidebar pane
+   exposes, and the semantic adapter stamps data-dsh-part="sidebar-entry" on
+   the plugin rows alone -- the official row carries no third-party glyph, so a
+   row-level stage offset left that row inside the stage while its neighbour
+   was pushed down. Position the whole native list below the stage instead:
+   every row moves together, with or without a glyph, and the list keeps its
+   own taps above the New Session hit plane below (z-index 3 over 2). */
+html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > nav {
   z-index: 3;
   margin-top: calc(var(--orca-stage, 300px) - 116px);
 }
 
-html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child:has( > button[data-dsh-part="sidebar-entry"]) [class*="regionArea"], html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button[data-dsh-part="sidebar-entry"] ~ button[data-dsh-part="sidebar-entry"] {
+/* The browsing region carries its own stage offset (see the regionArea rule
+   further down); with the list already pushed below the stage that offset
+   would drop the region by a second full stage and open a dead band under the
+   list. Kept on the pane-level list, so it holds for a list whose rows carry
+   no adapter-stamped part. */
+html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child:has( > nav) [class*="regionArea"] {
   margin-top: 0;
 }
 
@@ -889,13 +902,18 @@ html[data-dsh-skin="orca-link"] .orca-ch-statusCharacter[data-orca-link-status="
   height: 18px;
 }
 
+/* The stock wide New Session control keeps its layout slot and its own click
+   handler; only its containing-block role moves, so the frame and the hit
+   plane below can be placed in the pane's own geometry exactly like the status
+   character, instead of riding the button's 38px flow slot (a host that moves
+   that slot drifted the frame off the art it frames). The pseudo-elements
+   carry the stacking rung the button gave up. */
 html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]) {
-  z-index: 2;
   box-shadow: none;
   color: #0000;
   background: none;
   border-color: #0000;
-  position: relative;
+  position: static;
   overflow: visible;
 }
 
@@ -905,24 +923,39 @@ html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="
 }
 
 html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]):before {
-  height: calc(var(--orca-stage, 300px) - 60px);
+  z-index: 2;
+  top: 58px;
+  left: 22px;
+  width: calc(var(--orca-sidebar-art-width, 280px) - 30px);
+  /* 58 + (stage - 174) = stage - 116: the plane ends exactly where the panel
+     list is pushed to (the list's own `margin-top`), so no point of any plugin
+     row can reach this button (issue #1743). The painted character still owns
+     the full stage; only the hit surface is clipped to the free band. */
+  height: calc(var(--orca-stage, 300px) - 174px);
   content: "";
-  /* Decoration only: the frame is invisible until hover, but as a real box it
-     would swallow every tap/click in the sidebar stage area (the session list
-     sits inside it) and route them to the New Session button. */
-  pointer-events: none;
+  /* The hit plane is the stage's own box, the one the status character paints:
+     every point of the area the skin presents as the new-session stage reaches
+     the button's click handler, starting at the pane top the way the artwork
+     does.
+
+     It must stop where the PANEL LIST starts, not at the stage seam. The list
+     is offset to `stage - 116px` while the painted stage reaches `stage`, so a
+     plane sized to the artwork swallowed the first rows of the list: their own
+     boxes sit above it, but the plane is the ::before of a sibling that keeps
+     the pane's child z-index, so a click landing on a row's lower half reached
+     the New Session button instead of opening the panel (issue #1743). Ending
+     the plane at the list's own offset keeps every point of the list its own. */
+  cursor: pointer;
   opacity: 0;
   background: linear-gradient(var(--orca-blue), var(--orca-blue)) left top / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) left top / 1px 18px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right top / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right top / 1px 18px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) left bottom / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) left bottom / 1px 18px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right bottom / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right bottom / 1px 18px no-repeat;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--orca-blue) 12%, transparent);
   transition: opacity .16s;
   position: absolute;
-  top: -14px;
-  left: -14px;
-  right: -14px;
 }
 
 html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]):after {
-  top: calc(var(--orca-stage, 300px) - 86px);
+  top: calc(58px + var(--orca-stage, 300px) - 174px - 12px);
+  left: calc(22px + var(--orca-sidebar-art-width, 280px) - 30px - 13px);
   content: "";
   pointer-events: none;
   background: var(--orca-blue);
@@ -932,7 +965,6 @@ html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="
   height: 9px;
   transition: opacity .16s, transform .16s;
   position: absolute;
-  right: -10px;
 }
 
 html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]):hover:before, html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]):focus-visible:before {
@@ -1489,7 +1521,7 @@ html[data-dsh-skin="orca-link"] [data-dsh-surface="sidebar"] > :first-child > .o
   transition: top .18s cubic-bezier(.16, 1, .3, 1), border-color .16s, background-color .16s, color .16s, box-shadow .16s;
   display: flex;
   position: absolute;
-  top: 55px;
+  top: calc(55px + var(--orca-shell-top-inset, 0px));
   left: 50%;
   transform: translate(-50%);
   box-shadow: 0 5px 12px #1b273a24;
@@ -1501,7 +1533,7 @@ html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="
   gap: 4px;
   padding: 1px 5px;
   font-size: 7px;
-  top: 46px;
+  top: calc(46px + var(--orca-shell-top-inset, 0px));
   left: 4px;
   transform: none;
 }
@@ -2072,8 +2104,21 @@ html[data-dsh-skin="orca-link"] [data-orca-link-todo-progress-cell="8"] {
     margin-top: 0;
   }
 
-  html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button[data-dsh-part="sidebar-entry"] {
+  html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > nav {
     margin-top: 0;
+  }
+
+  /* The wide stage is retired at this width (its pane decoration and the
+     status character are display:none above, and the list keeps no stage
+     offset), but the button's stage-sized hit plane is not part of that
+     display:none group: left live it would keep covering the browsing region
+     the list has just moved back up into -- 88px of it for the default
+     two-row list at the 300px stage. Give the pseudo back the inert
+     decoration role it held before the wide stage took the hit surface.
+     pointer-events over height:0 because the hover frame itself is not this
+     block's business: zeroing the box would silently erase it here. */
+  html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]):before {
+    pointer-events: none;
   }
 
   html[data-dsh-skin="orca-link"] body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] [class*="regionArea"]:before, html[data-dsh-skin="orca-link"] .orca-ch-spine, html[data-dsh-skin="orca-link"] .orca-ch-signalChip, html[data-dsh-skin="orca-link"] .orca-ch-statusCharacter, html[data-dsh-skin="orca-link"] .orca-ch-pricingLight, html[data-dsh-skin="orca-link"] body[data-orca-scene="hero"] .orca-ch-standby {
@@ -2086,7 +2131,7 @@ html[data-dsh-skin="orca-link"] [data-orca-link-todo-progress-cell="8"] {
     transition: none;
   }
 
-  html[data-dsh-skin="orca-link"] [data-dsh-surface="sidebar"] > :first-child > :first-child:after, html[data-dsh-skin="orca-link"] .orca-ch-signalDot, html[data-dsh-skin="orca-link"] [data-orca-link-icon="spinner"] [data-orca-link-spinner-seq], html[data-dsh-skin="orca-link"] [data-orca-link-icon="todo-progress"] [data-orca-link-todo-progress-cell], html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > :first-child, html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > [role="dialog"], html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > [role="dialog"]:before, html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > [role="dialog"]:after, html[data-dsh-skin="orca-link"] [data-phase="hero"] [class*="headlineText"]:after, html[data-dsh-skin="orca-link"] [data-composer-seat][data-orca-composer-entering], html[data-dsh-skin="orca-link"] [data-orca-composer-ghost], html[data-dsh-skin="orca-link"] [data-composer-seat][data-orca-composer-restoring], html[data-dsh-skin="orca-link"] [data-orca-composer-restore] {
+  html[data-dsh-skin="orca-link"] [data-orca-logo-row]:after, html[data-dsh-skin="orca-link"] .orca-ch-signalDot, html[data-dsh-skin="orca-link"] [data-orca-link-icon="spinner"] [data-orca-link-spinner-seq], html[data-dsh-skin="orca-link"] [data-orca-link-icon="todo-progress"] [data-orca-link-todo-progress-cell], html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > :first-child, html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > [role="dialog"], html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > [role="dialog"]:before, html[data-dsh-skin="orca-link"] body[data-orca-settings-open] [data-slot="sidebar.settings"] > [role="presentation"] > [role="dialog"]:after, html[data-dsh-skin="orca-link"] [data-phase="hero"] [class*="headlineText"]:after, html[data-dsh-skin="orca-link"] [data-composer-seat][data-orca-composer-entering], html[data-dsh-skin="orca-link"] [data-orca-composer-ghost], html[data-dsh-skin="orca-link"] [data-composer-seat][data-orca-composer-restoring], html[data-dsh-skin="orca-link"] [data-orca-composer-restore] {
     animation: none;
   }
 

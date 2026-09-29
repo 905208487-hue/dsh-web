@@ -14,6 +14,11 @@ declare module '@linxin666/dsh-client-ui-plugin-manager/client' {
   export const inject: readonly string[] | undefined
 }
 
+declare module '@linxin666/dsh-client-ui-market/client' {
+  export const apply: unknown
+  export const inject: readonly string[] | undefined
+}
+
 declare module '@linxin666/dsh-client-ui-task-board/client' {
   export const apply: unknown
   export const inject: readonly string[] | undefined
@@ -25,6 +30,11 @@ declare module '@linxin666/dsh-client-ui-git-graph/client' {
 }
 
 declare module '@linxin666/dsh-remote-web-ui/client' {
+  export const apply: unknown
+  export const inject: readonly string[] | undefined
+}
+
+declare module '@linxin666/dsh-update/client' {
   export const apply: unknown
   export const inject: readonly string[] | undefined
 }

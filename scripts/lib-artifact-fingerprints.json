@@ -1,4 +1,5 @@
 {
+  "packages/dsh-market": "8b0657c3e1d330d5ddeeb87f00ed4fcd07d65bac862e8491bcaea7f42c9c8116",
   "packages/dsh-recall": "5538ad1e8d241abbce6b5081c0f97f1dc426886bb25d22130fbb29d79a1d8093",
-  "packages/dsh-web-all": "8db5d002cee8354726d9b604394b176423f98248ee56c2088ab9e7667f81c82a"
+  "packages/dsh-web-all": "f90982b18ff850ad3cd4fa8cf91b8e323ffafdf8aff300fb4d29d60e3201b9ae"
 }

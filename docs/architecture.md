@@ -32,12 +32,10 @@ flowchart TB
 ```text
 dsh-web/
 ├── packages/            # 插件 monorepo：功能插件与聚合包 dsh-web-all（皮肤/宠物/社区索引已迁出）
-│   ├── <name>/          # 独立 cordis bundle 包（host + client 两半区）
-│   └── skins/           # skin-center：唯一皮肤包，skins/ 下为纯资产皮肤目录
+│   └── <name>/          # 独立 cordis bundle 包（host + client 两半区）
 ├── shared/              # 跨包事实源：构建预设、平台模块表、host 与 client 运行时模块
 ├── scripts/             # 仓库维护工具（aggregate、sync-shared、market-build、verify-docs 等）
 ├── market/              # dsh-market.com：src 静态站源、shell 试穿壳、dist 提交产物、worker 边缘 API
-├── desktop/             # Electron 桌面应用（桌面启动场景）
 └── docs/                # 长期文档、发布说明与归档
 ```
 
@@ -79,7 +77,7 @@ flowchart LR
 flowchart LR
     A["aggregate.yml：patchFrom、deps、rows、inactive"] -- "node scripts/aggregate.mjs 生成" --> B["dsh-web-all：cordis.patch.yml + package.json"]
     B -- "dsh plugin --profile web add link" --> C["web profile（hoisted 布局）"]
-    C -- "web-ui-* 行逐条挂载" --> D["17 个家族子包（alpha 分支不挂外部插件行）"]
+    C -- "web-ui-* 行逐条挂载" --> D["14 个家族子包（alpha 分支不挂外部插件行）"]
     E["mount-once 防重：双源只注册一次"] -.-> D
     F["inactive：ssh、liangshen、skill-explorer 出厂默认关闭"] -.-> D
 ```
@@ -102,11 +100,11 @@ flowchart TB
 
 ## 皮肤系统
 
-皮肤是纯资产目录：事实源在独立仓 [dsh-skins](https://github.com/zhu1090093659/dsh-skins) 的 `skins/`（42 个内置皮肤，本仓以 submodule `satellites/dsh-skins` 的 gitlink 固定要读的提交），npm 包 `files` 白名单只随发默认皮肤 blue-fantasy，其余由创意工坊按需安装到 `$DSH_HOME/skins/<id>/`（同 id 遮蔽内置）。skin-repo 双源发现并做 v2 manifest fail-closed 校验；样式经 `transformSkinCss` 安全管线强制作用域到 `html[data-dsh-skin]` 并按白名单过滤；启用互斥由 `dsh-skin use` 客户端原子切换管理，不改 `cordis.patch.yml`。插件输出语义属性（`data-dsh-plugin` / `data-dsh-part`）才承诺完整换肤覆盖，契约见 [semantic-attrs-v1.md](https://github.com/zhu1090093659/dsh-skins/blob/main/contracts/semantic-attrs-v1.md)。
+皮肤是纯资产目录：事实源在独立仓 [dsh-skins](https://github.com/zhu1090093659/dsh-skins) 的 `skins/`（47 个内置皮肤，本仓以 submodule `satellites/dsh-skins` 的 gitlink 固定要读的提交），npm 包 `files` 白名单只随发默认皮肤 blue-fantasy，其余由创意工坊按需安装到 `$DSH_HOME/skins/<id>/`（同 id 遮蔽内置）。skin-repo 双源发现并做 v2 manifest fail-closed 校验；样式经 `transformSkinCss` 安全管线强制作用域到 `html[data-dsh-skin]` 并按白名单过滤；启用互斥由 `dsh-skin use` 客户端原子切换管理，不改 `cordis.patch.yml`。插件输出语义属性（`data-dsh-plugin` / `data-dsh-part`）才承诺完整换肤覆盖，契约见 [semantic-attrs-v1.md](https://github.com/zhu1090093659/dsh-skins/blob/main/contracts/semantic-attrs-v1.md)。
 
 ```mermaid
 flowchart LR
-    B["内置：独立仓 dsh-skins 的 skins/ 下 42 个皮肤目录（按 gitlink 固定提交）"] --> R["skin-repo 双源发现：v2 manifest fail-closed 校验"]
+    B["内置：独立仓 dsh-skins 的 skins/ 下 47 个皮肤目录（按 gitlink 固定提交）"] --> R["skin-repo 双源发现：v2 manifest fail-closed 校验"]
     U["$DSH_HOME/skins/：工坊按需安装，同 id 遮蔽内置"] --> R
     R -- "transformSkinCss：作用域 + 白名单" --> CSS["html data-dsh-skin 作用域样式"]
     CSS --> SW["运行时无刷新原子切换（dsh-skin use 互斥）"]
@@ -186,6 +184,7 @@ flowchart LR
 | dsh-git-graph | 空会话 git 分支选择器与提交图 |
 | dsh-ssh | 远程 SSH：PTY 终端、SFTP、端口转发与 agent 工具 |
 | dsh-remote-web-ui | 扫码配对远程访问与可撤销设备会话 |
+| dsh-update | 家族自更新：探测 npm 上的新版本并在当前 profile 内就地执行更新 |
 | dsh-session-archive | 会话归档：批量归档恢复、级联删除、自动清理策略 |
 | dsh-session-id | 侧栏底部 Session ID 面板（纯浏览器半区） |
 | dsh-usage | 用量统计：provider 余额、套餐配额与实时 token 流水 |

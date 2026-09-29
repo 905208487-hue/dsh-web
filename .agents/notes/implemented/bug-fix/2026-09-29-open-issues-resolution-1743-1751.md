@@ -1,0 +1,37 @@
+# Agent Note: Open issue resolution (#1743, #1744, #1745, #1746, #1748, #1751)
+
+Status: implemented
+
+## Problem
+
+Six issues in this batch, four of them located in this repository and two forwarded from dsh-deep-whale:
+
+1. **#1751** - "Remote access is forced on and every save fails." The Host wraps the whole `settings/mutate` in `hmr.runExclusive`; committing a volatile field dispatches `loader/volatile-update` synchronously, and `remote-web-ui`'s `sync()` wrote `cordis.patch.yml` on that same async context - the very file the HMR config watcher watches. The watcher's refresh re-entered `runExclusive` and rejected with `HMR transactions cannot be nested`, so the save failed. The earlier reply claimed the reason was rendered next to the red text; the reporter's screenshot shows it is not.
+2. **#1748** - `task_board_update` carried its clearing value inside `enum: [...TASK_PERMISSIONS, '']`. Forwarded through an OpenAI-compatible gateway to Gemini, the empty enum member is rejected and the whole request 400s - and the tool definitions ship with every request, so even a plain greeting fails.
+3. **#1744** - The SSH terminal always reported `connection error` inside the official desktop client while every HTTP surface of the same panel worked. The client built `ws://app/...` from `location.host`; the shell delivers its page from `dsh-app://app/` and its protocol handler forwards HTTP only - a custom scheme cannot carry a WebSocket upgrade.
+4. **#1743** - The ORCA LINK plugin entry in the top-left corner was unclickable. The wide-stage New Session hit plane was sized to the *painted* character (`stage - 66`) while the native panel list is pushed to `stage - 116`, so the plane covered the first ~108px of the list. The #1732 fix adjusted stacking only and never reconciled the two geometries.
+5. **#1745 / #1746** - Forwarded from dsh-deep-whale#160/#161: maid-atelier 0.3.2 on the Windows desktop renders no background illustration at all (a flat dark blue window), does not update `--maid-sidebar-width` after the sidebar collapses, and finds no anchor for its `[class*="titlebar"]` decoration.
+
+## Decision
+
+1. **Side effects that rewrite an HMR-watched file must leave the caller's async context (#1751)**: the LAN-bind block write and the firewall probes move into `applyLanBindWork`, reached only through `scheduleLanBindWork()` via `setImmediate`. `setImmediate` starts a fresh AsyncLocalStorage store, so the watcher-driven refresh lands outside the save's transaction. The assertion is idempotent (it compares before writing), so a coalesced second `sync()` writes nothing; the deferred value is re-read through `resolve()` at run time, so two toggles inside one tick settle on the last committed value. A throwing deferred run is logged, never surfaced - the save already answered and the settings card re-reads the live block on its own poll.
+2. **The clearing value leaves `enum` and becomes an exact `oneOf` branch (#1748)**: `permission` becomes `oneOf: [{ type: 'string', enum: [...TASK_PERMISSIONS] }, { type: 'string', const: '' }]`. Legal-value validation and the clear-to-session-default meaning both survive, while no `enum` carries an empty member and the gateway's Gemini forwarding stops being rejected.
+3. **Classify by the web schemes, not by the known shells (#1744)**: `terminalSocketUrl()` dials only on the schemes in `WEB_PAGE_PROTOCOLS` and returns `undefined` for anything else, so the client reports an actionable instruction (open the Web UI in a browser) instead of opening a socket that can only fail. The list describes the same fact as the remote channel's `isWebPageProtocol` and the update seat's `isApplicationDeliveredPage`; naming the web side covers whatever shell the official client ships next.
+4. **The hit plane stops at the list's start, not the stage seam (#1743)**: the wide `::before` height becomes `calc(var(--orca-stage, 300px) - 174px)`, so `58 + (stage - 174) = stage - 116` lands exactly on the `nav`'s own `margin-top`; the corner marker follows. The character still paints over the full stage - only the hit surface is clipped.
+5. **The background layer needs a stacking-context root, not a z-index (#1745 A / #1746)**: the skin paints an opaque backdrop on the root element, so the host's `backgroundMedia` layer (z-index: -2, appended to body) stops propagating and is painted as an ordinary element background, which happens after the negative-z layers - that is the entire cause of the invisible illustration, not a compositor problem. `body { isolation: isolate }` makes body its own stacking-context root: the body background returns to the canvas step and the -2 layer paints again, still under the character stage (z-index 0) and above the conversation panels. z-index is deliberately untouched, because raising it to 0 would put the layer over the conversation itself. The rule must stay on `body`: the skin-center `/patches` pipeline prefixes every selector with `html[data-dsh-skin="<id>"] `, so a `:root` rule compiles into a selector that can never match.
+6. **A collapsed width of 0 is a legitimate state (#1745 B)**: `applySidebarWidth` bails on `width < 0` instead of `width <= 0`. The official Windows implementation defines `collapsedWidth` as 0 under `data-windows-titlebar` (56 is the other form), so the early return froze `--maid-sidebar-width` and `data-maid-sidebar-size` at the last expanded value.
+7. **The titlebar decoration prefers the official stable attribute (#1745 C)**: `decorateTitlebarBrand` checks `html[data-windows-titlebar]` and takes `.frame` first, falling back to the hashed-class lookup. The desktop shell exposes no matchable class name and the web build has neither marker.
+
+## Consequences
+
+- Any settings save in remote access now succeeds; the LAN-bind managed block still takes effect when the profile next applies, and the card's `pendingRestart` meaning is unchanged.
+- The eight task-board tools no longer trigger a 400 when the tool list reaches Gemini through a compatible gateway, and clearing a permission binding still works.
+- The SSH terminal tab inside the desktop client states plainly that this page cannot carry a WebSocket and points at the browser, instead of a bare `connection error`.
+- Every plugin row in the ORCA LINK wide sidebar is clickable again, and the New Session stage hit area covers only the genuinely free band.
+- maid-atelier's palace background is visible on the desktop again, the collapsed sidebar returns to place, and the desktop titlebar brand is anchored on the official attribute.
+
+## Coverage gaps
+
+- #1743's geometry cannot be verified in jsdom (no layout); the assertions cover the declarations the browser applies and the relation between the two boxes. Frame-by-frame click verification still needs the reproducing environment.
+- The `isolation: isolate` direction for #1745/#1746 was measured effective by the reporter on the same host (the -2 layer paints again, the conversation is not covered, both maids render); this repository landed that reading without a separate reproduction.
+- The #1751 regression test asserts a placement rule (which functions touch the patch file and the firewall, and that deferral goes through `setImmediate`), not an end-to-end reproduction of a real HMR transaction.

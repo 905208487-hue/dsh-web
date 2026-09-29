@@ -71,6 +71,13 @@ const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringif
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/**
+ * start() folds the persisted ledger asynchronously, so a fixed sleep races
+ * the file read on a loaded runner. Wait for an outcome that depends on the
+ * load instead, bounded by vi.waitFor.
+ */
+const waitForPersistedLoad = (assert: () => void): Promise<void> => vi.waitFor(assert, { timeout: 2_000 })
+
 const requestHeaderEvent = (provider: string, model: string) => ({
   type: 'request/header',
   data: { header: { config: { provider, model } } },
@@ -153,7 +160,9 @@ describe('session fold → overview', () => {
     const session = {}
     fireSessionEvent(session, requestHeaderEvent('deepseek', 'm'))
     fireSessionEvent(session, usageEvent(50, 0))
-    await sleep(30)
+    await waitForPersistedLoad(() => {
+      expect(service.overview().usage.all?.from).toBe(localDateKey(dayAt(40).getTime()))
+    })
 
     const usage = service.overview().usage
     // The trend window caps at the last 30 recorded days; the whole-ledger
@@ -347,8 +356,9 @@ describe('DeepSeek real-spend watch', () => {
     // The accrual persists with the provider snapshots and revives on load.
     const revived = new UsageService(ctx, OPTIONS)
     revived.start()
-    await sleep(30)
-    expect(revived.overview().usage.observedSpend?.cny).toBeCloseTo(1.5)
+    await waitForPersistedLoad(() => {
+      expect(revived.overview().usage.observedSpend?.cny).toBeCloseTo(1.5)
+    })
     await revived.stop()
   })
 
@@ -493,10 +503,10 @@ describe('persistence', () => {
     const session = {}
     fireSessionEvent(session, requestHeaderEvent('deepseek', 'deepseek-v4-pro'))
     fireSessionEvent(session, usageEvent(50, 0))
-    await sleep(30)
-
     // Replacement-on-load would drop the in-window fold (100); the merge keeps both (150).
-    expect(service.overview().usage.today.totals.inputTokens).toBe(150)
+    await waitForPersistedLoad(() => {
+      expect(service.overview().usage.today.totals.inputTokens).toBe(150)
+    })
     await service.stop()
   })
 
@@ -538,11 +548,137 @@ describe('persistence', () => {
     const { ctx } = makeCtx()
     const service = new UsageService(ctx, { ...OPTIONS, retainDays: 180 })
     service.start()
-    await sleep(30)
-    expect(service.overview().usage.days.map((day) => day.date)).toContain(localDateKey(twentyDaysAgo.getTime()))
+    await waitForPersistedLoad(() => {
+      expect(service.overview().usage.days.map((day) => day.date)).toContain(localDateKey(twentyDaysAgo.getTime()))
+    })
 
     service.applyOptions({ ...OPTIONS, retainDays: 7 })
     expect(service.overview().usage.days.map((day) => day.date)).toEqual([localDateKey(Date.now())])
     await service.stop()
   })
 })
+describe('DSH 0.1.7 foreign settings resolution (#1739)', () => {
+  it('operator sees apiKeyEnv for pi-ai provider resolved from settings.describe() with volatile unwrap', async () => {
+    // Given an OpenCode Go endpoint and DSH 0.1.7 SettingsForms describe providing volatile profiles
+    stubFetch(() => jsonResponse({
+      usage: {
+        rolling: { percent: 10, resetsAt: '2026-09-27T12:00:00Z' },
+      },
+    }))
+    const llm = {
+      listProviders: () => [{ id: 'opencode-go', name: 'OpenCode Go' }],
+      listConfigurableProviders: () => [],
+    }
+    const credentials = {
+      readRecord: async () => undefined,
+      resolve: async (ref: unknown) => {
+        if (ref === 'OPENCODE_GO_API_KEY') return { value: 'sk-opencode-secret' }
+        return undefined
+      },
+    }
+    const settings = {
+      describe: () => [
+        {
+          ns: 'llm-pi-ai',
+          value: {
+            providers: {
+              get: () => ({
+                'opencode-go': {
+                  apiKeyEnv: 'OPENCODE_GO_API_KEY',
+                  baseURL: 'https://opencode.ai/v1',
+                },
+              }),
+            },
+          },
+        },
+      ],
+    }
+    const { ctx } = makeCtx({ llm, credentials, settings })
+    const service = new UsageService(ctx, OPTIONS)
+
+    // When the poll cycle runs
+    await service.refresh()
+
+    // Then the credential resolves as env and plan windows are populated
+    const snapshot = service.overview().providers.find((p) => p.provider === 'opencode-go')
+    expect(snapshot?.credential).toBe('env')
+    expect(snapshot?.plan?.windows).toHaveLength(1)
+    await service.stop()
+  })
+
+  it('operator sees apiKeyEnv for pi-ai provider resolved from configEditor fallback', async () => {
+    // Given an OpenCode Go endpoint and profile configuration under configEditor
+    stubFetch(() => jsonResponse({
+      usage: {
+        rolling: { percent: 20, resetsAt: '2026-09-27T12:00:00Z' },
+      },
+    }))
+    const llm = {
+      listProviders: () => [{ id: 'opencode-go', name: 'OpenCode Go' }],
+      listConfigurableProviders: () => [],
+    }
+    const credentials = {
+      readRecord: async () => undefined,
+      resolve: async (ref: unknown) => {
+        if (ref === 'OPENCODE_GO_API_KEY') return { value: 'sk-opencode-editor' }
+        return undefined
+      },
+    }
+    const configEditor = {
+      configuration: () => [
+        {
+          entry: { options: { id: 'llm-pi-ai', name: '@deepseek-ai/dsh-llm-pi-ai' } },
+          inherited: {},
+          override: {
+            providers: {
+              'opencode-go': {
+                apiKeyEnv: 'OPENCODE_GO_API_KEY',
+              },
+            },
+          },
+        },
+      ],
+    }
+    const { ctx } = makeCtx({ llm, credentials, configEditor })
+    const service = new UsageService(ctx, OPTIONS)
+
+    // When the poll cycle runs
+    await service.refresh()
+
+    // Then the credential resolves as env from configEditor
+    const snapshot = service.overview().providers.find((p) => p.provider === 'opencode-go')
+    expect(snapshot?.credential).toBe('env')
+    await service.stop()
+  })
+
+  it('operator sees official balance excluded when deepseek baseURL is customized in llm-deepseek', async () => {
+    // Given a custom gateway baseURL declared for deepseek
+    stubFetch(() => jsonResponse(BALANCE_BODY))
+    const llm = {
+      listProviders: () => [{ id: 'deepseek', name: 'DeepSeek' }],
+      listConfigurableProviders: () => [],
+    }
+    const settings = {
+      describe: () => [
+        {
+          ns: 'llm-deepseek',
+          value: {
+            baseURL: 'https://custom-gateway.example/v1',
+          },
+        },
+      ],
+    }
+    const { ctx } = makeCtx({ llm, credentials: CREDENTIALS_ENV, settings })
+    const service = new UsageService(ctx, OPTIONS)
+
+    // When the poll cycle runs
+    await service.refresh()
+
+    // Then the balance is marked unsupported and not probed
+    const snapshot = service.overview().providers.find((p) => p.provider === 'deepseek')
+    expect(snapshot?.balanceSupported).toBe(false)
+    expect(snapshot?.balance).toBeUndefined()
+    await service.stop()
+  })
+})
+

@@ -4,23 +4,24 @@ dsh Web GUI 的 Host 权威多列任务看板。任务通过真实 DSH 会话执
 
 ## Host 账本、执行与调度
 
-- 权威账本固定为 `$DSH_HOME/task-board/ledger-v2.json`（文件名为历史沿用），当前 schema 为 `{ schemaVersion: 3, revision, tasks, scheduler }`；旧 v2 文档在 Host 启动时逐字段无损迁移为 v3 写回，迁移失败必须明确报错且保留原文件（不静默清零）；写入必须保持临时文件加原子 rename、损坏文件隔离和 revision 单调递增。
+- 权威账本固定为 `$DSH_HOME/task-board/ledger-v2.json`（文件名为历史沿用），当前 schema 为 `{ schemaVersion: 4, revision, tasks, scheduler }`；旧 v2/v3 文档在 Host 启动时逐字段无损迁移为 v4 写回（v4 为 `ScheduleRule.timeZone` 盖章 Host 时区），迁移失败必须明确报错且保留原文件（不静默清零）；写入必须保持临时文件加原子 rename、损坏文件隔离和 revision 单调递增。
 - 浏览器 `dsh.taskBoard.v1` 只用于一次性导入且必须保留；导入 marker 只能在 Host 确认后写。所有生产变更走 `protocol.ts` 的严格同源 action 协议，UI 不得先写未确认状态。
 - 手动与 cron 统一走 `HostExecutionRunner`。钉住的 workspace、agent preset、permission 任一失效都在任务 Prompt 前 fail closed；默认每次 execution 创建独立会话，任务开启 `reuseSession` 后可复用上一次会话——复用条件由 `core/session-reuse.ts` 唯一裁定：上一执行已结算、该 session 仍在名册中且空闲（名册未知一律不复用），复用时重新应用钉住的 permission/model 再入队 Prompt，不重命名、不新建。
+- 目标执行默认开启：任务未显式 `goalRun: false` 时，runner 先入队 Prompt，再在同一会话执行 `/goal <组合 Prompt>`（目标文本经 `goalObjective` 规避 `/goal` 自身的关键字语法）；`/goal` 被拒或部署没有命令派发器时只告警并照常按单回合执行。目标存活期间 `inspect` 读 `session/projections` 判定：目标 `active` 保持 pending、`blocked` 以目标自身原因判失败、`complete`/`paused`/无目标沿用回合判定；读取失败回退回合判定并告警，不得让读失败永久挂住执行。
 - 交接包三元组在执行时覆盖普通钉住字段；有效权限高于 `sessionDefaultPermission`（默认 `read-only`）的绑定必须先经 `confirm-permission` 动作人工确认（变更即重新武装），未确认卡片手动执行拒绝、cron 跳过并滚动 `nextRunAt`。
-- cron 使用 Host 本地时区和标准日期/星期 OR 语义。Host 首启或长暂停后的过期出现全部跳过；同任务 running 时不排队、不并发，只滚动下一触发点。
-- 重启恢复时，有 session id 的 running execution 继续观察；无 session id 的启动中断标为 cancelled，禁止自动重发。
+- cron 使用规则自身的 IANA 时区（`ScheduleRule.timeZone`，缺省跟随 Host 时区）：墙上时间由 `core/schedule.ts` 经 `Intl.DateTimeFormat` 在目标时区解析，夏令时空洞跳过、重复时刻取更早者；日期/星期遵循 Vixie 语义（两个字段都受限为 OR，其余组合为 AND）。账本 schema v4 迁移把 Host 时区盖到未存时区的规则上，使既有规则的触发时刻不随 `TZ` 变化移动。Host 首启或长暂停后的过期出现全部跳过；同任务 running 时不排队、不并发，只滚动下一触发点。
+- 重启恢复时，有 session id 的 running execution 继续观察；无 session id 的启动中断标为 cancelled，禁止自动重发。启动恢复与每次会话轮询都会先折叠已可裁决的运行：团队执行按 Lead 判定收口，成员全部结算的父子链一并终结（幂等，已折叠的运行不再写入）。会话历史读不到的 execution 不再等同「仍在进行」：名册已判定该会话空闲后仍连续读不到历史达到上限（24 次轮询，约 2 分钟）即带原因判失败，避免无限 pending 把卡片永久留在运行列。
 - 子任务层级由 Host 唯一裁定：`TaskRecord.parentId` 的深度上限是配置项 `maxSubtaskDepth`（1..3，默认 1），创建、`set-parent` 关联与导入修复共用 `src/core/subtask.ts` 的存在性/环/深度判定，浏览器只据此启停控件。执行一个任务会在同一 run group 内并发开启整棵子树的 execution；父任务在自己的回合与全部直接子任务都结算后才结算，任一成员失败则父任务失败，已在运行的任务不进入新的 run group（cron 同样），且运行中的参与者不能被 `set-parent` 改挂或解除关联——它的链接可能仍是该 run group 的父指针。子任务未单独设置的权限/模型在启动时按祖先链解析继承，继承来的权限连同提供它的祖先的人工确认戳一起生效；权限绝不在创建时复制到子任务卡片上（否则解除关联后会残留一张已确认的高权限根任务），workspace/模式/模型按用户看到的预填值存卡。
 
 ## Agent Team 执行（opt-in）
 
-- 任务级 `teamRun` 开关（默认关，详情页勾选；服务缺失时禁用）把一次执行从「每个成员各开一个会话」切换为「只开一个 Lead 会话 + 每个子任务一个 teammate」：Host 用 `ctx.agents.get(leadSessionId)` 取到 live Lead，调 `ctx.agentTeams.spawnTeammate(lead, { name, description, prompt, context: 'fresh', provider: teamProvider, signal })`，再把 teammate 会话 id 挂到该子任务的 execution 上，结算仍交给既有会话监视器。`agentTeams` 按可选服务解析（不注入）：缺失时手动执行直接拒绝（而不是静默退回级联），cron 路径把成员标为失败并写明原因。
-- 子树在这个模式下被压平成一个 Team（只有 Lead 能派生），teammate 名字取「标题 slug + run group 前 8 位」以保证同一 Team 内唯一且跨次执行不冲突；团队执行永远新建 Lead 会话，不复用旧会话。子任务自己钉住的（高于 `sessionDefaultPermission` 的）权限会被拒绝：teammate 运行在 Lead 会话环境里，无法承载该钉住值；继承自 Lead 的绑定仍按 Lead 的确认门判定。
+- 任务级 `teamRun` 开关（默认关，详情页勾选；服务缺失时禁用）把一次执行从「每个成员各开一个会话」切换为「只开一个 Lead 会话 + 每个子任务一个 teammate」：Host 用 `ctx.agents.get(leadSessionId)` 取到 live Lead，调 `ctx.agentTeams.spawnTeammate(lead, { name, description, prompt, context: 'fresh', provider: teamProvider, signal })`，再把 teammate 会话 id 挂到该子任务的 execution 上。结算不再只等会话监视器：teammate 是 Team 的常驻成员，回合结束后会话仍存活，因此看板读取它已完成的第一个回合（名册仍报该会话 running 也照读）；团队执行由 Lead 的判定统辖，Lead 自身结果落定后仍未报结果的成员一并按该判定结算，避免某个 teammate 不报结果而把整条链永久留在运行列。`agentTeams` 按可选服务解析（不注入）：缺失时手动执行直接拒绝（而不是静默退回级联），cron 路径把成员标为失败并写明原因。
+- 子树在这个模式下被压平成一个 Team（只有 Lead 能派生），teammate 名字取「标题 slug + 成员任务 id 的 4 位稳定标签 + run group 前 8 位」，以保证同一 Team 内唯一且跨次执行不冲突（slug 本身不唯一：纯中文标题会全部退化成同一个通用前缀，共享首个英文词的两个标题也会相撞；Agent Teams 对重名直接拒绝，只靠 slug 加 run group 会让同一次执行里第一个之后的 teammate 全部派生失败）；团队执行永远新建 Lead 会话，不复用旧会话。子任务自己钉住的（高于 `sessionDefaultPermission` 的）权限会被拒绝：teammate 运行在 Lead 会话环境里，无法承载该钉住值；继承自 Lead 的绑定仍按 Lead 的确认门判定。
 - 两种模式的 Prompt 都会说明本次运行的形态（哪些成员、各自名字/任务 id、可用工具），普通级联说「并发开启 N 个独立会话」，团队模式说「本会话是 Lead，以下成员是 teammate」。
 
 ## Agent 工具面
 
-- 八个模型可见工具 `task_board_list` / `task_board_get` / `task_board_create` / `task_board_update` / `task_board_set_parent` / `task_board_run` / `task_board_manage` / `task_board_schedule` 定义在 `src/host/agent-tools.ts`，经 `ctx.tools.register` 注册。它们只调用同一个 `TaskBoardHostService`（账本 action + 快照），不复制业务规则：fail closed 钉子、权限确认门、子任务深度门禁、运行中任务锁在工具面全部照旧生效。
+- 八个模型可见工具 `task_board_list` / `task_board_get` / `task_board_create` / `task_board_update` / `task_board_set_parent` / `task_board_run` / `task_board_manage` / `task_board_schedule` 定义在 `src/host/agent-tools.ts`，经 `ctx.tools.register` 注册。它们只调用同一个 `TaskBoardHostService`（账本 action + 快照），不复制业务规则：fail closed 钉子、权限确认门、子任务深度门禁、运行中任务锁在工具面全部照旧生效。`task_board_manage` 另有 `settle` 动作：把看板已无法观察的运行中卡片（含它辖下的成员 execution）强制结算为 cancelled，原因里记录调用者，卡片回到待办列，供人工/agent 解卡——移动、归档、删除都拒绝运行中的卡片，这是运行中卡片此前唯一的出口。
 - 注册跟随 `enabled` 主开关（关闭时不注册）；工具注册表按可选服务解析而不写入 `inject`，因此运行时不提供注册表的部署仍会挂载看板，只失去工具面（与可选 `llm` 的容忍度一致）。
 - 刻意不提供 `confirm-permission`：高于会话默认权限的绑定只能由人工在界面确认。工具面同样不接受命令、可执行路径或 shell 文本。
 - 工具描述是面向模型的英文文案（含中文触发词），不进 locales 字典；领域拒绝以 `ok:false` 值返回，便于模型自行纠正。

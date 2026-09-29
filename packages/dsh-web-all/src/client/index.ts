@@ -267,6 +267,28 @@ html:has([data-dsh-frame]) > body {
   width: 100%;
   overflow: hidden;
 }
+/* macOS window-drag guard. The official base stylesheet turns every DIRECT body
+   child into a "-webkit-app-region: no-drag" region (its selector spares only
+   the app's own root element), so a body-level element that spans the viewport
+   subtracts the whole window from the macOS draggable region and cancels the
+   official [data-window-drag] chrome rows with it: the window
+   can no longer be dragged by its title area, and macOS no longer runs the
+   system double-click action (zoom to fit the screen) there. "pointer-events:
+   none" does not exempt an element from that computation - only a declaration
+   of its own does. Family decorations are exactly such elements: the skin
+   center mounts its six fixed decoration layers and the backdrop-blur veil as
+   full-viewport body children and declares them non-interactive (aria-hidden,
+   pointer-events: none; decoration must never eat clicks). The "initial"
+   keyword is the initial value ("none"), which leaves the element and its whole
+   subtree out of the app-region computation; the declaration must be !important
+   because the official selector outranks this one. */
+html[data-platform="darwin"] body > :is(
+  [data-dsh-skin-layer],
+  [data-dsh-boot-splash],
+  [aria-hidden="true"]
+) {
+  -webkit-app-region: initial !important;
+}
 [data-dsh-frame] [data-dsh-responsive-part="composer"],
 [data-dsh-frame] [data-dsh-responsive-part="sidebar-toggle"],
   [data-dsh-frame] [data-dsh-responsive-part="menu"] { touch-action: manipulation; }
@@ -915,7 +937,7 @@ function installMobileSidebarDismiss(frame: HTMLElement): () => void {
     if (!(target instanceof Element)) return
     if (typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 768px)').matches) return
     const sidebar = frame.querySelector<HTMLElement>('[data-pane="sidebar"]')
-  const toggle = frame.querySelector<HTMLElement>('[data-dsh-responsive-part="sidebar-toggle"]')
+    const toggle = frame.querySelector<HTMLElement>('[data-dsh-responsive-part="sidebar-toggle"]')
     if (!frame.hasAttribute('data-sidebar-collapsed') && sidebar !== null && !sidebar.contains(target)) {
       event.preventDefault()
       event.stopPropagation()
@@ -923,7 +945,19 @@ function installMobileSidebarDismiss(frame: HTMLElement): () => void {
       return
     }
     if (target.closest('[data-dsh-responsive-part="sidebar-toggle"]') !== null) return
-    if (target.closest('[data-dsh-part="sidebar-entry"], [role="treeitem"]') === null) return
+    // A group row toggles its own aria-expanded in place, so folding the drawer
+    // on that tap hides the rows it just revealed; its menu trigger opens a
+    // menu the fold would discard (issue #1716). The group row's trailing
+    // new-session button navigates away and keeps the fold, matching the
+    // remote package's own workspace-row rule.
+    const sessionRow = target.closest('[class*="sessionRow"]')
+    if (sessionRow === null && target.closest('[class*="projectRow"]') !== null) {
+      const actions = target.closest('[class*="rowActions"]')
+      if (actions === null) return
+      const buttons = actions.querySelectorAll('button')
+      if (target.closest('button') !== buttons[buttons.length - 1]) return
+    }
+    if (sessionRow === null && target.closest('[data-dsh-part="sidebar-entry"]') === null && target.closest('[role="treeitem"]') === null) return
     if (raf !== 0) cancelAnimationFrame(raf)
     raf = requestAnimationFrame(() => {
       raf = 0

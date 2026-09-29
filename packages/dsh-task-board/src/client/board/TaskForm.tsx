@@ -4,7 +4,7 @@
  * NewTaskModal and the EditTaskModal. State stays in the owning modal; these
  * are controlled components.
  */
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { TAG_NAME_MAX_LENGTH, TAG_PROMPT_MAX_LENGTH, TASK_TAG_LIMIT, normalizeTags, type TaskTag } from '../../core/tasks.ts'
 import { t } from '../locales.ts'
 import css from '../board.module.css'
@@ -45,7 +45,7 @@ export function ModalShell({
       >
         <h2 className={css.modalTitle}>{title}</h2>
 
-        {children}
+        <div className={css.modalBody}>{children}</div>
 
         {error !== undefined && <p className={css.formError}>{error}</p>}
 
@@ -69,6 +69,51 @@ export function ModalShell({
         </footer>
       </form>
     </div>
+  )
+}
+
+/**
+ * One collapsible region of a task form (create/edit dialog UX): the form
+ * groups its configuration into a few regions instead of stacking every field
+ * in one long column, so a normal-sized dialog needs no scrollbar. A collapsed
+ * region keeps a one-line summary of the values it holds, so nothing is hidden
+ * without a trace; a region holding a blocking error is forced open by its
+ * owner (forceOpen) rather than reporting the error out of sight.
+ */
+export function CollapsibleSection({
+  title,
+  summary,
+  defaultOpen = false,
+  forceOpen = false,
+  children,
+}: {
+  title: string
+  /** One-line value preview rendered only while the region is collapsed. */
+  summary?: string | undefined
+  /** Whether the region starts expanded (the owner's default layout). */
+  defaultOpen?: boolean
+  /** Open regardless of the stored state: an error inside must stay visible. */
+  forceOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const expanded = forceOpen || open
+  return (
+    <section className={css.formSection} data-dsh-part="form-section" data-open={expanded ? 'true' : undefined}>
+      <button
+        type="button"
+        className={css.formSectionHeader}
+        aria-expanded={expanded}
+        onClick={() => { setOpen(value => !value) }}
+      >
+        <span className={css.formSectionChevron} aria-hidden="true" />
+        <span className={css.formSectionTitle}>{title}</span>
+        {!expanded && summary !== undefined && summary !== '' && (
+          <span className={css.formSectionSummary}>{summary}</span>
+        )}
+      </button>
+      {expanded && <div className={css.formSectionBody}>{children}</div>}
+    </section>
   )
 }
 
@@ -106,7 +151,7 @@ export function TaskContentFields({
         <span className={css.fieldLabel}>{t('new.description')}</span>
         <textarea
           className={css.input}
-          rows={3}
+          rows={2}
           value={description}
           placeholder={t('new.descriptionPlaceholder')}
           onChange={event => onDescriptionChange(event.target.value)}

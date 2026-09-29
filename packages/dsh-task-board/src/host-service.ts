@@ -38,20 +38,82 @@ export interface TaskBoardTeamDispatcher {
   spawn(input: TeamSpawnInput): Promise<TeamSpawnResult>
 }
 
+/** Session-roster poll cadence — the one recurring Host timer this service still holds. */
 const SESSION_POLL_MS = 5_000
-const SCHEDULE_TICK_MS = 30_000
-const RESUME_GAP_MS = SCHEDULE_TICK_MS + 15_000
+/**
+ * How late an armed schedule fire may be before it counts as a resume rather
+ * than a normal occurrence. The schedule timer is armed AT the next due
+ * instant, so landing this far past its target means the Host was suspended,
+ * the process throttled, or the wall clock jumped forward — the same condition
+ * the old fixed 30 s heartbeat detected through its own gap threshold.
+ */
+const RECOVERY_TOLERANCE_MS = 60_000
+/** Largest delay a Node timer represents without clamping; longer targets re-arm in segments. */
+const MAX_TIMER_DELAY_MS = 2_147_483_647
+/**
+ * Consecutive polls that may report one execution's session history as
+ * unreadable before it is reported failed. The roster poll runs every 5 s, so
+ * this is two minutes of a session that is NOT running: no turn is executing
+ * there and its history cannot be read, which means no verdict will ever
+ * arrive. Reporting that as a failure keeps a card — and every ancestor of it —
+ * out of the running column, which nothing else can rescue.
+ */
+const UNREADABLE_SETTLE_POLLS = 24
+
+/**
+ * Provenance of one cron-triggered cascade: when the rule fired and the zone
+ * its wall clock was read in. Passed into every launched prompt of that run so
+ * a scheduled job knows its own clock rather than inferring one.
+ */
+export interface ScheduledRunContext {
+  triggeredAt: number
+  timeZone: string
+  cron: string
+}
+
+/**
+ * Actions that can move an armed trigger. Only these re-arm the native timer;
+ * an unrelated card edit leaves the pending fire untouched.
+ */
+const SCHEDULE_WRITE_ACTIONS: ReadonlySet<TaskBoardAction['kind']> = new Set(['set-schedule', 'delete', 'archive'])
+
+/**
+ * The native timer face the Host arms through. The cordis `timer` service
+ * (dsh-base's own `cordis-plugin-timer` row) provides it: its handles are
+ * registered on the owning fiber, so unloading the board clears every armed
+ * timer without this service tracking handles by hand. A composition that
+ * serves no timer service falls back to the process globals.
+ */
+export interface HostTimerFace {
+  timeout(callback: () => void, delay: number): () => void
+  interval(callback: () => void, delay: number): () => void
+}
+
+/** Process-global fallback used when the deployment serves no cordis timer service. */
+const PROCESS_TIMERS: HostTimerFace = {
+  timeout(callback: () => void, delay: number): () => void {
+    const handle = setTimeout(callback, delay)
+    return () => { clearTimeout(handle) }
+  },
+  interval(callback: () => void, delay: number): () => void {
+    const handle = setInterval(callback, delay)
+    return () => { clearInterval(handle) }
+  },
+}
 
 export class TaskBoardHostService {
   readonly ledger: HostTaskLedger
   readonly runner: HostExecutionRunner
   readonly power: PowerInhibitor
   private readonly listeners = new Set<() => void>()
-  private timers: Array<ReturnType<typeof setInterval>> = []
-  private lastScheduleTick: number | undefined
+  /** The one recurring timer: the session-roster poll. */
+  private pollTimer: (() => void) | undefined
+  /** The armed schedule timer, if a trigger is pending. */
+  private scheduleTimer: (() => void) | undefined
+  /** The instant the armed schedule timer targets (ms epoch), for resume detection. */
+  private scheduleTarget: number | undefined
   private disposed = false
   private pollInFlight = false
-  private tickInFlight = false
   private active = true
   /**
    * Ids the last roster poll saw as present and idle; undefined while the
@@ -60,8 +122,15 @@ export class TaskBoardHostService {
    * conversation instead of prompting into a session it cannot see.
    */
   private idleSessionIds: ReadonlySet<string> | undefined
+  /**
+   * Consecutive unreadable-history polls per open execution (see
+   * {@link noteUnreadableInspection}). Cleared as soon as an inspection
+   * resolves, so a transient reader failure never fails a card.
+   */
+  private readonly unreadablePolls = new Map<string, number>()
   private preventIdleSleep = false
   private readonly team: TaskBoardTeamDispatcher | undefined
+  private readonly timers: HostTimerFace
   private lastPowerJson = ''
   private readonly now: () => number
 
@@ -74,6 +143,7 @@ export class TaskBoardHostService {
     sessionDefaultPermission?: TaskPermission
     maxSubtaskDepth?: number
     team?: TaskBoardTeamDispatcher
+    timers?: HostTimerFace
   } = {}) {
     this.ledger = options.ledger ?? new HostTaskLedger(undefined, undefined, {
       sessionDefaultPermission: options.sessionDefaultPermission,
@@ -81,6 +151,7 @@ export class TaskBoardHostService {
     })
     this.runner = new HostExecutionRunner(gateway, options.commandDispatcher, options.workspaceRegistry)
     this.team = options.team
+    this.timers = options.timers ?? PROCESS_TIMERS
     this.power = options.power ?? new PowerInhibitor()
     this.now = options.now ?? Date.now
     installStreamErrorGuards()
@@ -100,12 +171,15 @@ export class TaskBoardHostService {
   }
 
   start(): void {
-    if (this.disposed || this.timers.length > 0) return
+    if (this.disposed || this.pollTimer !== undefined) return
     this.syncPowerReasons()
-    this.timers.push(setInterval(() => { this.schedulePoll() }, SESSION_POLL_MS))
-    this.timers.push(setInterval(() => { this.scheduleTick(false) }, SCHEDULE_TICK_MS))
+    this.pollTimer = this.timers.interval(() => { this.schedulePoll() }, SESSION_POLL_MS)
     this.schedulePoll()
-    this.scheduleTick(true)
+    // Boot is a recovery point: an occurrence armed while the Host was down is
+    // not replayed, and each schedule rolls to its next future target. A
+    // schedule the Board should have served while running is then armed
+    // normally by the timer below.
+    this.recoverSchedule()
   }
 
   setConfiguration(active: boolean, preventIdleSleep: boolean): void {
@@ -123,7 +197,11 @@ export class TaskBoardHostService {
     this.power.setEnabled(active && preventIdleSleep)
     if (resumed) {
       this.schedulePoll()
-      this.scheduleTick(true)
+      this.recoverSchedule()
+    } else if (!active) {
+      // A disabled board holds no timer: its schedules must not fire while the
+      // master switch is off.
+      this.clearScheduleTimer()
     }
     this.emit()
   }
@@ -164,6 +242,10 @@ export class TaskBoardHostService {
     }
     const result = this.ledger.applyRequest(requestId, action, initiator)
     if (result.runs !== undefined) this.dispatchRuns(result.runs)
+    // A committed schedule write (create / update / toggle / delete) moves the
+    // nearest trigger; re-arm on every action so a newly enabled schedule fires
+    // at its own instant without waiting for the previous target to elapse.
+    if (SCHEDULE_WRITE_ACTIONS.has(action.kind)) this.refreshSchedule()
     return {
       schemaVersion: TASK_BOARD_SCHEMA_VERSION,
       revision: result.state.revision,
@@ -175,13 +257,15 @@ export class TaskBoardHostService {
 
   dispose(): void {
     this.disposed = true
-    for (const timer of this.timers.splice(0)) clearInterval(timer)
+    this.clearScheduleTimer()
+    this.pollTimer?.()
+    this.pollTimer = undefined
     this.power.dispose()
     this.ledger.dispose()
     this.listeners.clear()
   }
 
-  private async launch(opened: OpenedRun, others: readonly OpenedRun[] = []): Promise<void> {
+  private async launch(opened: OpenedRun, others: readonly OpenedRun[] = [], schedule?: ScheduledRunContext): Promise<void> {
     try {
       // A team run always mints a fresh Lead session: teammates are immutable
       // children of that session, so reusing an older one would collide on
@@ -190,13 +274,17 @@ export class TaskBoardHostService {
       const reuseSessionId = team ? undefined : reusableSessionId(opened.task, this.idleSessionIds)
       // Both modes tell the launched agent what else this run opens; only a team
       // run names teammates, because only then does this session own them.
-      const promptContext = others.length === 0 ? undefined : {
-        peers: others.map(other => ({
-          id: other.task.id,
-          title: other.task.title,
-          ...(team ? { name: teammateName(other.task.title, other.execution.runGroupId ?? other.task.id) } : {}),
-        })),
+      const peers = others.length === 0 ? undefined : others.map(other => ({
+        id: other.task.id,
+        title: other.task.title,
+        ...(team ? { name: teammateName(other.task.title, other.execution.runGroupId ?? other.task.id, other.task.id) } : {}),
+      }))
+      // A cron-triggered run additionally states its own firing instant and
+      // rule zone, so a scheduled job can resolve "today" without guessing.
+      const promptContext = peers === undefined && schedule === undefined ? undefined : {
+        ...(peers === undefined ? {} : { peers }),
         ...(team ? { team: true } : {}),
+        ...(schedule === undefined ? {} : { schedule }),
       }
       const sessionId = await this.runner.launch(opened.task, {
         ...(reuseSessionId === undefined ? {} : { reuseSessionId }),
@@ -234,7 +322,7 @@ export class TaskBoardHostService {
     try {
       const member = await team.spawn({
         leadSessionId,
-        name: teammateName(opened.task.title, opened.execution.runGroupId ?? opened.task.id),
+        name: teammateName(opened.task.title, opened.execution.runGroupId ?? opened.task.id, opened.task.id),
         description: opened.task.title,
         prompt: promptText(opened.task),
       })
@@ -263,6 +351,10 @@ export class TaskBoardHostService {
       return
     }
     this.idleSessionIds = new Set(running.items.filter(item => !item.running).map(item => item.sessionId))
+    // Fold whatever the board can already decide before spending inspection
+    // RPCs: a team run whose Lead recorded its verdict, and any lineage whose
+    // members are all settled. Idempotent, so an already folded board is free.
+    this.ledger.finalizeReadyRuns()
     // Read after the RPC so executions attached while it was in flight are
     // included in this pass, matching the former full-state snapshot timing.
     const runtime = this.ledger.runtimeView()
@@ -284,29 +376,124 @@ export class TaskBoardHostService {
     for (const execution of executions) {
       if (execution.sessionId === undefined) continue
       try {
-        const result = await this.runner.inspect(execution.sessionId, execution.startedAt, sessions)
-        if (result.outcome === 'pending') continue
+        // A team member's turn is read even while the roster calls its session
+        // running: a durable teammate never goes idle for good.
+        const result = await this.runner.inspect(execution.sessionId, execution.startedAt, sessions, {
+          whileRunning: execution.teamMember,
+        })
+        if (result.outcome === 'pending') {
+          if (result.unreadable === true) this.noteUnreadableInspection(execution, result.reason)
+          else this.unreadablePolls.delete(execution.executionId)
+          continue
+        }
+        this.unreadablePolls.delete(execution.executionId)
         this.ledger.settle(execution.taskId, execution.executionId, result.outcome, 'error' in result ? result.error : undefined)
       } catch {
         // A transient inspection failure never settles a running execution.
       }
     }
+    const open = new Set(executions.map(execution => execution.executionId))
+    for (const executionId of [...this.unreadablePolls.keys()]) {
+      if (!open.has(executionId)) this.unreadablePolls.delete(executionId)
+    }
   }
 
-  private async tickSchedule(first: boolean): Promise<void> {
+  /**
+   * Count one poll whose session history could not be read. A reader failure is
+   * not progress: the session is not running (the runner only reads history for
+   * one that is idle), so nothing will ever change that verdict. After
+   * {@link UNREADABLE_SETTLE_POLLS} consecutive polls the execution is reported
+   * failed with the recorded reason, instead of holding its card — and every
+   * ancestor of it — in the running column with no way out. The first poll of
+   * each streak is logged, so the Host log names the session.
+   */
+  private noteUnreadableInspection(execution: OpenExecutionReference, reason: string | undefined): void {
+    const polls = (this.unreadablePolls.get(execution.executionId) ?? 0) + 1
+    this.unreadablePolls.set(execution.executionId, polls)
+    const detail = reason ?? 'no reason reported'
+    if (polls === 1) {
+      safeConsoleError('[dsh-task-board] execution session ' + (execution.sessionId ?? 'unknown')
+        + ' history is unreadable; it stays pending for up to ' + UNREADABLE_SETTLE_POLLS + ' polls: ' + detail)
+    }
+    if (polls < UNREADABLE_SETTLE_POLLS) return
+    this.unreadablePolls.delete(execution.executionId)
+    this.ledger.settle(
+      execution.taskId,
+      execution.executionId,
+      'failed',
+      'execution session history is unreadable (' + UNREADABLE_SETTLE_POLLS + ' consecutive polls); the outcome cannot be determined: ' + detail,
+    )
+  }
+
+  /** Drop the armed schedule timer and forget its target. */
+  private clearScheduleTimer(): void {
+    this.scheduleTimer?.()
+    this.scheduleTimer = undefined
+    this.scheduleTarget = undefined
+  }
+
+  /**
+   * Boot / resume recovery: skip every occurrence that came due while the
+   * board was not running and roll each schedule to its next future target,
+   * then arm the timer for the nearest one. Rendering the occurrence is
+   * deliberately not attempted: the ACL of a card that fired hours ago is
+   * stale, and the board's own recovery contract is "missed triggers are
+   * skipped, never replayed".
+   */
+  private recoverSchedule(): void {
+    if (this.disposed) return
+    this.clearScheduleTimer()
+    const now = this.now()
+    this.ledger.setScheduler({ lastTickAt: now })
+    this.ledger.skipMissed(now)
+    this.armSchedule()
+  }
+
+  /**
+   * Arm the native timer at the nearest armed future trigger. One timer serves
+   * every schedule: the ledger's next target is the only instant the Host has
+   * to wake for. A target beyond the platform's timer ceiling re-arms in
+   * segments, and a target already past (the wall clock jumped, or the process
+   * was suspended) is handled immediately as a recovery.
+   */
+  private armSchedule(): void {
+    if (this.disposed || !this.active) return
+    this.clearScheduleTimer()
+    const target = this.ledger.nextArmedRunAt(this.now())
+    if (target === undefined) return
+    this.scheduleTarget = target
+    const delay = Math.max(0, Math.min(target - this.now(), MAX_TIMER_DELAY_MS))
+    this.scheduleTimer = this.timers.timeout(() => {
+      this.scheduleTimer = undefined
+      this.onScheduleFire(target)
+    }, delay)
+  }
+
+  /**
+   * One armed target became due. A fire landing well past its target is a
+   * resume (suspend, throttle, forward clock jump) rather than a normal
+   * occurrence, so it takes the recovery path instead of launching a run for a
+   * long-stale instant.
+   */
+  private onScheduleFire(target: number): void {
     if (this.disposed || !this.active) return
     const now = this.now()
-    const recovered = first || (this.lastScheduleTick !== undefined && now - this.lastScheduleTick > RESUME_GAP_MS)
-    this.lastScheduleTick = now
+    this.scheduleTarget = undefined
     this.ledger.setScheduler({ lastTickAt: now })
-    if (recovered) {
-      this.ledger.skipMissed(now)
+    if (now - target > RECOVERY_TOLERANCE_MS) {
+      this.recoverSchedule()
       return
     }
     for (const schedule of this.ledger.dueSchedules(now)) {
-      const next = nextRunAtMs(schedule.cron, schedule.nextRunAt)
-      this.dispatchRuns(this.ledger.openScheduled(schedule.taskId, next, now))
+      const next = nextRunAtMs(schedule.cron, schedule.nextRunAt, schedule.timeZone)
+      this.dispatchRuns(
+        this.ledger.openScheduled(schedule.taskId, next, now),
+        { triggeredAt: now, timeZone: schedule.timeZone, cron: schedule.cron },
+      )
     }
+    // The launched run (or the rolled-forward target) moved every due schedule,
+    // so the next nearest target has to be recomputed from the ledger.
+    this.armSchedule()
   }
 
   private armedSchedules(): number {
@@ -320,18 +507,18 @@ export class TaskBoardHostService {
    * others back. A team run's members are spawned inside the root's Lead
    * session instead, once that session exists.
    */
-  private dispatchRuns(runs: readonly OpenedRun[]): void {
+  private dispatchRuns(runs: readonly OpenedRun[], schedule?: ScheduledRunContext): void {
     if (runs.length === 0) return
     const root = runs.find(run => run.dispatch !== 'teammate') ?? runs[0]
     const others = runs.filter(run => run !== root)
-    this.scheduleLaunch(root, others)
+    this.scheduleLaunch(root, others, schedule)
     for (const run of others) {
-      if (run.dispatch !== 'teammate') this.scheduleLaunch(run)
+      if (run.dispatch !== 'teammate') this.scheduleLaunch(run, [], schedule)
     }
   }
 
-  private scheduleLaunch(opened: OpenedRun, others: readonly OpenedRun[] = []): void {
-    void this.launch(opened, others).catch(error => {
+  private scheduleLaunch(opened: OpenedRun, others: readonly OpenedRun[] = [], schedule?: ScheduledRunContext): void {
+    void this.launch(opened, others, schedule).catch(error => {
       safeConsoleError('[dsh-task-board] execution launch settlement failed', error)
     })
   }
@@ -344,12 +531,18 @@ export class TaskBoardHostService {
     }).finally(() => { this.pollInFlight = false })
   }
 
-  private scheduleTick(first: boolean): void {
-    if (this.tickInFlight || this.disposed) return
-    this.tickInFlight = true
-    void this.tickSchedule(first).catch(error => {
-      safeConsoleError('[dsh-task-board] scheduler tick failed', error)
-    }).finally(() => { this.tickInFlight = false })
+  /**
+   * Re-arm from the ledger's current targets. Callers that just changed a
+   * schedule (the host routes, the agent tools) invoke this after the write
+   * commits, so a new or edited trigger arms without waiting for the next fire.
+   */
+  refreshSchedule(): void {
+    if (this.disposed) return
+    if (!this.active) {
+      this.clearScheduleTimer()
+      return
+    }
+    this.armSchedule()
   }
 
   private syncPowerReasons(): void {

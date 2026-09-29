@@ -10,11 +10,11 @@ Status: implemented
 
 六个 Bug 已复现、在 `dev` 上修复并关闭，每条的验证证据都留在对应讨论里：
 
-- #1450 与 #1455（梁神预设 schema 与持久化消息来源）——提交 `6d2cf827`，见[记录](../../bug-fix/2026-09-10-preset-schema-and-message-source.md)。
-- #1458（scene-resource URL 编码）——提交 `16241a86`，见[记录](../../bug-fix/2026-09-10-scene-resource-url-encoding.md)；已在 Issue 里通知渲染器域协作者，符合该域的仓库规则。
-- #1447（任务看板归档闸门）——提交 `b0151d32`，见[记录](../../bug-fix/2026-09-10-task-board-archive-non-running.md)。
-- #1453（插件管理生效状态）——提交 `7375afad`，见[记录](../../bug-fix/2026-09-10-plugin-manager-effective-enablement.md)。
-- #1442（根别名聚合包钉版）——提交 `058c981c`，见[记录](../../bug-fix/2026-09-10-root-alias-exact-aggregate-pin.md)。
+- #1450 与 #1455（梁神预设 schema 与持久化消息来源）——提交 `6d2cf827`，见[记录](../bug-fix/2026-09-10-preset-schema-and-message-source.md)。
+- #1458（scene-resource URL 编码）——提交 `16241a86`，见[记录](../bug-fix/2026-09-10-scene-resource-url-encoding.md)；已在 Issue 里通知渲染器域协作者，符合该域的仓库规则。
+- #1447（任务看板归档闸门）——提交 `b0151d32`，见[记录](../bug-fix/2026-09-10-task-board-archive-non-running.md)。
+- #1453（插件管理生效状态）——提交 `7375afad`，见[记录](../bug-fix/2026-09-10-plugin-manager-effective-enablement.md)。
+- #1442（根别名聚合包钉版）——提交 `058c981c`，见[记录](../architecture/2026-09-29-root-alias-caret-aggregate-range.md)（精确钉版已于 2026-09-29 由同一记录里的发布线 caret 取代）。
 
 剩余两个 Bug 报告都在巡检后按 owner 决定关闭，各自在讨论里留下已验证的立场：
 

@@ -12,11 +12,12 @@
  * owns only the orchestration seam (state, persistence, notify, navigation).
  */
 import type { TaskStore } from './store.ts'
-import { withStatus, type NewTaskInput, type TaskRecord, type TaskStatus } from './tasks.ts'
+import { hasOpenExecution, withStatus, type NewTaskInput, type TaskRecord, type TaskStatus } from './tasks.ts'
 import { applyArchiveTask, applyRestoreTask } from './use-cases/task-archive.ts'
 import { applyCreateTask } from './use-cases/task-create.ts'
 import { applyDeleteTask } from './use-cases/task-delete.ts'
 import { applyScheduleNextRun as applyScheduleRollForward, applySetSchedule } from './use-cases/task-schedule.ts'
+import { resolveHostTimeZone } from './schedule.ts'
 import { applySetParent } from './use-cases/task-parent.ts'
 import { applyUpdateTask, type TaskUpdatePatch } from './use-cases/task-update.ts'
 import { DEFAULT_SUBTASK_DEPTH } from './subtask.ts'
@@ -62,6 +63,21 @@ function currentOf(sessions: SessionsControllerFace | undefined): string | undef
   return sessions?.current()
 }
 
+/** Stable id shared by the board's sidebar panel row and its main-slot page. */
+export const TASK_BOARD_PANEL_ID = 'task-board'
+
+/**
+ * The layout's panel-navigation face. The board no longer owns the center
+ * column at the DOM level: selecting the panel is the layout's business, and
+ * this is the one call that asks for it (null returns to the conversation).
+ * Optional, so a composition without the layout service keeps the board's
+ * pure state transitions testable.
+ */
+export interface PanelNavigationFace {
+  /** Select the board panel, or null to hand the column back to the conversation. */
+  select(panelId: string | null): void
+}
+
 /** Controller dependencies (all swappable in tests). */
 export interface ControllerDeps {
   store: TaskStore
@@ -72,6 +88,8 @@ export interface ControllerDeps {
   uuid?: () => string
   /** Host-authoritative transport; absent keeps the legacy in-memory test path. */
   transport?: TaskBoardTransport
+  /** Layout panel selection; absent keeps the board state-only (tests, shell-less hosts). */
+  panel?: PanelNavigationFace
 }
 
 /**
@@ -253,20 +271,60 @@ export class BoardController {
 
   // --- view state -------------------------------------------------------------
 
+  /**
+   * Show the board. The layout owns which panel the center column renders, so
+   * the state flip and the panel selection travel together here; a composition
+   * with no layout face (tests, a shell-less host) still flips the state.
+   *
+   * The selection is requested AFTER the snapshot flips so a subscriber
+   * rendering against `boardOpen` never observes "open" while the shell still
+   * shows the conversation.
+   */
   openBoard(): void {
     if (this.boardOpen) return
     this.boardOpen = true
     this.notify()
+    this.selectPanel(TASK_BOARD_PANEL_ID)
   }
 
+  /**
+   * Return the center column to the conversation. The layout's own selection is
+   * the source of truth for what the column renders, so this asks for the
+   * conversation explicitly rather than only clearing local state.
+   */
   closeBoard(): void {
     this.boardOpen = false
     this.notify()
+    this.selectPanel(null)
   }
 
   toggleBoard(): void {
     if (this.boardOpen) this.closeBoard()
     else this.openBoard()
+  }
+
+  /**
+   * Reflect a panel selection that came from OUTSIDE this controller (the user
+   * clicked another sidebar row, or the layout dropped the panel id). Keeps
+   * `boardOpen` aligned with what the column actually shows without asking the
+   * layout to select anything back.
+   * @param panelId - the layout's current panel id, or null for the conversation.
+   */
+  syncPanelSelection(panelId: string | null): void {
+    const open = panelId === TASK_BOARD_PANEL_ID
+    if (open === this.boardOpen) return
+    this.boardOpen = open
+    this.notify()
+  }
+
+  /** Ask the layout to select a panel; a shell that serves no layout face is a no-op. */
+  private selectPanel(panelId: string | null): void {
+    try {
+      this.deps.panel?.select(panelId)
+    } catch {
+      // The layout service throws by contract before its root entry mounts;
+      // the state flip above already stands, and the next selection retries.
+    }
   }
 
   /**
@@ -460,8 +518,12 @@ export class BoardController {
    * @param patch - fields to change (absent fields keep their current value).
    * @returns true when applied, false when rejected (invalid cron / unknown task).
    */
-  setSchedule(id: string, patch: { enabled?: boolean; cron?: string }): boolean {
-    const { tasks, applied } = applySetSchedule(this.tasks, id, patch, this.now())
+  setSchedule(id: string, patch: { enabled?: boolean; cron?: string; timeZone?: string | null }): boolean {
+    // The Host zone is the fallback a rule with no stored zone follows: the
+    // mirrored snapshot carries it, and a controller without a Host mirror
+    // (pure client tests) falls back to the process zone.
+    const hostTimeZone = this.hostState?.scheduler.timeZone ?? resolveHostTimeZone()
+    const { tasks, applied } = applySetSchedule(this.tasks, id, patch, this.now(), hostTimeZone)
     if (!applied) return false
     if (this.deps.transport !== undefined) {
       void this.commitRemote({ kind: 'set-schedule', taskId: id, patch }, id)
@@ -510,7 +572,9 @@ export class BoardController {
    */
   async runTask(id: string): Promise<boolean> {
     const task = this.tasks.find(candidate => candidate.id === id)
-    if (task === undefined || task.archivedAt !== undefined || task.status === 'running') return false
+    // Only an open execution blocks a second launch; the 'running' column is a
+    // board statement and a card parked there by hand still runs on request.
+    if (task === undefined || task.archivedAt !== undefined || hasOpenExecution(task)) return false
     if (this.deps.transport === undefined) return false
     return await this.commitRemote({ kind: 'run', taskId: id }, id, currentOf(this.deps.sessions))
   }
@@ -547,8 +611,8 @@ export class BoardController {
    * (background navigation, the Host runner creating and selecting a fresh
    * execution session, settlement, other plugins), so closing on `current`
    * changes would evict the board without the user asking. The board closes
-   * only on explicit user navigation: a sidebar session/workspace row click
-   * (board-mount onClickSidebarRow) or the board's own actions
+   * only on explicit user navigation: selecting another panel (the layout owns
+   * selection, and `syncPanelSelection` follows it) or the board's own actions
    * (openSession / close). Keeping the hook preserves the subscription
    * contract for future listeners.
    */

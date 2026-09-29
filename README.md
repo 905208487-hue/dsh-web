@@ -2,7 +2,7 @@
 
 中文 | [English](README.en.md)
 
-dsh-web 是面向 DeepSeek Harness（DSH）Web GUI 的模块化插件生态与桌面工作台，为 AI 智能体开发提供任务自动化看板、手机与跨设备远程控制、SSH 终端运维、Git 历史可视化以及个性化主题皮肤。用户既可以通过官方 profile 机制将插件全家桶一键挂载至已有的 `dsh web` 实例，也可以直接下载内置完整 Node.js 运行时与全套插件的 macOS 与 Windows 桌面客户端 DSH Desktop。
+dsh-web 是面向 DeepSeek Harness（DSH）Web GUI 的模块化插件生态与桌面工作台，为 AI 智能体开发提供任务自动化看板、手机与跨设备远程控制、SSH 终端运维、Git 历史可视化以及个性化主题皮肤。用户既可以通过官方 profile 机制将插件全家桶一键挂载至已有的 `dsh web` 实例，也可以在官方 DeepSeek Harness 桌面客户端中以同样的方式安装。
 
 <p align="center">
   <img src="docs/dsh-web-banner.zh.jpg" alt="dsh-web — DeepSeek Harness Web GUI 插件与主题" width="100%">
@@ -23,19 +23,19 @@ dsh-web 是面向 DeepSeek Harness（DSH）Web GUI 的模块化插件生态与�
   &nbsp;
   <a href="https://dsh-market.com"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fdsh-market.com%2Fapi%2Ftelemetry%2Fbadge%2Fusers&style=flat-square&label=users" alt="users"></a>
   &nbsp;
-  <a href="https://www.npmjs.com/package/@deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.1.7--rc.1-4c6ef5?style=flat-square&amp;labelColor=454a54" alt="DSH"></a>
+  <a href="https://www.npmjs.com/package/@deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.2.0--rc.2-4c6ef5?style=flat-square&amp;labelColor=454a54" alt="DSH"></a>
   &nbsp;
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="License">
 </p>
 
 <p align="center">
   <strong>DeepSeek Harness（DSH）Web 插件生态 · 模块化智能体工作台</strong><br>
-  <em>任务看板 · 移动端远程 · SSH 运维 · Git 图谱 · 使用统计</em>
+  <em>创意工坊 · 任务看板 · 移动端远程 · SSH 运维 · Git 图谱 · 使用统计</em>
 </p>
 
 <div align="center">
 
-[是什么](#是什么) · [DSH Desktop](#dsh-desktop桌面客户端) · [功能插件](#功能插件) · [快速上手](#快速上手) · [常见问题](#常见问题) · [已知限制](#已知限制) · [社区](#社区)
+[是什么](#是什么) · [桌面客户端](#官方桌面客户端) · [创意工坊](#创意工坊dsh-marketcom) · [功能插件](#功能插件) · [皮肤](#皮肤) · [快速上手](#快速上手) · [常见问题](#常见问题) · [已知限制](#已知限制) · [社区](#社区)
 
 </div>
 
@@ -45,7 +45,7 @@ dsh-web 是面向 DeepSeek Harness（DSH）Web GUI 的模块化插件生态与�
 
 dsh-web 通过官方 profile 机制挂载到 `dsh web`，零修改侵入官方源码，为用户提供完整的模块化扩展体系：
 - **工程运维与协同插件**：涵盖长程定时任务看板、移动端与跨设备远程控制、SSH 终端传输、Git 图谱与 worktree 隔离、全量会话归档管理、模型能力声明编辑器以及资源管理器右侧面板；
-- **社区资产独立分发**：主题皮肤、桌面宠物、社区插件与 Agent 预设由 [dsh-market.com](https://dsh-market.com) 站点统一分发，按资产说明安装；
+- **视觉主题与资产解耦**：功能插件与样式资产完全分离。皮肤插件负责底层渲染，多样化的主题皮肤（含样式、贴图与动态特效）以及桌面宠物可通过 [DSH 创意工坊](#创意工坊dsh-marketcom)自由安装；
 - **全家桶聚合与按需组合**：既支持通过 `@linxin666/dsh-web-all` 聚合包一键安装完整功能，也支持按需单独安装特定插件。聚合包预集成家族全部功能插件；alpha 分支不内置 `dsh-better-sidebar` 等外部插件，按需安装，详见[插件全家桶使用指南](packages/dsh-web-all/README.zh.md)。
 
 ![DeepSeek Harness Web GUI 与 dsh-web 插件工作台主界面](docs/screenshots/13-hero-main.png)
@@ -61,7 +61,7 @@ dsh-web 通过官方 profile 机制挂载到 `dsh web`，零修改侵入官方�
 | 文件预览与变更 | 无 | 右侧面板：资源管理器 / 编辑器 / 终端 / Git / 浏览器 |
 | Git 可视化 | 无 | 分支选择器 + 提交历史图谱 |
 | 会话归档 | 无 | 集中查看与筛选全部会话，批量归档 / 恢复 / 删除，含自动策略 |
-| 主题皮肤 | 默认主题 | 皮肤与桌面宠物由 [dsh-market.com](https://dsh-market.com) 分发，按需安装 |
+| 主题皮肤 | 默认主题 | Blue Fantasy 随皮肤插件内置，其他皮肤从创意工坊按需安装 |
 
 ### 按使用场景选择 DSH 扩展
 
@@ -70,26 +70,29 @@ dsh-web 通过官方 profile 机制挂载到 `dsh web`，零修改侵入官方�
 | 执行和定时调度 AI 智能体任务 | [任务看板与 cron 定时执行](packages/dsh-task-board/README.zh.md) |
 | 用手机或另一台电脑访问 DSH | [手机与 PC 浏览器远程控制](packages/dsh-remote-web-ui/README.zh.md) |
 | 通过 SSH 管理远程服务器 | [SSH 终端、文件传输与隧道](packages/dsh-ssh/README.zh.md) |
-| 自定义主题皮肤与宠物 | [浏览 dsh-market.com](https://dsh-market.com) |
-| 使用 macOS 或 Windows 桌面应用 | [DSH Desktop 下载与使用要求](#dsh-desktop桌面客户端) |
+| 自定义主题皮肤与宠物 | [浏览 DSH 创意工坊](https://dsh-market.com) |
+| 在官方桌面客户端中使用 | [官方桌面客户端](#官方桌面客户端) |
 | 为已有 DSH 安装插件全家桶 | [插件安装快速上手](#快速上手) |
 
-## DSH Desktop（桌面客户端）
+## 官方桌面客户端
 
-DSH Desktop 将 DeepSeek Harness Web GUI 封装为跨平台桌面应用（支持 macOS 与 Windows）。安装包内置独立的 Node.js 运行时环境（包含 npm 与 pnpm）、dsh 宿主以及预配置的 web profile（官方 web bundle 与 dsh-web 全家桶），无需预先配置系统开发环境或单独安装 dsh CLI。安装包随每个 [Release](https://github.com/zhu1090093659/dsh-web/releases) 的 `dsh-desktop-*` 资产发布（提供 macOS dmg/zip 与 Windows exe/zip）。
+DeepSeek Harness 的桌面客户端由官方发布，本仓库不再随 Release 提供 `dsh-desktop-*` 安装包。桌面客户端与 `dsh web` 共用 `~/.dsh` 数据目录，其 profile 为 `desktop`，插件全家桶的安装命令与命令行一致：
 
-- **独立宿主与端口隔离**：内置运行时在 3082-3181 端口段启动专属 dsh 宿主，与原生 `dsh web` 的 3080/3081 端口完全隔离。桌面应用与独立命令行实例可并行运行，各自维护独立会话。
-- **共享数据目录**：与 dsh CLI 共用 `~/.dsh` 配置目录（包含全局配置、历史会话与密钥）；应用自动初始化的 profile 带有标识，在内置运行时升级时会自动重新部署并保留用户的自定义 patch 层，不改动用户自建的 profile。
-- **内置插件管理**：应用直接将 `dsh plugin add/remove` 命令转发给内置 pnpm 执行，增删插件无需额外配置外部开发工具链。
-- **启动诊断与容错**：若遇到组件缺失、宿主异常退出或启动超时，界面将自动进入诊断错误页并输出宿主日志末尾，支持一键重试或直接定位日志文件。
+```sh
+dsh plugin --profile desktop add @linxin666/dsh-web-all@latest
+```
 
-安装包目前未做商业代码签名。macOS 首次运行如遇安全提示，可通过“右键菜单 → 打开”启动；Windows 系统弹出 SmartScreen 提示时，选择“更多信息 → 仍要运行”。详细构建步骤、配置说明与安全规范见 [desktop README](desktop/README.zh.md)。
+安装后重启桌面客户端，即可在“设置 > 插件配置”中使用各插件入口。
 
-## 社区资产分发（dsh-market.com）
+## 创意工坊（dsh-market.com）
 
-[dsh-market.com](https://dsh-market.com) 统一分发主题皮肤、桌面宠物、社区插件与 Agent 预设，按真实设备点赞热度排序，皮肤提供即时试穿预览，插件提供一键安装命令。站点是本仓库的组成部分：前端为纯静态构建，由 `scripts/market-build` 依据 `skin.json`、`pet.json` 与 `community.json` 等数据源自动生成并部署到 Cloudflare Workers（`market/`）。
+[创意工坊](https://dsh-market.com) 是 DSH 生态的一站式资产分发平台，统一提供主题皮肤、桌面宠物、功能插件与社区 Agent 预设。所有项目按照真实设备点赞热度排序，皮肤支持即时试穿预览，插件提供一键安装命令。经典的 Blue Fantasy 蓝色幻想随皮肤插件内置，其余主题皮肤与宠物资产均可在工坊浏览、查看源代码并按需安装。在 Web GUI 的“创意工坊”设置卡中可直接浏览线上清单，皮肤与宠物可一键下载至 DSH 主目录并在对应设置页选用；社区预设下载至本地预设库，启用后即可在“设置 → Agent 预设”中用于新建会话。
 
-Web GUI 不内置商店卡片：资产通过 `dsh plugin --profile <name> add <package>` 命令按需安装。
+![创意工坊首页](docs/screenshots/31-market-home.png)
+
+创意工坊站点为本仓库的组成部分：前端为纯静态构建，由构建脚本 `scripts/market-build` 依据 `skin.json`、`pet.json` 与 `community.json` 等数据源自动生成；点赞等动态能力由 Cloudflare Workers 边缘函数与 D1 数据库提供支持（遵循单设备单票限制），代码合入 `main` 分支后自动触发持续集成部署。
+
+创意工坊旨在建立开放透明的社区生态，方便开发者分享作品并让用户自由选择所需扩展。
 
 ## 功能插件
 
@@ -138,6 +141,7 @@ Web GUI 不内置商店卡片：资产通过 `dsh plugin --profile <name> add <p
 - **用量明细**：查看每日输入、输出与缓存用量，按不同供应商与模型细分展示，并提供最近 30 天消费趋势；支持的供应商提供账户余额查询，针对 DeepSeek 官方路由还提供峰谷分时计费与账单估算。
 - **个人套餐追踪**：实时展示 Kimi、GLM、MiniMax、OpenCode Go、Codex / ChatGPT 等平台编程套餐的使用比例与重置周期。
 - **Token 银行**：DeepSeek 官方通道每消耗 1 token 自动积累 1 鲸元，以“鲸元券”形式展示台账周期内的累计调用指标，支持保存票券卡片与系统级分享。
+- **桌面宠物联动**：安装宠物插件后，可通过桌面悬浮挂件的气泡提示直接查看当前会话供应商的额度、余额或今日消耗。
 
 统计自插件首次启用起计，不回填历史数据；鲸元券仅统计台账窗口内的 DeepSeek 官方消耗。支持的供应商列表与配置细节见 [dsh-usage README](packages/dsh-usage/README.zh.md)。
 
@@ -156,7 +160,7 @@ Web GUI 不内置商店卡片：资产通过 `dsh plugin --profile <name> add <p
 
 ### 右侧面板（Right Panel）
 
-右侧面板由社区插件 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 提供，集成了文件资源管理器、内联代码编辑器、辅助终端、Git 面板以及内置网页浏览器，支持第三方插件注册停靠。alpha 分支的聚合包不内置它（其 0.19.1 的 peer 区间 `^0.1.5-rc.1` 不覆盖本分支的 0.1.7-rc.1 cohort），按需安装：`dsh plugin --profile web add dsh-better-sidebar@latest`。相关架构与配置见其 [项目说明](https://github.com/omdsh-dev/DSH-better-sidebar)。
+右侧面板由社区插件 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 提供，集成了文件资源管理器、内联代码编辑器、辅助终端、Git 面板以及内置网页浏览器，支持第三方插件注册停靠。alpha 分支的聚合包不内置它（其 0.19.1 的 peer 区间 `^0.1.5-rc.1` 不覆盖本分支的 0.2.0-rc.2 cohort），按需安装：`dsh plugin --profile web add dsh-better-sidebar@latest`。相关架构与配置见其 [项目说明](https://github.com/omdsh-dev/DSH-better-sidebar)。
 
 ![右侧面板](docs/screenshots/19-right-panel.png)
 
@@ -187,9 +191,11 @@ Web GUI 不内置商店卡片：资产通过 `dsh plugin --profile <name> add <p
 - **Skill 中心**（`dsh-client-ui-skill-explorer`）：按来源集中查看与管理已加载的 agent skills，支持按名称与功能描述实时搜索过滤，多工作区独立呈现，支持一键启停与删除。
 - **插件管理器**（`dsh-client-ui-plugin-manager`）：基于官方 host 接口从 npm 或 git 仓库直接安装插件，可视化管理插件运行状态与自定义配置。
 
-### 皮肤与桌面宠物
+### 皮肤
 
-默认主题由官方 Web 客户端提供；第三方主题皮肤与桌面宠物经 [dsh-market.com](https://dsh-market.com) 分发并按各自说明安装。
+经典的 Blue Fantasy 蓝色幻想是随皮肤插件内置的默认主题：深邃的靛蓝色调贯穿全局，搭配半透明毛玻璃面板与定制鲸鱼插画，在暗色模式下具有优秀的视觉沉浸感。其他精美皮肤与 Wallpaper Engine 动态壁纸由皮肤插件统一管理，可直接在[创意工坊](https://dsh-market.com)在线预览、试穿与一键安装。
+
+![Blue Fantasy 暗色](docs/screenshots/17-skin-blue-fantasy-dark.png)
 
 ## 快速上手
 
@@ -203,13 +209,13 @@ Web GUI 不内置商店卡片：资产通过 `dsh plugin --profile <name> add <p
 - **DSH Web CLI（现有浏览器服务）**：
   1. 安装聚合包：`dsh plugin --profile web add @linxin666/dsh-web-all@latest`
   2. 重启 `dsh web` 服务，侧边栏将自动呈现各插件入口
-  3. 打开“设置 > 插件配置”按需开关插件
-- **DSH Desktop（桌面客户端）**：
-  1. 从 [Releases](https://github.com/zhu1090093659/dsh-web/releases) 下载对应系统的 `dsh-desktop-*` 安装包（macOS dmg/zip、Windows exe/zip）
-  2. 安装并启动应用：内置运行时与全家桶已随安装包就绪，无需配置额外环境
-  3. 通过应用内置的插件管理器或设置面板管理扩展与主题
+  3. 打开“设置 > 插件配置”按需开关插件，或在皮肤面板选用主题
+- **官方桌面客户端（DeepSeek Harness Desktop）**：
+  1. 安装并启动官方桌面客户端
+  2. 安装插件全家桶：`dsh plugin --profile desktop add @linxin666/dsh-web-all@latest`
+  3. 重启客户端，在“设置 > 插件配置”中按需开关插件
 
-> 皮肤与桌面宠物资产经 [dsh-market.com](https://dsh-market.com) 分发并按各自说明安装；若因包管理器门禁安装到旧版本，请参阅后文“安装排障”。
+> 若仅需要皮肤功能，可单独安装 `@linxin666/dsh-client-ui-skin-center`。若因包管理器门禁安装到旧版本，请参阅后文“安装排障”。
 
 ### 从 GitHub 仓库直接安装
 
@@ -258,6 +264,7 @@ dsh plugin --profile web add @linxin666/dsh-client-ui-task-board@latest         
 dsh plugin --profile web add @linxin666/dsh-ssh@latest                             # 远程连接（SSH）
 dsh plugin --profile web add @linxin666/dsh-usage@latest                           # 使用统计
 dsh plugin --profile web add @linxin666/dsh-client-ui-model-capabilities@latest    # 模型能力声明
+dsh plugin --profile web add @linxin666/dsh-pet@latest                             # 桌面悬浮宠物
 dsh plugin --profile web add @linxin666/dsh-session-archive@latest                 # 会话归档管理
 dsh plugin --profile web add dsh-better-sidebar@latest                             # 右侧辅助面板（alpha 分支未内置）
 ```
@@ -269,16 +276,21 @@ dsh plugin --profile web add dsh-better-sidebar@latest                          
 
 | npm 包名 | 功能说明 |
 | --- | --- |
-| [@linxin666/dsh-web-all](https://www.npmjs.com/package/@linxin666/dsh-web-all) | 全家桶聚合包：一站式包含全部功能插件 |
+| [@linxin666/dsh-web-all](https://www.npmjs.com/package/@linxin666/dsh-web-all) | 全家桶聚合包：一站式包含全部功能插件与皮肤中心 |
 | [@linxin666/dsh-client-ui-task-board](https://www.npmjs.com/package/@linxin666/dsh-client-ui-task-board) | 任务看板：支持长程异步任务与 cron 定时调度 |
 | [@linxin666/dsh-remote-web-ui](https://www.npmjs.com/package/@linxin666/dsh-remote-web-ui) | 移动端远程控制：扫码配对、跨设备协同与触控优化 |
 | [@linxin666/dsh-ssh](https://www.npmjs.com/package/@linxin666/dsh-ssh) | 远程运维面板：Web 终端、SFTP 传输、端口转发与集群执行 |
 | [@linxin666/dsh-usage](https://www.npmjs.com/package/@linxin666/dsh-usage) | 用量统计：Token 消耗、余额估算、套餐追踪与 Token 银行 |
 | [@linxin666/dsh-client-ui-model-capabilities](https://www.npmjs.com/package/@linxin666/dsh-client-ui-model-capabilities) | 模型能力：自定义供应商图片输入声明与推理档位配置 |
+| [@linxin666/dsh-pet](https://www.npmjs.com/package/@linxin666/dsh-pet) | 桌面宠物：注册表驱动的桌面交互悬浮挂件 |
 | [@linxin666/dsh-client-ui-git-graph](https://www.npmjs.com/package/@linxin666/dsh-client-ui-git-graph) | Git 图谱：可视化提交历史、分支流与 worktree 隔离 |
+| [@linxin666/dsh-client-ui-skin-center](https://www.npmjs.com/package/@linxin666/dsh-client-ui-skin-center) | 皮肤中心：主题与壁纸的加载与运行引擎 |
+| [@linxin666/dsh-client-ui-market](https://www.npmjs.com/package/@linxin666/dsh-client-ui-market) | 创意工坊客户端：线上资产一键下载与管理 |
+| [@linxin666/dsh-client-ui-preset-center](https://www.npmjs.com/package/@linxin666/dsh-client-ui-preset-center) | 预设中心：社区 Agent 预设安装与管理 |
 | [@linxin666/dsh-client-ui-plugin-manager](https://www.npmjs.com/package/@linxin666/dsh-client-ui-plugin-manager) | 插件管理器：可视化插件状态控制与配置编辑 |
 | [@linxin666/dsh-client-ui-skill-explorer](https://www.npmjs.com/package/@linxin666/dsh-client-ui-skill-explorer) | Skill 中心：已加载技能的浏览、检索与管理 |
 | [@linxin666/dsh-session-archive](https://www.npmjs.com/package/@linxin666/dsh-session-archive) | 会话归档：全量会话检索、批量恢复与级联清理 |
+| [@linxin666/dsh-client-ui-community-plugins](https://www.npmjs.com/package/@linxin666/dsh-client-ui-community-plugins) | 社区数据源：创意工坊插件目录权威清单 |
 | [@linxin666/dsh-client-ui-web-ui-settings](https://www.npmjs.com/package/@linxin666/dsh-client-ui-web-ui-settings) | 综合设置面板：dsh-web 全局偏好与样式配置 |
 
 </details>
@@ -337,14 +349,14 @@ dsh plugin --profile web add dsh-better-sidebar@latest                          
 <details>
 <summary><strong>试穿主题皮肤不满意如何还原？</strong></summary>
 
-皮肤与桌面宠物经 [dsh-market.com](https://dsh-market.com) 分发并按各自说明安装与还原。
+皮肤面板提供免落盘试穿功能：点击试穿即刻在当前界面生效预览，离开面板或关闭预览会自动恢复初始外观；只有显式点击“应用”按钮才会将主题配置写入磁盘，可放心预览各类主题。
 
 </details>
 
 <details>
 <summary><strong>是否可以仅使用主题皮肤或某个单一插件？</strong></summary>
 
-完全支持。第三方主题皮肤与桌面宠物经 [dsh-market.com](https://dsh-market.com) 分发并按各自说明安装；若仅需特定功能，参考“单独安装某个插件”章节直接安装对应 npm 包即可。
+完全支持。若仅需要视觉定制，直接安装 `@linxin666/dsh-client-ui-skin-center` 即可；若仅需特定功能，参考“单独安装某个插件”章节直接安装对应 npm 包即可。
 
 </details>
 

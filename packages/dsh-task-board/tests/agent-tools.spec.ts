@@ -145,6 +145,25 @@ describe('agent tool definitions', () => {
     // Then neither the surface nor the lifecycle action enum carries one
     expect(names).not.toContain('confirm')
     expect(actions).not.toContain('confirm')
+    // The manage tool also owns the manual escape hatch for a stuck running card
+    expect(actions).toContain('settle')
+  })
+
+  it('operator can clear a permission without an empty member in any enum', () => {
+    // Given a live board service
+    const live = harness()
+    const update = live.tools.find(tool => tool.name === 'task_board_update')
+    const permission = (update?.parameters as { properties?: Record<string, { oneOf?: Array<{ enum?: string[] }> }> }).properties?.permission
+
+    // When the update tool's permission parameter is read
+    // Then the clearing value is its own const branch, because an OpenAI-compatible
+    // gateway that forwards this schema to Gemini rejects an empty enum member and
+    // fails every request that carries the tool list (issue #1748)
+    const members = permission?.oneOf?.flatMap(branch => branch.enum ?? []) ?? []
+    expect(members).toEqual(['read-only', 'workspace-write', 'danger-full-access'])
+    expect(members).not.toContain('')
+    // The clear value is still reachable, as its own exact branch
+    expect(permission?.oneOf).toHaveLength(2)
   })
 })
 
@@ -421,6 +440,36 @@ describe('task_board_manage', () => {
     expect(moved.ok).toBe(true)
     expect((moved.task as { status: string }).status).toBe('backlog')
   })
+
+  it('user marking a card done declares completion without a run', async () => {
+    // Given a card in the todo column
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the user records work that finished outside the board
+    const moved = await call(live, 'task_board_manage', { taskId, action: 'move-done' })
+
+    // Then the card reports the done column and holds no execution record
+    expect(moved.ok).toBe(true)
+    expect((moved.task as { status: string }).status).toBe('done')
+    expect((moved.task as { executionCount: number }).executionCount).toBe(0)
+  })
+
+  it('user parks a card in the running column and sees it there without a run', async () => {
+    // Given a card in the todo column
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the user records work that is under way outside the board
+    const moved = await call(live, 'task_board_manage', { taskId, action: 'move-running' })
+
+    // Then the card reports the running column and holds no execution record
+    expect(moved.ok).toBe(true)
+    expect((moved.task as { status: string }).status).toBe('running')
+    expect((moved.task as { executionCount: number }).executionCount).toBe(0)
+  })
 })
 
 describe('task_board_schedule', () => {
@@ -440,6 +489,54 @@ describe('task_board_schedule', () => {
     expect(schedule.cron).toBe('0 9 * * *')
     expect(typeof schedule.nextRunAt).toBe('number')
     expect((disarmed.schedule as { enabled: boolean }).enabled).toBe(false)
+  })
+
+  it('user arming a rule in an explicit zone sees that zone on the schedule', async () => {
+    // Given a plain card
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the user arms a rule pinned to a zone
+    const armed = await call(live, 'task_board_schedule', {
+      taskId, enabled: true, cron: '0 9 * * *', timeZone: 'Asia/Shanghai',
+    })
+
+    // Then the schedule reports the stored zone alongside the expression
+    const schedule = armed.schedule as { enabled: boolean; cron: string; timeZone?: string; nextRunAt?: number }
+    expect(schedule.enabled).toBe(true)
+    expect(schedule.cron).toBe('0 9 * * *')
+    expect(schedule.timeZone).toBe('Asia/Shanghai')
+    expect(typeof schedule.nextRunAt).toBe('number')
+  })
+
+  it('user clearing the time zone with an empty string gets the stored zone removed', async () => {
+    // Given a card whose rule is pinned to a zone
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+    await call(live, 'task_board_schedule', { taskId, enabled: true, cron: '0 9 * * *', timeZone: 'Asia/Shanghai' })
+
+    // When the model clears it with an empty string
+    const cleared = await call(live, 'task_board_schedule', { taskId, timeZone: '' })
+
+    // Then no zone is stored any more
+    expect((cleared.schedule as { timeZone?: string }).timeZone).toBeUndefined()
+  })
+
+  it('user arming a rule with an unusable zone is refused and the rule stays unset', async () => {
+    // Given a card
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the model names a zone that cannot resolve
+    const refused = await call(live, 'task_board_schedule', { taskId, enabled: true, cron: '0 9 * * *', timeZone: 'Nowhere/Nope' })
+
+    // Then the action is refused and no rule was written
+    expect(refused.ok).toBe(false)
+    const get = await call(live, 'task_board_get', { taskId })
+    expect((get.task as { schedule?: unknown }).schedule).toBeUndefined()
   })
 
   it('user arming a schedule on an unknown card is told the card is missing', async () => {
@@ -558,6 +655,29 @@ describe('team-run opt-in through the tools', () => {
 
     // Then the card runs as a plain cascade again
     expect((updated.task as { teamRun?: boolean }).teamRun).toBeUndefined()
+  })
+})
+
+describe('/goal opt-in through the tools', () => {
+  it('user creating a card gets a goal run by default and the model can pin a plain turn', async () => {
+    // Given a fresh board
+    const live = harness()
+
+    // When the model creates a card without naming the option
+    const defaulted = await call(live, 'task_board_create', { title: 'default' })
+    const defaultTask = defaulted.task as { id: string; goalRun?: boolean }
+
+    // Then the default is on, and the view reports no deviation from it
+    expect(defaultTask.goalRun).toBeUndefined()
+
+    // And an explicit false pins a single plain turn, which the view reports
+    const opted = await call(live, 'task_board_create', { title: 'plain', goalRun: false })
+    const optedTask = opted.task as { id: string; goalRun?: boolean }
+    expect(optedTask.goalRun).toBe(false)
+
+    // And switching it back to the default clears the stored opt-out
+    const updated = await call(live, 'task_board_update', { taskId: optedTask.id, goalRun: true })
+    expect((updated.task as { goalRun?: boolean }).goalRun).toBeUndefined()
   })
 })
 

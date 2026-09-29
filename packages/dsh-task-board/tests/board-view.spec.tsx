@@ -8,7 +8,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
-import { mountBoard } from '../src/client/board-mount.tsx'
+import { TaskBoardPanel } from '../src/client/native-panel.tsx'
 import { TaskBoard } from '../src/client/board/TaskBoard.tsx'
 import type { BoardController, ControllerSnapshot } from '../src/core/controller.ts'
 import type { TaskRecord } from '../src/core/tasks.ts'
@@ -16,11 +16,8 @@ import type { TaskRecord } from '../src/core/tasks.ts'
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const roots: Root[] = []
-let disposeMount: (() => void) | undefined
 
 afterEach(() => {
-  disposeMount?.()
-  disposeMount = undefined
   for (const root of roots.splice(0)) {
     act(() => { root.unmount() })
   }
@@ -109,7 +106,13 @@ describe('TaskBoard L2 semantic attributes (#506)', () => {
 })
 
 describe('TaskBoard card drag-and-drop status changes (#1195)', () => {
-  it('marks manual tasks as draggable and running/pending/archived tasks as not draggable', async () => {
+  const openExecution = () => ({
+    id: 'e-open', sessionId: undefined, startedAt: 0, endedAt: undefined, result: undefined, error: undefined,
+  })
+
+  it('operator sees cards draggable unless the runner is executing them or the board is pending', async () => {
+    // Given a board holding a todo card, an executing card, a card parked in
+    // the running column by hand, and a card awaiting a Host reply
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -117,28 +120,24 @@ describe('TaskBoard card drag-and-drop status changes (#1195)', () => {
 
     const controller = fakeController({
       tasks: [
-        task({ id: 't-todo', status: 'todo' }),
-        task({ id: 't-running', status: 'running' }),
-        task({ id: 't-pending', status: 'todo' }),
+        task({ id: 't-todo', status: 'todo', title: 'Todo card' }),
+        task({ id: 't-executing', status: 'running', title: 'Executing card', executions: [openExecution()] }),
+        task({ id: 't-parked', status: 'running', title: 'Parked card' }),
+        task({ id: 't-pending', status: 'todo', title: 'Pending card' }),
       ],
       pendingTaskIds: ['t-pending'],
     })
     await act(async () => { root.render(<TaskBoard controller={controller} />) })
 
-    const cards = container.querySelectorAll('button[data-dsh-part="card"]')
-    expect(cards).toHaveLength(3)
+    const cardOf = (title: string) => Array.from(
+      container.querySelectorAll('button[data-dsh-part="card"]'),
+    ).find(card => card.textContent?.includes(title))
 
-    // Todo card is draggable
-    const todoCard = Array.from(cards).find(c => c.getAttribute('data-status') === 'todo' && !c.hasAttribute('data-pending'))
-    expect(todoCard?.getAttribute('draggable')).toBe('true')
-
-    // Running card is not draggable
-    const runningCard = Array.from(cards).find(c => c.getAttribute('data-status') === 'running')
-    expect(runningCard?.getAttribute('draggable')).toBe('false')
-
-    // Pending card is not draggable
-    const pendingCard = Array.from(cards).find(c => c.getAttribute('data-pending') === 'true')
-    expect(pendingCard?.getAttribute('draggable')).toBe('false')
+    // Then only the executing and the pending card refuse the drag
+    expect(cardOf('Todo card')?.getAttribute('draggable')).toBe('true')
+    expect(cardOf('Parked card')?.getAttribute('draggable')).toBe('true')
+    expect(cardOf('Executing card')?.getAttribute('draggable')).toBe('false')
+    expect(cardOf('Pending card')?.getAttribute('draggable')).toBe('false')
   })
 
   it('drops a backlog card onto the todo column and triggers controller.moveTask', async () => {
@@ -178,7 +177,8 @@ describe('TaskBoard card drag-and-drop status changes (#1195)', () => {
     expect(moveCalls).toEqual([{ id: 't-backlog', status: 'todo' }])
   })
 
-  it('rejects invalid drops (same column or dropping running tasks)', async () => {
+  it('operator cannot drop a card on its own column or drop an executing card', async () => {
+    // Given a board holding a todo card and a card the runner is executing
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -189,7 +189,7 @@ describe('TaskBoard card drag-and-drop status changes (#1195)', () => {
       {
         tasks: [
           task({ id: 't-todo', status: 'todo' }),
-          task({ id: 't-running', status: 'running' }),
+          task({ id: 't-running', status: 'running', executions: [openExecution()] }),
         ],
       },
       {
@@ -211,7 +211,7 @@ describe('TaskBoard card drag-and-drop status changes (#1195)', () => {
     })
     expect(moveCalls).toHaveLength(0)
 
-    // Dropping a running task does nothing
+    // Dropping a card the runner is executing does nothing
     const runningTransfer = {
       getData: (type: string) => (type === 'text/plain' ? 't-running' : ''),
     }
@@ -222,19 +222,89 @@ describe('TaskBoard card drag-and-drop status changes (#1195)', () => {
     })
     expect(moveCalls).toHaveLength(0)
   })
+
+  it('operator drops a todo card onto the done column and the board dispatches the move', async () => {
+    // Given a board holding a todo card
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    roots.push(root)
+
+    const moveCalls: Array<{ id: string; status: string }> = []
+    const controller = fakeController(
+      {
+        tasks: [task({ id: 't-todo', status: 'todo', title: 'Task Todo' })],
+      },
+      {
+        moveTask: (id, status) => { moveCalls.push({ id, status }) },
+      },
+    )
+    await act(async () => { root.render(<TaskBoard controller={controller} />) })
+
+    const doneColumn = container.querySelector('section[data-status="done"]')
+    expect(doneColumn).not.toBeNull()
+
+    // When the operator drops the card on the Done column
+    const dataTransfer = {
+      getData: (type: string) => (type === 'text/plain' ? 't-todo' : ''),
+    }
+    await act(async () => {
+      doneColumn!.dispatchEvent(
+        Object.assign(new Event('drop', { bubbles: true, cancelable: true }), { dataTransfer }),
+      )
+    })
+
+    // Then the board asks the controller for the done column
+    expect(moveCalls).toEqual([{ id: 't-todo', status: 'done' }])
+  })
+
+  it('operator drops a todo card onto the running column and the board dispatches the move', async () => {
+    // Given a board holding a todo card
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    roots.push(root)
+
+    const moveCalls: Array<{ id: string; status: string }> = []
+    const controller = fakeController(
+      { tasks: [task({ id: 't-todo', status: 'todo', title: 'Task Todo' })] },
+      { moveTask: (id, status) => { moveCalls.push({ id, status }) } },
+    )
+    await act(async () => { root.render(<TaskBoard controller={controller} />) })
+
+    const runningColumn = container.querySelector('section[data-status="running"]')
+
+    // When the operator parks the card in the running column by hand
+    const dataTransfer = {
+      getData: (type: string) => (type === 'text/plain' ? 't-todo' : ''),
+    }
+    await act(async () => {
+      runningColumn!.dispatchEvent(
+        Object.assign(new Event('drop', { bubbles: true, cancelable: true }), { dataTransfer }),
+      )
+    })
+
+    // Then the board dispatches the manual move without opening a run
+    expect(moveCalls).toEqual([{ id: 't-todo', status: 'running' }])
+  })
 })
 
-describe('mountBoard lifecycle & interaction (#506, #1233)', () => {
-  it('tags the injected board container with data-dsh-plugin', async () => {
-    const column = document.createElement('div')
-    column.setAttribute('data-pane', 'conversation')
-    document.body.appendChild(column)
+describe('TaskBoard panel page lifecycle & interaction (#506, #1233)', () => {
+  it('tags the panel page container with the L2 semantic anchor and plugin id', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    roots.push(root)
 
-    await act(async () => { disposeMount = mountBoard(fakeController()) })
+    // The layout mounts this component as the keyed 'main' page; it carries the
+    // container-query context the board's responsive rules read, so the board
+    // lays out against the center column instead of the viewport.
+    await act(async () => { root.render(<TaskBoardPanel controller={fakeController()} />) })
 
-    const view = column.querySelector('[data-dsh-taskboard-view]')
+    const view = container.querySelector('[data-dsh-taskboard-view]')
     expect(view).not.toBeNull()
     expect(view!.getAttribute('data-dsh-plugin')).toBe('task-board')
+    expect(view!.querySelector('[data-dsh-taskboard-board]')).not.toBeNull()
   })
 
   it('clicking the back button calls controller.closeBoard() (#1233)', async () => {
@@ -253,29 +323,5 @@ describe('mountBoard lifecycle & interaction (#506, #1233)', () => {
     expect(backButton).not.toBeNull()
     await act(async () => { backButton.click() })
     expect(closed).toBe(1)
-  })
-
-  it('self-heals and remounts when the conversation column is replaced (#1233)', async () => {
-    let column = document.createElement('div')
-    column.setAttribute('data-pane', 'conversation')
-    document.body.appendChild(column)
-
-    const controller = fakeController({ boardOpen: true })
-    await act(async () => { disposeMount = mountBoard(controller) })
-    expect(column.querySelector('[data-dsh-taskboard-view]')).not.toBeNull()
-
-    // Replace the column element in DOM (e.g. React re-render of AppFrame)
-    column.remove()
-    column = document.createElement('div')
-    column.setAttribute('data-pane', 'conversation')
-    document.body.appendChild(column)
-
-    await act(async () => {
-      // Trigger the page-wide body mutation hub, which coalesces its
-      // subscribers to the next animation frame (shared/client/body-mutations.ts).
-      document.body.appendChild(document.createElement('span'))
-      await new Promise(resolve => requestAnimationFrame(() => { resolve(undefined) }))
-    })
-    expect(column.querySelector('[data-dsh-taskboard-view]')).not.toBeNull()
   })
 })

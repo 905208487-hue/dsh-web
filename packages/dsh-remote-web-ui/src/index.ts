@@ -8,13 +8,12 @@
  * phone-side pair/accept + deep-link flow.
  */
 
-import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { setInterval as nodeSetInterval, setTimeout as nodeSetTimeout } from 'node:timers'
 import type { IncomingMessage } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SettingsNamespace } from '@deepseek-ai/dsh-settings'
-import z from 'schemastery'
+import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-commands'
@@ -34,29 +33,26 @@ import { ensureFirewallRule, firewallSummary, removeFirewallRule } from './firew
 import { lanBindState, writeLanBind } from './lan-bind.ts'
 import { isHttpUrl, tunnelPlanOf } from './tunnel-plan.ts'
 import { loadRelayIdentity, RelayRegistrar, type RelayState } from './relay-registry.ts'
-import { desiredBindHost, desiredBindPort, firewallActionNeeded, pendingRestartOf, type AppliedFirewallState, type StartupFacts } from './lan-bind-plan.ts'
+import { desiredBindHost, desiredBindPort, firewallActionNeeded, pendingRestartOf, resolveManagedProfile, type AppliedFirewallState, type StartupFacts } from './lan-bind-plan.ts'
 import { createInnerAuth } from './inner-auth.ts'
 import { withIdentityEncoding } from './http.ts'
 import { TunnelManager, type TunnelInfo } from './tunnel.ts'
 import { PublicBaseKeeper } from './public-base.ts'
-import {
-  checkUpdates,
-  fetchGitHubReleaseNotes,
-  fetchLatestVersion,
-  RELEASE_NOTES_CACHE_TTL_MS,
-  resolveAnchorManifest,
-  resolveUpdateTarget,
-  runUpdateVerified,
-  type UpdateReleaseNotes,
-  type UpdateRunResult,
-} from './update.ts'
-import { makeUpdateRoutes } from './update-routes.ts'
 import { mountOnce } from './mount-once.ts'
 import { REMOTE_CHANNEL_BOOT_SCRIPT } from './remote-channel-boot.ts'
 import { UUID_POLYFILL_SCRIPT } from './uuid-polyfill.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
+    /**
+     * Volatile config values were committed into the running fiber without a
+     * remount; dispatched to the owning fiber only. Spelled here because the
+     * Loader package is not a dependency of this plugin, with the Loader's own
+     * shape so the two declarations merge when a Host program carries both.
+     * @param paths - changed config paths as key arrays; every value is committed before dispatch.
+     * @mode emit
+     */
+    'loader/volatile-update'(paths: readonly (readonly string[])[]): void
     /**
      * Waterfall seam on the /api transport fence: the connection plugin
      * fires this per /api request before bridging to the API proxy on
@@ -199,43 +195,59 @@ export interface Config {
    */
   lanBind?: boolean
   /**
-   * The profile whose cordis.patch.yml the LAN bind toggle manages.
-   * Defaults to the DSH_PROFILE environment variable, then "web". Must be
-   * a single safe path segment (the DSH_PROFILE env fallback bypasses this
-   * schema, so the path builder asserts containment independently).
+   * The profile whose cordis.patch.yml the LAN bind toggle manages. Defaults
+   * to the profile the Host booted (its `profileContext`), then to the
+   * DSH_PROFILE environment variable, then "web" — the Desktop client boots
+   * "desktop" without exporting DSH_PROFILE, so the environment alone names
+   * the wrong profile there. Must be a single safe path segment (the runtime
+   * and environment fallbacks bypass this schema, so the path builder asserts
+   * containment independently).
    */
   profile?: string
   /** Master switch for the plugin (browser half + host pairing surfaces). */
   enabled?: boolean
 }
 
-export const Config: z<Config> = z.object({
-  tokenTtlMs: z.number().step(1).min(60_000).default(10 * 60_000),
-  offlineAfterMs: z.number().step(1).min(5_000).default(25_000),
-  maxDevices: z.number().step(1).min(1).max(64).default(4),
-  idleExpireMs: z.number().step(1).min(60_000).default(DEFAULT_IDLE_EXPIRE_MS),
-  cookieName: z.string().min(1).default('dsh_pair'),
-  requirePairingForLan: z.boolean().default(true),
-  publicBaseUrl: z.string(),
+/**
+ * Plugin config schema. Under the 0.1.7 settings model this schema IS the
+ * entry's settings page: the Host derives one form per profile entry from it
+ * and serves that form only when at least one field is `volatile()`. The marker
+ * is also what admits a write and what keeps the edit on the live path — the
+ * Loader commits the new value into the field's reference and announces
+ * `loader/volatile-update` on this fiber instead of remounting the row, so the
+ * pairing service, its device sessions, the tunnel and the route registrations
+ * survive a settings save (see {@link applyImpl}'s sync).
+ *
+ * The schema is left to inference rather than annotated with `z<Config>`: a
+ * volatile field's parsed output is a live reference while its accepted input
+ * stays the plain value, so the two sides no longer share one shape and the
+ * annotation would reject the schema the Host must be given.
+ *
+ * The deployment-level fields (`trustedHosts`, `devicesFile`, `profile`) are
+ * deliberately NOT volatile: they belong in the profile patch, so the form
+ * leaves them to the operator instead of offering a card control that a
+ * document write could not honor.
+ */
+export const Config = z.object({
+  tokenTtlMs: z.number().step(1).min(60_000).default(10 * 60_000).volatile(),
+  offlineAfterMs: z.number().step(1).min(5_000).default(25_000).volatile(),
+  maxDevices: z.number().step(1).min(1).max(64).default(4).volatile(),
+  idleExpireMs: z.number().step(1).min(60_000).default(DEFAULT_IDLE_EXPIRE_MS).volatile(),
+  cookieName: z.string().min(1).default('dsh_pair').volatile(),
+  requirePairingForLan: z.boolean().default(true).volatile(),
+  publicBaseUrl: z.string().volatile(),
   trustedHosts: z.array(z.string()),
   devicesFile: z.string(),
-  autoTunnel: z.boolean().default(false),
-  tunnelToken: z.string().role('secret'),
-  relay: z.boolean().default(true),
-  lanBind: z.boolean(),
+  autoTunnel: z.boolean().default(false).volatile(),
+  tunnelToken: z.string().role('secret').volatile(),
+  relay: z.boolean().default(true).volatile(),
+  lanBind: z.boolean().volatile(),
   profile: z.string().pattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
-  enabled: z.boolean().default(true),
+  enabled: z.boolean().default(true).volatile(),
 })
 
 /** Presence sweep cadence (a stale device flips to disconnected within two sweeps). */
 const SWEEP_INTERVAL_MS = 10_000
-
-/**
- * How long one update-status probe answer is reused. The probe fans out one
- * registry GET per family package plus a GitHub call, and the sidebar update
- * entry asks for the status on every GUI page load.
- */
-const UPDATE_STATUS_TTL_MS = 60_000
 
 /**
  * Fully resolved config: every field non-optional except `publicBaseUrl`,
@@ -250,6 +262,60 @@ type ResolvedConfig = Required<Omit<Config, 'publicBaseUrl' | 'trustedHosts' | '
   lanBind: boolean | undefined
   tunnelToken: string | undefined
   profile: string
+}
+
+/**
+ * The stable reference a `volatile()` config field resolves to; its owner
+ * updates it in place when the user saves.
+ */
+interface ConfigRef<T> {
+  /** @returns the value currently committed for the running instance. */
+  get(): T
+}
+
+/** One resolved config field: a live reference, or a plain value from a hand-built context. */
+type ConfigField<T> = ConfigRef<T> | T
+
+/** The config the Host hands {@link applyImpl} — the runtime face of {@link Config}. */
+export interface ResolvedConfigFields {
+  tokenTtlMs?: ConfigField<number>
+  offlineAfterMs?: ConfigField<number>
+  maxDevices?: ConfigField<number>
+  idleExpireMs?: ConfigField<number>
+  cookieName?: ConfigField<string>
+  requirePairingForLan?: ConfigField<boolean>
+  publicBaseUrl?: ConfigField<string>
+  trustedHosts?: ConfigField<string[]>
+  devicesFile?: ConfigField<string>
+  autoTunnel?: ConfigField<boolean>
+  tunnelToken?: ConfigField<string>
+  relay?: ConfigField<boolean>
+  lanBind?: ConfigField<boolean>
+  profile?: ConfigField<string>
+  enabled?: ConfigField<boolean>
+}
+
+/** Read one resolved config field, following the live reference the schema produces. */
+function readConfigField<T>(field: ConfigField<T> | undefined, fallback: T): T {
+  if (field === undefined) return fallback
+  if (typeof field === 'object' && field !== null && typeof (field as ConfigRef<T>).get === 'function') {
+    const value = (field as ConfigRef<T>).get()
+    return value === undefined ? fallback : value
+  }
+  return field as T
+}
+
+/**
+ * Read one optional resolved config field. A volatile reference is read at
+ * call time, so an unset field stays `undefined` rather than falling back to a
+ * schema default (the distinction the LAN toggle and the tunnel plan depend on).
+ */
+function readOptionalConfigField<T>(field: ConfigField<T> | undefined): T | undefined {
+  if (field === undefined) return undefined
+  if (typeof field === 'object' && field !== null && typeof (field as ConfigRef<T>).get === 'function') {
+    return (field as ConfigRef<T>).get()
+  }
+  return field as T
 }
 
 /**
@@ -291,8 +357,22 @@ const DEFAULTS: ResolvedConfig = {
   tunnelToken: undefined,
   relay: true,
   lanBind: undefined,
-  profile: process.env.DSH_PROFILE ?? 'web',
+  profile: resolveManagedProfile(undefined, undefined, process.env.DSH_PROFILE),
   enabled: true,
+}
+
+/**
+ * The launched profile the Host publishes on its `profileContext` service
+ * (`{ name, dir, patchPath, … }`). The Desktop client boots the "desktop"
+ * profile without exporting DSH_PROFILE, so the environment alone resolves
+ * the wrong profile there and the LAN bind toggle would edit a profile that
+ * is not running.
+ * @param ctx - host plugin context.
+ * @returns the profile name when the Host publishes one; undefined otherwise.
+ */
+function launchedProfileName(ctx: Context): string | undefined {
+  const fact = ctx.get('profileContext') as { name?: unknown } | undefined
+  return typeof fact?.name === 'string' && fact.name.length > 0 ? fact.name : undefined
 }
 
 /**
@@ -302,32 +382,31 @@ const DEFAULTS: ResolvedConfig = {
  */
 export const apply = mountOnce('@linxin666/dsh-remote-web-ui', applyImpl)
 
-function applyImpl(ctx: Context, config?: Config): void {
+function applyImpl(ctx: Context, config?: ResolvedConfigFields): void {
   const envPublicBase = process.env.DSH_REMOTE_PUBLIC_BASE_URL?.trim() || undefined
-  const resolved: ResolvedConfig = {
-    tokenTtlMs: config?.tokenTtlMs ?? DEFAULTS.tokenTtlMs,
-    offlineAfterMs: config?.offlineAfterMs ?? DEFAULTS.offlineAfterMs,
-    maxDevices: config?.maxDevices ?? DEFAULTS.maxDevices,
-    idleExpireMs: config?.idleExpireMs ?? DEFAULTS.idleExpireMs,
-    cookieName: config?.cookieName ?? DEFAULTS.cookieName,
-    requirePairingForLan: config?.requirePairingForLan ?? DEFAULTS.requirePairingForLan,
-    publicBaseUrl: config?.publicBaseUrl ?? envPublicBase,
-    trustedHosts: config?.trustedHosts,
-    devicesFile: config?.devicesFile ?? DEFAULTS.devicesFile,
-    autoTunnel: config?.autoTunnel ?? DEFAULTS.autoTunnel,
-    tunnelToken: config?.tunnelToken,
-    relay: config?.relay ?? DEFAULTS.relay,
-    lanBind: config?.lanBind,
-    profile: config?.profile ?? process.env.DSH_PROFILE ?? DEFAULTS.profile,
-    enabled: config?.enabled ?? DEFAULTS.enabled,
-  }
-  // The effective configuration this activation runs on: under the 0.1.7
-  // settings model the plugin's own Config IS its settings document, so the
-  // Host serves the settings page from this schema and reloads the row after a
-  // save — a live edit re-enters apply() with the new value instead of being
-  // pushed into a running instance.
-  const resolve = (): ResolvedConfig => resolved
-  const service = new PairingService(pairingConfigOf(resolved))
+  // The settings are read through the volatile references at every call rather
+  // than captured once: a settings save commits into those references and
+  // announces `loader/volatile-update` (see the listener below), so resolving
+  // them here is what makes a live edit reach the running instance without a
+  // remount — and keeps the device sessions, the tunnel and the routes alive.
+  const resolve = (): ResolvedConfig => ({
+    tokenTtlMs: readConfigField(config?.tokenTtlMs, DEFAULTS.tokenTtlMs),
+    offlineAfterMs: readConfigField(config?.offlineAfterMs, DEFAULTS.offlineAfterMs),
+    maxDevices: readConfigField(config?.maxDevices, DEFAULTS.maxDevices),
+    idleExpireMs: readConfigField(config?.idleExpireMs, DEFAULTS.idleExpireMs),
+    cookieName: readConfigField(config?.cookieName, DEFAULTS.cookieName),
+    requirePairingForLan: readConfigField(config?.requirePairingForLan, DEFAULTS.requirePairingForLan),
+    publicBaseUrl: readOptionalConfigField(config?.publicBaseUrl) ?? envPublicBase,
+    trustedHosts: readOptionalConfigField(config?.trustedHosts),
+    devicesFile: readConfigField(config?.devicesFile, DEFAULTS.devicesFile),
+    autoTunnel: readConfigField(config?.autoTunnel, DEFAULTS.autoTunnel),
+    tunnelToken: readOptionalConfigField(config?.tunnelToken),
+    relay: readConfigField(config?.relay, DEFAULTS.relay),
+    lanBind: readOptionalConfigField(config?.lanBind),
+    profile: resolveManagedProfile(readOptionalConfigField(config?.profile), launchedProfileName(ctx), process.env.DSH_PROFILE),
+    enabled: readConfigField(config?.enabled, DEFAULTS.enabled),
+  })
+  const service = new PairingService(pairingConfigOf(resolve()))
 
   // ── auto tunnel ─────────────────────────────────────────────────────────
   // The minted public URL becomes the QR base (and the pairing fence's
@@ -394,7 +473,7 @@ function applyImpl(ctx: Context, config?: Config): void {
   }
   // 'off' until a sync pass turns a mode on; the phase listener only feeds
   // the public base while a plugin-managed tunnel (quick or named) runs.
-  let tunnelMode: 'off' | 'quick' | 'named' = resolved.autoTunnel ? 'quick' : 'off'
+  let tunnelMode: 'off' | 'quick' | 'named' = resolve().autoTunnel ? 'quick' : 'off'
   tunnel.onPhase((info: TunnelInfo) => {
     if (tunnelMode === 'off') return
     if (info.phase === 'running' && info.url !== undefined) {
@@ -450,89 +529,6 @@ function applyImpl(ctx: Context, config?: Config): void {
   // request) instead of opening the fence.
   let disposeRoutes: (() => void) | undefined
   let disposeSweep: (() => void) | undefined
-  // ── remote update ────────────────────────────────────────────────────────
-  // The dsh-web self-update surface: probe the npm registry for family
-  // releases and run `pnpm update --latest` in the owning profile. Resolutions
-  // anchor on the host process's own module graph, so the update always
-  // targets the profile the running web GUI was booted from. The anchor path
-  // is re-resolved per operation: pnpm removes the old version's .pnpm
-  // directory on update, so a boot-time captured path would fail to read
-  // after a successful update; versions are re-read from disk per check.
-  const requireFromHost = createRequire(import.meta.url)
-  /** Host-process resolve that degrades to "not installed" (undefined) instead of throwing. */
-  const hostResolve = (specifier: string): string | undefined => {
-    try {
-      return requireFromHost.resolve(specifier)
-    } catch {
-      return undefined
-    }
-  }
-  const resolveAnchorPath = (): string | undefined => resolveAnchorManifest(hostResolve)
-
-  const releaseNotesCache = new Map<string, { at: number; notes?: UpdateReleaseNotes }>()
-  const fetchReleaseNotesCached = async (version: string): Promise<UpdateReleaseNotes | undefined> => {
-    const cached = releaseNotesCache.get(version)
-    if (cached !== undefined && Date.now() - cached.at < RELEASE_NOTES_CACHE_TTL_MS) return cached.notes
-    const notes = await fetchGitHubReleaseNotes(version, fetch)
-    releaseNotesCache.set(version, { at: Date.now(), notes })
-    return notes
-  }
-  // The status probe fans out one registry GET per family package (plus a
-  // GitHub release-notes call), and the sidebar update entry asks for it on
-  // every GUI page load — so the answer is memoized briefly and concurrent
-  // callers share one probe. A completed update invalidates it.
-  let updateStatusCache: { at: number; value: Awaited<ReturnType<typeof checkUpdates>> } | undefined
-  let updateStatusInFlight: Promise<Awaited<ReturnType<typeof checkUpdates>>> | undefined
-  const checkStatusCached = (): Promise<Awaited<ReturnType<typeof checkUpdates>>> => {
-    const cached = updateStatusCache
-    if (cached !== undefined && Date.now() - cached.at < UPDATE_STATUS_TTL_MS) return Promise.resolve(cached.value)
-    if (updateStatusInFlight !== undefined) return updateStatusInFlight
-    updateStatusInFlight = checkUpdates({
-      anchorManifestPath: resolveAnchorPath(),
-      resolve: hostResolve,
-      fetchLatest: name => fetchLatestVersion(name, fetch),
-      fetchReleaseNotes: fetchReleaseNotesCached,
-    }).then((value) => {
-      updateStatusCache = { at: Date.now(), value }
-      return value
-    }).finally(() => { updateStatusInFlight = undefined })
-    return updateStatusInFlight
-  }
-  const updateRoutes = makeUpdateRoutes({
-    // Control endpoints are host-surface only: a LAN/phone origin must never
-    // trigger a real install on this machine.
-    fence: request => isTrustedApiRequest(request, []),
-    check: () => checkStatusCached(),
-    run: async (): Promise<UpdateRunResult> => {
-      const target = resolveUpdateTarget({ anchorManifestPath: resolveAnchorPath() })
-      if ('error' in target) {
-        const code = target.error
-        return {
-          ok: false,
-          exitCode: null,
-          output: '',
-          error: code === 'not-found' ? 'dsh-web aggregate not installed' : 'local link install — update unavailable',
-          errorCode: code,
-        }
-      }
-      // Verify the versions actually moved after a green pnpm exit: the pnpm
-      // 11 minimumReleaseAge gate can silently keep the installed versions
-      // (same-day releases), which a plain exit-0 check would report as
-      // success — the user then restarts and nothing changed.
-      const result = await runUpdateVerified({
-        run: { profileDir: target.profileDir, packages: target.packages },
-        check: {
-          anchorManifestPath: resolveAnchorPath(),
-          resolve: hostResolve,
-          fetchLatest: name => fetchLatestVersion(name, fetch),
-          fetchReleaseNotes: fetchReleaseNotesCached,
-        },
-      })
-      // The install moved (or failed) the versions the cached status reported.
-      updateStatusCache = undefined
-      return result
-    },
-  })
   // LAN-bind facts for the settings card, re-read per request so a hot
   // rebind (the patch watcher recomposes the process) and a fresh toggle
   // round are both reflected without a restart.
@@ -653,7 +649,6 @@ function applyImpl(ctx: Context, config?: Config): void {
       port: ctx.webServer.port,
       auth: innerAuth,
     }),
-    ...updateRoutes,
   ]
   const upgrades = makeRemoteApiUpgradeRoutes({
     service,
@@ -741,18 +736,22 @@ function applyImpl(ctx: Context, config?: Config): void {
     console.warn('remote-web-ui: LAN-exposed bind — pairing gates the /remote channel; direct /api stays under the harness fence + browser auth (stop() does not revoke an already-redeemed browser credential)')
   }
 
-  // Apply the effective configuration to the running surfaces once per
-  // activation: the service tunables, the LAN-bind block/firewall, the tunnel
-  // plan, the pairing routes, the presence sweep, and the posture probe.
-  const sync = (): void => {
-    const value = resolve()
-    service.config = pairingConfigOf(value)
-    // LAN bind toggle: only write the managed patch block once the user has
-    // flipped it (undefined = untouched, never write). Desired host/port come
-    // from the CLI flags when given (flags win), else from the toggle and
-    // the currently bound port. The block takes effect on the next start, so
-    // the re-assert at every boot keeps it in sync with both the toggle and
-    // the flags.
+  // LAN bind toggle: only write the managed patch block once the user has
+  // flipped it (undefined = untouched, never write). Desired host/port come
+  // from the CLI flags when given (flags win), else from the toggle and
+  // the currently bound port. The block takes effect on the next start, so
+  // the re-assert at every boot keeps it in sync with both the toggle and
+  // the flags.
+  //
+  // This work must leave the caller's async context first: a settings save
+  // runs inside the Host's hmr.runExclusive, and cordis.patch.yml is exactly
+  // the file the HMR config watcher refreshes from. A write issued on that
+  // same context makes the watcher's refresh re-enter runExclusive, which
+  // rejects with "HMR transactions cannot be nested" and fails the user's
+  // save (issue #1751). setImmediate starts a fresh AsyncLocalStorage store,
+  // so the assertion runs outside the transaction; it is idempotent, so the
+  // coalesced follow-up sync() re-reading the same block writes nothing.
+  const applyLanBindWork = (value: ResolvedConfig): void => {
     if (value.lanBind !== undefined) {
       const startup = ctx.get('webStartup') as StartupFacts | undefined
       const desiredHost = desiredBindHost(value.lanBind === true, startup?.host)
@@ -790,6 +789,36 @@ function applyImpl(ctx: Context, config?: Config): void {
         }
       }
     }
+  }
+
+  // The LAN bind assertion never blocks the caller: one pending work item is
+  // enough, and it always re-reads the config through `resolve()` at run time
+  // so a toggle flipped twice before the tick lands on the last value.
+  let lanBindWorkPending = false
+  const scheduleLanBindWork = (): void => {
+    if (lanBindWorkPending) return
+    lanBindWorkPending = true
+    setImmediate(() => {
+      lanBindWorkPending = false
+      try {
+        applyLanBindWork(resolve())
+      } catch (error) {
+        // A deferred assertion must never surface as an unhandled rejection:
+        // the settings save that triggered it already answered, and the card
+        // reads the live block state back on its own poll.
+        console.error(`remote-web-ui: the deferred lan-bind assertion failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    })
+  }
+  ctx.effect(() => () => { lanBindWorkPending = false }, 'remote-web-ui: lan-bind work')
+
+  // Apply the effective configuration to the running surfaces once per
+  // activation: the service tunables, the LAN-bind block/firewall, the tunnel
+  // plan, the pairing routes, the presence sweep, and the posture probe.
+  const sync = (): void => {
+    const value = resolve()
+    service.config = pairingConfigOf(value)
+    scheduleLanBindWork()
     // The plugin-managed tunnels own the public base while one runs: the URL
     // lands in the service through the tunnel's phase listener (the minted
     // quick URL, or the named tunnel's fixed public hostname). The manual
@@ -917,8 +946,17 @@ function applyImpl(ctx: Context, config?: Config): void {
     table.push({ kind: 'script', placement: 'head', text: REMOTE_CHANNEL_BOOT_SCRIPT })
   }), 'remote-web-ui: remote channel boot patch')
 
+  // The settings write path. The Host commits the new values into this row's
+  // volatile references and announces it here instead of remounting the row, so
+  // `sync` is what re-applies them: it re-reads every field through those
+  // references (see `resolve`) and is idempotent, so a save that changes
+  // nothing observable is a no-op while a disable, a bind flip or a tunnel
+  // change lands on the live instance without dropping the pairing service,
+  // its device sessions or the route registrations.
+  ctx.on('loader/volatile-update', () => { sync() })
+
   // No settings registration: the Host derives this plugin's settings page
-  // from the exported `Config` schema and reloads the row after a save, so
-  // every write re-enters apply() with the new config (see `resolve`).
+  // from the exported `Config` schema, whose volatile fields are what make the
+  // page writable and what route a save through the live path above.
   sync()
 }

@@ -76,6 +76,29 @@ pnpm typecheck && pnpm test && pnpm docs:check   # 提交前必过
 
 三个卫星仓（`dsh-skins` / `dsh-pet` / `dsh-community-plugins`）以 git submodule 挂在 `satellites/`，市场构建按各自的 gitlink 固定提交拉取内容。默认不需要检出：要就地改卫星仓内容时才 `git submodule update --init satellites/<仓名>`。该命令把工作树停在 gitlink 固定的提交上（detached HEAD），要提交改动先切到该仓的默认分支：`git -C satellites/<仓名> checkout main`。检出停在该固定提交时 `pnpm market:fetch` 直接复制该工作树；检出离开固定提交（切了分支，或提交了自己的改动）时，默认运行会明确提示并仍按固定提交构建，`pnpm market:fetch --local` 才读取该工作树——这样构建出的 `market/dist` 来自未固定内容，不得提交。
 
+**卫星仓的改动必须在卫星仓提交。** `satellites/<仓名>` 是独立的 git 仓库，
+在本仓写下的文件改动不会被本仓的 `git add` 收走：只 `git add` 本仓会把它们的
+工作树留在 dirty 状态（`git status` 显示 `m satellites/<仓名>`），下次检出/清理
+就可能丢失。改完卫星仓（含随源码一起重新生成的 `lib/`）后：
+
+1. 在卫星仓提交：`git -C satellites/<仓名> add -A && git -C satellites/<仓名> commit`；
+2. **把该提交推到卫星仓的远程**：`git -C satellites/<仓名> push origin main`；
+3. 回到本仓把新的 gitlink 一起提交：`git add satellites/<仓名> && git commit`。
+
+三步缺一不可——只提交卫星仓，本仓仍指向旧提交，其他检出与市场构建读到的还是改动前的
+内容；只提交 gitlink 则根本不成立（卫星仓的提交才是被固定的对象）。漏掉第 2 步最隐蔽：
+本地检出的工作树停在该提交上，`pnpm market:fetch` 直接复制它、构建照常成功，但拉取内容时
+的 tarball 回退只按 SHA 寻址该提交，于是只存在于本地的提交让每一个全新克隆与 CI 的
+`pnpm market:fetch` 得到 `HTTP 404`——移动钉扎的那一次运行成功，掩盖了后续所有运行的失败。
+卫星仓内改动的验收与门禁在该仓自己的 CI 跑（见该仓 `AGENTS.md`）。
+
+**桌面宿主读到的是哪份卫星副本**：全家桶聚合包按 semver 声明这四个卫星包
+（`^0.4.3`），`pnpm install` 因此把聚合包 `node_modules/@linxin666` 下的符号链接指到
+pnpm store 的已发布 tarball。桌面宿主解析聚合 patch 行贡献的外部行时从聚合包自身的
+node_modules 出发——仅提交卫星仓并重启，GUI 加载的仍是发布版旧代码。在本地检出开发
+卫星内容后重跑 `node scripts/link-profile.mjs`：它会把这些 store 链接改指到本地卫星
+（仅当该卫星已构建 `lib/` 且版本满足声明的范围），随后重启 DSH 生效。
+
 ## 提交规范
 
 提交信息格式 `type(scope): subject`，type 用 `feat` / `fix` / `chore` /
@@ -92,7 +115,7 @@ active panel (#76 #87)`。提交信息禁止 emoji（全仓规则）。
    `README.zh.md` + `README.i18n.yaml`），改完任一侧后重录配对记录：
 
 ```sh
-pnpm docs:write-pair <包目录名>   # 如 dsh-ssh 或 xp
+pnpm docs:write-pair <包目录名>   # 如 dsh-ssh 或 dsh-update
 ```
 
 3. **无 emoji**：代码、注释、文档、提交信息均不得出现 emoji（CI 有全树
@@ -165,7 +188,7 @@ dsh-market.com。预设启用后运行在 DSH 宿主进程内，PR 描述需说�
 | --- | --- | --- |
 | [AGENTS.md](AGENTS.md) | 布局、命令、全局约定、开发与贡献流程 | 每个会话 |
 | [packages/AGENTS.md](packages/AGENTS.md) | 包级规则：SDK 约束、bundle 形态、测试纪律 | 改 packages/ 前 |
-| [docs/AGENTS.md](docs/AGENTS.md) | 文档标准：结构分层、写作规则、i18n 配对、预算 | 写文档前 |
+| [docs/AGENTS.md](docs/AGENTS.md) | 文档标准：结构分层、写作规则、i18n 配对 | 写文档前 |
 | 各包 `AGENTS.md` | 该包特有规则（如 dsh-ssh 安全模型） | 改对应包前 |
 | [docs/architecture.md](docs/architecture.md) | 架构总览与运行时全景 | 了解整体架构时 |
 | [docs/plugins.md](docs/plugins.md) | 新插件入桶规范与脚手架 | 新增或改造插件时 |

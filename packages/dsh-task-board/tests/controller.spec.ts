@@ -39,7 +39,7 @@ class FakeSessions {
 /** Host-like snapshot builder for transport fakes. */
 function snapshot(revision: number, tasks: TaskRecord[] = [], ledgerId = 'ledger-a'): TaskBoardSnapshot {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     revision,
     tasks,
     scheduler: { timeZone: 'UTC', ledgerId },
@@ -50,7 +50,7 @@ function snapshot(revision: number, tasks: TaskRecord[] = [], ledgerId = 'ledger
   }
 }
 
-function makeController() {
+function makeController(panel?: { select(panelId: string | null): void }) {
   const sessions = new FakeSessions()
   const store = new InMemoryTaskStore()
   const deps: ControllerDeps = {
@@ -58,6 +58,7 @@ function makeController() {
     sessions,
     now: () => NOW,
     uuid,
+    ...(panel === undefined ? {} : { panel }),
   }
   const controller = new BoardController(deps)
   controller.start()
@@ -216,6 +217,62 @@ describe('view state', () => {
     expect(controller.getSnapshot().boardOpen).toBe(true)
   })
 
+  it('operator sees the layout select the board panel on open and the conversation on close', () => {
+    // Given a controller wired to the layout panel-navigation face
+    const selections: Array<string | null> = []
+    const { controller } = makeController({ select: panelId => { selections.push(panelId) } })
+
+    // When the user opens and closes the board
+    controller.openBoard()
+    controller.closeBoard()
+    // Re-opening is not a second selection request for the already-open board
+    controller.openBoard()
+
+    // Then the layout was asked for the board panel, then the conversation,
+    // then the board again
+    expect(selections).toEqual(['task-board', null, 'task-board'])
+  })
+
+  it('operator reopening an open board sees no second panel selection (#1233)', () => {
+    // Given an already-open board
+    const selections: Array<string | null> = []
+    const { controller } = makeController({ select: panelId => { selections.push(panelId) } })
+    controller.openBoard()
+
+    // When openBoard runs again
+    controller.openBoard()
+
+    // Then the layout is not asked to re-select the same panel
+    expect(selections).toEqual(['task-board'])
+  })
+
+  it('operator keeps the board open when the layout face throws before its root entry mounts', () => {
+    // Given a layout service that throws by contract during boot
+    const { controller } = makeController({
+      select: () => { throw new Error('layout root entry has not mounted') },
+    })
+
+    // When the board opens
+    // Then the local state still flips; the throw never reaches the caller
+    expect(() => { controller.openBoard() }).not.toThrow()
+    expect(controller.getSnapshot().boardOpen).toBe(true)
+  })
+
+  it('operator clicking another panel row sees the board follow without asking the layout back', () => {
+    // Given an open board whose layout face records any request
+    const selections: Array<string | null> = []
+    const { controller } = makeController({ select: panelId => { selections.push(panelId) } })
+    controller.openBoard()
+    selections.length = 0
+
+    // When the user clicks another sidebar panel row (the layout owns selection)
+    controller.syncPanelSelection('plugins')
+
+    // Then the board's own view state follows, with no write back to the layout
+    expect(controller.getSnapshot().boardOpen).toBe(false)
+    expect(selections).toEqual([])
+  })
+
   it('stays open when the current selection changes without user navigation', () => {
     const { controller, sessions } = makeController()
     sessions.setCurrent('s-1')
@@ -283,7 +340,14 @@ describe('view state', () => {
 describe('run loop', () => {
   it('requests a Host run and applies the confirmed running state', async () => {
     const initial = createTask({ title: '任务A', description: '', prompt: '干活' }, NOW, 'task-a')
-    const running = { ...initial, status: 'running' as const, updatedAt: NOW + 1 }
+    const running = {
+      ...initial,
+      status: 'running' as const,
+      updatedAt: NOW + 1,
+      executions: [{
+        id: 'e-open', sessionId: undefined, startedAt: NOW, endedAt: undefined, result: undefined, error: undefined,
+      }],
+    }
     const actions: TaskBoardAction[] = []
     const transport: TaskBoardTransport = {
       bootstrap: async () => snapshot(1, [initial]),
@@ -301,6 +365,28 @@ describe('run loop', () => {
     // A second run while the task is already running is ignored locally.
     expect(await controller.runTask('task-a')).toBe(false)
     expect(actions).toHaveLength(1)
+    controller.dispose()
+  })
+
+  it('operator runs a card parked in the running column by hand', async () => {
+    // Given a card parked in the running column with no execution behind it
+    const initial = createTask({ title: '任务A', description: '', prompt: '干活' }, NOW, 'task-a')
+    const parked = { ...initial, status: 'running' as const, updatedAt: NOW + 1 }
+    const actions: TaskBoardAction[] = []
+    const transport: TaskBoardTransport = {
+      bootstrap: async () => snapshot(1, [parked]),
+      state: async () => snapshot(1, [parked]),
+      action: async action => { actions.push(action); return snapshot(2, [parked]) },
+      subscribe: () => () => undefined,
+    }
+    const controller = new BoardController({ store: new InMemoryTaskStore(), sessions: new FakeSessions(), transport, now: () => NOW, uuid })
+    controller.start()
+    await controller.retryHostSync()
+
+    // When the operator asks for a run
+    // Then the Host request goes out: only an open execution blocks a launch
+    expect(await controller.runTask('task-a')).toBe(true)
+    expect(actions).toEqual([{ kind: 'run', taskId: 'task-a' }])
     controller.dispose()
   })
 

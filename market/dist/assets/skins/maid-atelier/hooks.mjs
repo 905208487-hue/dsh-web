@@ -166,7 +166,15 @@ function createSidebarCorners() {
  * overlay / desktop shell).
  */
 function decorateTitlebarBrand(ownedNodes) {
-  const titlebar = document.querySelector("[class*='titlebar']")
+  // The official Windows desktop shell exposes its frameless title bar through
+  // `html[data-windows-titlebar]` and paints it on the window frame, so there is
+  // no hashed class to match there. Prefer that stable marker and keep the
+  // hashed-class lookup as the fallback for the web build, which has neither
+  // (issue #1745).
+  const desktopTitlebar = document.documentElement.hasAttribute('data-windows-titlebar')
+    ? document.querySelector('.frame')
+    : null
+  const titlebar = desktopTitlebar ?? document.querySelector("[class*='titlebar']")
   if (!titlebar) return
   if (titlebar.querySelector("[data-skin-chrome='titlebar-brand']")) return
   const brand = document.createElement('span')
@@ -406,8 +414,14 @@ export default function defineSkinHooks() {
       titlebarOverlay?.addEventListener('geometrychange', syncTitlebarHeight)
       try { syncTitlebarHeight() } catch {}
 
+      // A collapsed width of 0 is the official Windows desktop state (the
+      // host's own collapsedWidth is 0 under data-windows-titlebar; 56 is the
+      // other form), not a measurement failure. Bailing out on it left
+      // --maid-sidebar-width and data-maid-sidebar-size frozen at the last
+      // expanded value, so the lace and the rail ring never returned to their
+      // collapsed place (issue #1745).
       const applySidebarWidth = (width) => {
-        if (width <= 0) return
+        if (width < 0) return
         const roundPx = (value) => `${Math.round(value * 100) / 100}px`
         const widthVal = roundPx(width)
         const swagVal = roundPx(Math.min(94, Math.max(54, width * 0.2575)))

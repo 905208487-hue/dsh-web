@@ -4,10 +4,10 @@
  * a link the Host would refuse is not offered in the first place; the Host
  * still re-checks the action at submit time.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { BoardController } from '../../core/controller.ts'
-import { DEFAULT_SUBTASK_DEPTH, checkParentLink } from '../../core/subtask.ts'
-import type { TaskRecord } from '../../core/tasks.ts'
+import { DEFAULT_SUBTASK_DEPTH, buildLineageIndex, checkParentLink } from '../../core/subtask.ts'
+import { hasOpenExecution, type TaskRecord } from '../../core/tasks.ts'
 import { t } from '../locales.ts'
 import css from '../board.module.css'
 import { STATUS_KEY } from './status-key.ts'
@@ -28,15 +28,26 @@ export function LinkSubtaskModal({ controller, parent, onClose }: LinkSubtaskMod
   const limit = snapshot.host?.maxSubtaskDepth ?? DEFAULT_SUBTASK_DEPTH
   // Only root, on-board tasks can move under another parent; the lineage gate
   // decides the rest (depth, cycle, archived parent).
-  const candidates = snapshot.tasks.filter(task =>
-    task.archivedAt === undefined
-    // A running task may already be a participant of another run group; the
-    // Host refuses the move, so it is not offered here.
-    && task.status !== 'running'
-    && task.parentId === undefined
-    && task.id !== parent.id
-    && checkParentLink(snapshot.tasks, task.id, parent.id, limit).ok,
-  )
+  //
+  // The gate is run once per candidate task, so it is given ONE lineage index
+  // for the whole pass: without it every call rebuilds the id/child maps and
+  // rescans the ledger, turning a render into quadratic work. The derivation
+  // also runs on every controller notification (the SSE heartbeat included),
+  // so it is memoized on the inputs it actually reads.
+  const tasks = snapshot.tasks
+  const candidates = useMemo(() => {
+    const lineage = buildLineageIndex(tasks)
+    return tasks.filter(task =>
+      task.archivedAt === undefined
+      // An executing task may already be a participant of another run group;
+      // the Host refuses the move, so it is not offered here. A card parked in
+      // the running column by hand carries no execution and stays linkable.
+      && !hasOpenExecution(task)
+      && task.parentId === undefined
+      && task.id !== parent.id
+      && checkParentLink(tasks, task.id, parent.id, limit, lineage).ok,
+    )
+  }, [tasks, parent.id, limit])
   const link = async (taskId: string): Promise<void> => {
     setPending(true)
     setError(undefined)

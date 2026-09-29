@@ -17,6 +17,16 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://dsh-market.com/tryon/?skin=porco-rosso</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsh-market.com/tryon/?skin=verdandi</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://dsh-market.com/tryon/?skin=whale-song</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -27,7 +37,17 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://dsh-market.com/tryon/?skin=last-exile</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://dsh-market.com/tryon/?skin=harbor</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsh-market.com/tryon/?skin=white-snake</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -97,6 +117,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://dsh-market.com/tryon/?skin=ice-princess</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://dsh-market.com/tryon/?skin=observatory</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -147,7 +172,22 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://dsh-market.com/tryon/?skin=ice-princess</loc>
+    <loc>https://dsh-market.com/tryon/?skin=shangmei-jinbi</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsh-market.com/tryon/?skin=mid-autumn</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsh-market.com/tryon/?skin=whale-fantasy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsh-market.com/tryon/?skin=claude</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

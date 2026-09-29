@@ -2,6 +2,7 @@
 # deps 的包进 package.json dependencies（workspace:*）：children 作为 dependencies
 # 安装，DSH loader 从 profile 顶层解析 patch 行；严格（isolated）布局需在
 # profile 配 hoist（nodeLinker: hoisted 或 public-hoist-pattern，见根 README）
+# dsh-skins 的 patch 行只有 skin-center，汇总后展开为 web-ui-skin-center
 # 所有子插件行 id 统一加 web-ui- 命名空间（生成器剥掉子包 ui- 前缀后加 web-ui-），
 # 与独立包安装共存，不再触发 loader duplicate entry id
 # self: 聚合包自身也作为插件加载（compat shim 的 host/client 已并入本包，
@@ -9,18 +10,25 @@
 # 顺序注意：ui-web-ui-settings 排在最前（self 之后），先声明
 # web-ui.plugin.item 子槽位，其余插件的设置卡再注入（slots.inject 声明感知，
 # 但更早的声明让设置组在任何卡片之前就位，避免观感上的注册顺序歧义）。
+# remote-web-ui 排在 pet 前，确保非 loopback 页面先安装配对门控的远程通道，
+# 再由 pet 发起首次 /api/pet/* 请求，避免启动阶段命中 SDK 围栏。
 patchFrom:
   - ../dsh-web-settings
   - ../dsh-plugin-manager
+  - ../dsh-market
   - ../dsh-task-board
   - ../dsh-git-graph
   - ../dsh-remote-web-ui
+  # dsh-update 紧邻 remote-web-ui：两者共用侧栏 footer action 席位，
+  # 自更新行跟在远程访问行之后，观感顺序稳定。
+  - ../dsh-update
   - ../dsh-ssh
   - ../dsh-liangshen
   - ../dsh-skill-explorer
   - ../dsh-usage
   - ../dsh-session-archive
   - ../dsh-model-capabilities
+  # quick-restart：设置卡内一键重启 dsh web 服务（2026-09-26 新增家族包）。
   - ../dsh-quick-restart
   # dsh-i18n 语言包无宿主行为、无时序依赖，放列表末尾：注册 ru 语言与全部
   # 家族插件命名空间的 ru 字典（见 packages/dsh-i18n）。
@@ -29,9 +37,11 @@ self:
   - web-ui-compat
 deps:
   - ../dsh-plugin-manager
+  - ../dsh-market
   - ../dsh-task-board
   - ../dsh-git-graph
   - ../dsh-remote-web-ui
+  - ../dsh-update
   - ../dsh-ssh
   - ../dsh-liangshen
   - ../dsh-skill-explorer
@@ -42,14 +52,24 @@ deps:
   - ../dsh-web-settings
   - ../dsh-i18n
 
-# 独立仓库卫星（npm 外部行）：2026-09-26 起家族不再内置皮肤/宠物/社区插件索引/
-# 预设中心与创意工坊商店插件（见 Agent Note 2026-09-26-remove-workshop-and-satellite-rows）。
-# 四个卫星仓仍以 git submodule 形式保留，仅作 dsh-market.com 站点构建的内容输入。
-rows: []rows: []
+# 独立仓库卫星（npm 外部行）：皮肤中心、宠物、社区插件索引迁出本单一仓库后由各自
+# 仓库独立发版，这里只按 registry 版本内置。行 id 与 patchFrom 时期逐字一致
+# （web-ui-* 命名空间不变），老 profile 无需迁移；remote-web-ui 仍排在 pet 之前
+# （patchFrom 行整体先于外部行渲染）。
+# 依赖版本由 packages/dsh-web-all/package.json 手写并随生成器保留。
+# 代价：外部行不带聚合包的 fault-isolation shell，且客户端不再内联进本包 lib
+# （改由卫星自带的 loader entry 挂载）。
+# preset-center 排在 patchFrom 行之后：创意工坊卡片（本仓 dsh-market 行）先声明
+# dsh-workshop.panel 子槽位，预设面板再注册进该槽位（见 dsh-presets 仓）。
+rows:
+  - {"id": "community-plugins", "name": "@linxin666/dsh-client-ui-community-plugins"}
+  - {"id": "pet", "name": "@linxin666/dsh-pet"}
+  - {"id": "preset-center", "name": "@linxin666/dsh-client-ui-preset-center"}
+  - {"id": "skin-center", "name": "@linxin666/dsh-client-ui-skin-center"}
 
 # 外部 npm 插件段：alpha 分支（2026-09-17 决策）不内置 dsh-better-sidebar。
 # 该插件 0.19.1 的全部 @deepseek-ai/dsh-* peer 声明为 ^0.1.5-rc.1，按 semver
-# 不覆盖本分支的 0.1.7-rc.1 cohort（预发布版本只匹配同 [major,minor,patch]
+# 不覆盖本分支的 0.2.0-rc.2 cohort（预发布版本只匹配同 [major,minor,patch]
 # 元的区间），因此 alpha 实验环境不再挂载这个右侧面板插件：聚合包不依赖它、
 # profile 里也不出现它的行。需要右侧面板时按需安装
 # （dsh plugin --profile <name> add dsh-better-sidebar@latest）。
@@ -71,7 +91,7 @@ inactive:
   - web-ui-skill-explorer
 # 归档设置入口（2026-09-15 原生优先决策）：dsh-session-archive 注册官方 section id
 # archived-sessions 与 order 25 接管该入口，把「原生恢复列表 + 家族批量归档/删除/
-# 自动策略」放在同一页。>=0.1.7-rc.1 的官方 dsh-web-app 不再挂载
+# 自动策略」放在同一页。>=0.2.0-rc.2 的官方 dsh-web-app 不再挂载
 # ui-settings-unarchive-sessions 行，所以这里没有 retire 目标：对不存在的行写
 # disabled 覆盖只会让 loader 每次启动都报 "patch: entry ... not found"。加回 retire
 # 目标前必须先在当前 cohort 上用 dsh --profile <name> --dump-config 确认该外部行存在。
@@ -89,4 +109,3 @@ tombstones:
   - preset-center
   - skin-center
   - community-plugins
-  - market

@@ -1,12 +1,11 @@
 /**
  * The sidebar remote-control seat: the phone-icon trigger beside the
  * settings button, and the pairing panel modal. Owns the panel behavior —
- * token minting on open, the status SSE subscription, stop/refresh/copy —
- * and renders the pure {@link RemotePanel} body. The self-update trigger
- * that used to ride the same footer row was removed from the seat on
- * 2026-09-26 (its flow stays in {@link UpdateEntry}). Component-local
- * state per the client stack rules: nothing here survives remounts or
- * crosses entries.
+ * token minting on open, the status SSE subscription, stop/refresh/copy — and
+ * renders the pure {@link RemotePanel} body. The family self-update seat is
+ * its own plugin (dsh-update) and no longer rides this row. Component-local
+ * state per the client stack rules: nothing here survives remounts or crosses
+ * entries.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'

@@ -59,6 +59,37 @@ afterEach(() => {
   for (const value of roots.splice(0)) rmSync(value, { recursive: true, force: true })
 })
 
+/**
+ * A controllable Host timer face. The board arms exactly one schedule timer at
+ * its next target, so a test reads the armed delay and fires that timer instead
+ * of advancing real wall-clock time by a fixed heartbeat.
+ * @returns the timer face plus the most recent schedule arming.
+ */
+function timerProbe() {
+  let last: { callback: () => void; delay: number } | undefined
+  const timers = {
+    timeout(callback: () => void, delay: number): () => void {
+      last = { callback, delay }
+      return () => {}
+    },
+    interval(): () => void {
+      return () => {}
+    },
+  }
+  return {
+    timers,
+    /** Delay of the most recently armed schedule timer, in ms. */
+    get delay(): number { return last?.delay ?? 0 },
+    /** Fire the most recently armed schedule timer and flush its launch chain. */
+    async trigger(): Promise<void> {
+      const armed = last
+      last = undefined
+      armed?.callback()
+      for (let turn = 0; turn < 50; turn += 1) await Promise.resolve()
+    },
+  }
+}
+
 
 describe('team-run dispatch', () => {
   /**
@@ -134,9 +165,12 @@ describe('team-run dispatch', () => {
     expect(prompts).toHaveLength(1)
     expect(spawns.map(input => input.leadSessionId)).toEqual(['session-lead', 'session-lead'])
     expect(spawns.map(input => input.name)).toEqual([
-      expect.stringMatching(/^collect-carbon-[0-9a-f]{8}$/),
-      expect.stringMatching(/^model-[0-9a-f]{8}$/),
+      expect.stringMatching(/^collect-carbon-[0-9a-f]{4}-[0-9a-f]{8}$/),
+      expect.stringMatching(/^model-[0-9a-f]{4}-[0-9a-f]{8}$/),
     ])
+    // Two members of one run group can never share a name: Agent Teams refuses
+    // the second spawn, which is how three subtasks of a real run never started.
+    expect(new Set(spawns.map(input => input.name)).size).toBe(spawns.length)
     expect(spawns[0].prompt).toContain('collect')
     const tasks = ledger.state().tasks
     expect(tasks.find(task => task.id === 'root')?.executions.at(-1)?.sessionId).toBe('session-lead')
@@ -248,20 +282,25 @@ describe('TaskBoardHostService scheduling without a browser', () => {
       if (request.method === 'prompt') return prompt(request)
       throw new Error('unexpected gateway call')
     })
+    const probe = timerProbe()
     const service = new TaskBoardHostService(gateway, {
       ledger,
       power: new PowerInhibitor({ platform: 'linux' }),
+      timers: probe.timers,
       now: () => now,
     })
+    service.start()
+    // The next cron instant after 10:00:30 is 10:01:00: the armed delay is exact.
+    expect(probe.delay).toBe(30_000)
+
     now = new Date(2026, 7, 16, 10, 1, 0).getTime()
-    await (service as unknown as { tickSchedule(first: boolean): Promise<void> }).tickSchedule(false)
-    await new Promise(resolve => { setTimeout(resolve, 0) })
+    await probe.trigger()
     expect(create).toHaveBeenCalledOnce()
     expect(prompt).toHaveBeenCalledOnce()
     expect(ledger.state().tasks[0].executions).toHaveLength(1)
     expect(ledger.state().tasks[0].executions[0].sessionId).toBe('session-scheduled')
-    await (service as unknown as { tickSchedule(first: boolean): Promise<void> }).tickSchedule(false)
-    expect(create).toHaveBeenCalledOnce()
+    // The schedule rolled to 10:02:00 and re-armed one minute out.
+    expect(probe.delay).toBe(60_000)
     service.dispose()
   })
 
@@ -277,14 +316,17 @@ describe('TaskBoardHostService scheduling without a browser', () => {
     ledger.applyRequest('import', { kind: 'import', sourceId: 'legacy', tasks: [archived] })
     const create = vi.fn()
     const { gateway } = makeGateway(request => request.method === 'create' ? create(request) : { items: [] })
+    const probe = timerProbe()
     const service = new TaskBoardHostService(gateway, {
       ledger,
       power: new PowerInhibitor({ platform: 'linux' }),
+      timers: probe.timers,
       now: () => now,
     })
+    service.start()
 
-    await (service as unknown as { tickSchedule(first: boolean): Promise<void> }).tickSchedule(false)
-
+    // The archived card is not an armed target, so nothing was ever armed.
+    expect(probe.delay).toBe(0)
     expect(create).not.toHaveBeenCalled()
     expect(ledger.state().tasks[0].executions).toEqual([])
     service.dispose()
@@ -300,16 +342,22 @@ describe('TaskBoardHostService scheduling without a browser', () => {
     })
     const create = vi.fn()
     const { gateway } = makeGateway(request => request.method === 'create' ? create(request) : { items: [] })
+    const probe = timerProbe()
     const service = new TaskBoardHostService(gateway, {
       ledger,
       power: new PowerInhibitor({ platform: 'linux' }),
+      timers: probe.timers,
       now: () => now,
     })
+    // Boot is a recovery point: the 10:01:00 occurrence armed while the Host was
+    // down is skipped, and the schedule rolls from the current Host time.
     now = new Date(2026, 7, 16, 10, 2, 0).getTime()
-    await (service as unknown as { tickSchedule(first: boolean): Promise<void> }).tickSchedule(true)
+    service.start()
     expect(create).not.toHaveBeenCalled()
     expect(ledger.state().tasks[0].executions).toEqual([])
     expect(ledger.state().tasks[0].schedule?.nextRunAt).toBe(new Date(2026, 7, 16, 10, 3, 0).getTime())
+    // The skipped occurrence arms the next one instead of firing the stale one.
+    expect(probe.delay).toBe(60_000)
     service.dispose()
   })
 
@@ -383,18 +431,65 @@ describe('TaskBoardHostService scheduling without a browser', () => {
     service.dispose()
   })
 
-  it('starts its two Host timers only once', () => {
-    const interval = vi.spyOn(globalThis, 'setInterval')
+  it('operator sees an execution reported failed when its session history stays unreadable', async () => {
+    // Given a running execution whose session history cannot be read at all
+    const ledger = new HostTaskLedger(root())
+    const base = createTask({ title: 'A', description: '', prompt: '' }, 1_000, 'task-a')
+    const opened = startExecution(base, 1_100, 'execution-a').task
+    const imported = {
+      ...opened,
+      status: 'running' as const,
+      executions: opened.executions.map(execution => ({ ...execution, sessionId: 'session-a' })),
+    }
+    ledger.applyRequest('import', { kind: 'import', sourceId: 'browser', tasks: [imported] })
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { gateway } = makeGateway(request => {
+      if (request.method === 'list') return { items: [{ sessionId: 'session-a', running: false }] }
+      throw new Error('history offline')
+    }, () => ({
+      async *[Symbol.asyncIterator]() {
+        throw new Error('follow offline')
+      },
+    }))
+    const service = new TaskBoardHostService(gateway, {
+      ledger,
+      power: new PowerInhibitor({ platform: 'linux' }),
+    })
+    try {
+      const poll = service as unknown as { pollSessions(): Promise<void> }
+      // When the poll meets the unreadable history
+      await poll.pollSessions()
+      // Then the first failure is only reported: a transient reader failure must
+      // never fail a card
+      expect(ledger.state().tasks[0].status).toBe('running')
+      expect(errors).toHaveBeenCalledWith(expect.stringContaining('history is unreadable'))
+      // And a sustained one is reported as a failure instead of hanging the card
+      for (let turn = 0; turn < 30; turn += 1) await poll.pollSessions()
+      const settled = ledger.state().tasks[0]
+      expect(settled.executions[0].result).toBe('failed')
+      expect(settled.status).toBe('failed')
+      expect(settled.executions[0].error).toContain('the outcome cannot be determined')
+    } finally {
+      errors.mockRestore()
+      service.dispose()
+    }
+  })
+
+  it('holds exactly one recurring poll timer, and start() is idempotent', () => {
+    const interval = vi.fn((_callback: () => void, _delay: number) => () => {})
     const { gateway } = makeGateway(() => ({ items: [] }))
     const service = new TaskBoardHostService(gateway, {
       ledger: new HostTaskLedger(root()),
       power: new PowerInhibitor({ platform: 'linux' }),
+      timers: { timeout: () => () => {}, interval },
     })
     service.start()
     service.start()
-    expect(interval).toHaveBeenCalledTimes(2)
+    // The schedule is a one-shot re-armed at each target, not a heartbeat, so
+    // the session-roster poll is the only recurring timer the board owns.
+    expect(interval).toHaveBeenCalledOnce()
+    expect(interval.mock.calls[0]?.[1]).toBe(5_000)
     service.dispose()
-    interval.mockRestore()
   })
 })
 
@@ -486,7 +581,10 @@ describe('TaskBoardHostService poll heartbeat', () => {
       expect(new Set(attached).size).toBe(2)
     })
     expect([...sessions].sort()).toEqual(['session-1', 'session-2'])
-    expect([...permissions].sort()).toEqual(['/permission read-only', '/permission read-only'])
+    expect(permissions.filter(line => line.startsWith('/permission')).sort()).toEqual(['/permission read-only', '/permission read-only'])
+    // Every member of the run also arms its own goal (the option is on by
+    // default), each with that member's own composed prompt.
+    expect(permissions.filter(line => line.startsWith('/goal '))).toHaveLength(2)
     expect(ledger.state().tasks.map(task => task.status)).toEqual(['running', 'running'])
     service.dispose()
   })
@@ -582,7 +680,9 @@ describe('TaskBoardHostService poll heartbeat', () => {
     expect(runtimeView).not.toHaveBeenCalled()
     sessionStateAvailable = true
     await (service as unknown as { pollSessions(): Promise<void> }).pollSessions()
-    await (service as unknown as { tickSchedule(first: boolean): Promise<void> }).tickSchedule(false)
+    // Arming the schedule reads only the ledger's next target, never the
+    // full-state clone the browser snapshot needs.
+    service.refreshSchedule()
 
     expect(state).not.toHaveBeenCalled()
     expect(runtimeView).toHaveBeenCalledOnce()
