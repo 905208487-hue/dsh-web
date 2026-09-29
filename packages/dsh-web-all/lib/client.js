@@ -16170,6 +16170,8 @@ window.__ModuleLoader__.load({
 			disposeForm;
 			disposed = false;
 			saving = false;
+			/** A save asked for while one was in flight; it runs once the first settles (#1754). */
+			saveQueued = false;
 			failed = false;
 			failedReason;
 			/** @param scope - the bound configuration form for this card's namespace. */
@@ -16245,7 +16247,7 @@ window.__ModuleLoader__.load({
 						});
 					},
 					save: () => {
-						this.save();
+						this.requestSave();
 					},
 					discard: () => {
 						if (this.staged.size === 0 && !this.failed) return;
@@ -16272,6 +16274,29 @@ window.__ModuleLoader__.load({
 			* the user can correct them instead of retyping.
 			* @returns settlement after the mutation and the read-back.
 			*/
+			/**
+			* Run one save, and re-run it once if another was asked for while this one
+			* was still in flight.
+			*
+			* A save is a Host round trip that also triggers the profile reconcile, so
+			* two overlapping saves race the Host's exclusive settings transaction: the
+			* second is refused with "HMR transactions cannot be nested" and, worse, was
+			* previously dropped outright, leaving the user's edit unsaved with no
+			* explanation. Serializing instead of refusing means a save pressed while
+			* another is still settling runs against the settled state, which is what
+			* the operator meant by pressing it again (#1754).
+			* @returns settlement after the mutation and the read-back.
+			*/
+			async requestSave() {
+				if (this.saving) {
+					this.saveQueued = true;
+					return;
+				}
+				await this.save();
+				if (!this.saveQueued) return;
+				this.saveQueued = false;
+				await this.requestSave();
+			}
 			async save() {
 				const plan = this.plan();
 				const valid = plan.filter((item) => item.judge !== void 0);

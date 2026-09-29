@@ -743,14 +743,22 @@ function applyImpl(ctx: Context, config?: ResolvedConfigFields): void {
   // the re-assert at every boot keeps it in sync with both the toggle and
   // the flags.
   //
-  // This work must leave the caller's async context first: a settings save
-  // runs inside the Host's hmr.runExclusive, and cordis.patch.yml is exactly
-  // the file the HMR config watcher refreshes from. A write issued on that
-  // same context makes the watcher's refresh re-enter runExclusive, which
-  // rejects with "HMR transactions cannot be nested" and fails the user's
-  // save (issue #1751). setImmediate starts a fresh AsyncLocalStorage store,
-  // so the assertion runs outside the transaction; it is idempotent, so the
-  // coalesced follow-up sync() re-reading the same block writes nothing.
+  // cordis.patch.yml is exactly the file the Host's HMR config watcher
+  // refreshes from, and a settings save runs inside the Host's exclusive HMR
+  // transaction. Writing that file while the caller's transaction is open makes
+  // the watcher's refresh re-enter it, which the Host refuses with "HMR
+  // transactions cannot be nested" and which surfaces on the user's save
+  // (#1751, #1754).
+  //
+  // A deferred callback does NOT escape that context: AsyncLocalStorage is
+  // propagated into setImmediate, into node:timers, and into AsyncResource
+  // scopes, so the earlier assumption that setImmediate "starts a fresh store"
+  // was wrong and the deferral alone could not fix it (verified against
+  // Node 24). What actually keeps the two apart is that this block is written
+  // at most once per distinct desired state: the write is guarded by the
+  // current-vs-desired comparison below, so once the profile carries the block
+  // the coalesced follow-up sync() finds nothing to do and never touches the
+  // file at all.
   const applyLanBindWork = (value: ResolvedConfig): void => {
     if (value.lanBind !== undefined) {
       const startup = ctx.get('webStartup') as StartupFacts | undefined
