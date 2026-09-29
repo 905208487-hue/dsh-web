@@ -341,7 +341,7 @@ describe('HostExecutionRunner', () => {
     }
   })
 
-  it('settles a durable teammate from its completed turn while the roster still calls it running', async () => {
+  it('operator sees a durable teammate settle from its completed turn while the roster still calls it running', async () => {
     // Given a session the roster reports as running and a history holding the
     // teammate's own completed turn
     const gateway = {
@@ -358,8 +358,10 @@ describe('HostExecutionRunner', () => {
     }
     const runner = new HostExecutionRunner(gateway)
 
-    // Then an ordinary execution still waits for the session to go idle, while a
-    // teammate reads the turn it already completed
+    // When the runner inspects that session as an ordinary execution and as a
+    // teammate that is still on the roster
+    // Then the ordinary execution still waits for the session to go idle, while
+    // the teammate reads the turn it already completed
     await expect(runner.inspect('session-a', 1_000)).resolves.toEqual({ outcome: 'pending' })
     await expect(runner.inspect('session-a', 1_000, undefined, { whileRunning: true })).resolves.toEqual({ outcome: 'succeeded' })
   })

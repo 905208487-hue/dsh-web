@@ -431,7 +431,7 @@ describe('TaskBoardHostService scheduling without a browser', () => {
     service.dispose()
   })
 
-  it('reports an execution failed when its session history stays unreadable', async () => {
+  it('operator sees an execution reported failed when its session history stays unreadable', async () => {
     // Given a running execution whose session history cannot be read at all
     const ledger = new HostTaskLedger(root())
     const base = createTask({ title: 'A', description: '', prompt: '' }, 1_000, 'task-a')
