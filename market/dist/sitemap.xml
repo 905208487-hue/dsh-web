@@ -17,6 +17,11 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://dsh-market.com/tryon/?skin=porco-rosso</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://dsh-market.com/tryon/?skin=verdandi</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -32,7 +37,17 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://dsh-market.com/tryon/?skin=last-exile</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://dsh-market.com/tryon/?skin=harbor</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsh-market.com/tryon/?skin=white-snake</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
