@@ -17,9 +17,15 @@ latest content only, completed history stays untouched.
   (dropping an in-flight trailing turn or the last completed turn), writes it
   back atomically with a timestamped `.recall-bak-` backup, and reports the
   outcome.
-- Because the running harness keeps finished sessions in memory and exposes no
-  message-level API, the rollback lands on disk first: the button tells you to
-  reopen the conversation or restart `dsh` to see the recalled state.
+- Because the running harness keeps finished sessions in memory, the rollback
+  lands on disk first. The client then mirrors the cut immediately: the
+  recalled turn's rows (the user message and its reply) leave the visible
+  message flow, and their identity keys (`data-chat-anchor-key`) persist in a
+  page-level stylesheet so shell re-renders cannot resurrect them. Anchor keys
+  derive from event identity, so re-sending the recalled draft and reopening
+  the session both render fresh keys — the stale rules stay inert. The
+  reopen/restart note now refers to the host-memory side (the running
+  session's own context state), not the displayed flow.
 
 ## Restrictions
 
@@ -34,5 +40,6 @@ latest content only, completed history stays untouched.
   synthetic logs).
 - `src/host/*` — route and on-disk rollback (fixture-tested with real zstd
   round-trips).
-- `src/client/*` — the trigger pill, its gating, and the locale dictionary.
+- `src/client/*` — the trigger pill, its gating, the post-recall flow cleanup,
+  and the locale dictionary.
 - `pnpm test` runs the suite; `pnpm i18n:check` covers the zh/en/ru keys.

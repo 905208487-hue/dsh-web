@@ -95,6 +95,176 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region src/client/cleanup.ts
+		/**
+		* Client-side cleanup after a successful recall: the recalled latest turn's
+		* flow rows vanish from the open conversation immediately — the operator sees
+		* their message and its reply removed without reopening the session or
+		* restarting dsh. The on-disk facts stay authoritative (the host route already
+		* truncated the event log); this module only keeps the visible flow in step.
+		*
+		* The official chat shell renders every turn's content as flow rows marked
+		* with `data-chat-turn=<number>` (ascending along the conversation) and a
+		* stable identity key on `data-chat-anchor-key` (mirrored on
+		* `data-chat-flow-key`). Disk recall semantics (core/rollback) cut everything
+		* from the turn containing the LAST real user message through the end of the
+		* log, so the client mirror is: anchor on the LAST flow row of kind `user` or
+		* `steering` (the shell's own selector for operator-typed messages — injected
+		* platform content never renders as `user`), then remove every row whose turn
+		* number is that row's or higher.
+		*
+		* The shell renders rows from its own React store (the running host keeps the
+		* session in memory), so a later reconciliation re-creates removed rows.
+		* Every removed row's anchor key therefore lands in a page-level stylesheet,
+		* and the key sets persist per session (localStorage, best effort): re-created
+		* rows are hidden by attribute selector while the SPA lives, and the same keys
+		* cannot reappear elsewhere — anchor keys derive from event identity, so both
+		* a re-sent message and a post-reopen reload render fresh keys, which keeps
+		* stale rules inert instead of hiding new content. Storage-unavailable
+		* environments fall back to the in-page map: hiding still works for the whole
+		* page lifetime, only the cross-reload persistence is lost.
+		* @module @linxin666/dsh-recall/client/cleanup
+		*/
+		const HIDDEN_PREFIX = "dsh-recall.hidden.";
+		/** Cap on persisted key sets, trimming the least recently written sessions. */
+		const MAX_PERSISTED_SESSIONS = 20;
+		/** The shell marks operator-typed messages (mid-stream steering included) so. */
+		const USER_ROW_SELECTOR = "[data-chat-flow-kind=\"user\"], [data-chat-flow-kind=\"steering\"]";
+		const TURN_ATTR = "data-chat-turn";
+		const KEY_ATTR = "data-chat-anchor-key";
+		const FALLBACK_KEY_ATTR = "data-chat-flow-key";
+		/** The live per-session key sets (insertion order = recency). */
+		const hiddenBySession = /* @__PURE__ */ new Map();
+		let hydrated = false;
+		/** Best-effort Storage access (null when the environment provides none). */
+		function storage() {
+			try {
+				return window.localStorage ?? null;
+			} catch {
+				return null;
+			}
+		}
+		/** Hydrate the live map from persisted key sets (once per page). */
+		function hydrate() {
+			if (hydrated) return;
+			hydrated = true;
+			const store = storage();
+			if (store === null) return;
+			for (let i = 0; i < store.length; i++) {
+				const key = store.key(i);
+				if (key === null || !key.startsWith(HIDDEN_PREFIX)) continue;
+				try {
+					const sessionId = key.slice(18);
+					if (hiddenBySession.has(sessionId)) continue;
+					const parsed = JSON.parse(store.getItem(key) ?? "[]");
+					if (Array.isArray(parsed)) hiddenBySession.set(sessionId, new Set(parsed.filter((k) => typeof k === "string")));
+				} catch {
+					continue;
+				}
+			}
+		}
+		/** Persist one session's hidden keys, trimming the oldest persisted sessions past the cap. */
+		function persist(sessionId, keys) {
+			const store = storage();
+			if (store === null) return;
+			try {
+				store.removeItem(HIDDEN_PREFIX + sessionId);
+				for (let i = hiddenBySession.size; i > MAX_PERSISTED_SESSIONS; i--) {
+					const stale = hiddenBySession.keys().next().value;
+					if (stale === void 0) break;
+					store.removeItem(HIDDEN_PREFIX + stale);
+				}
+				store.setItem(HIDDEN_PREFIX + sessionId, JSON.stringify([...keys]));
+			} catch {}
+		}
+		/** Register one session's hidden keys in the live map. */
+		function remember(sessionId, added) {
+			hydrate();
+			const set = hiddenBySession.get(sessionId) ?? /* @__PURE__ */ new Set();
+			for (const key of added) set.add(key);
+			hiddenBySession.delete(sessionId);
+			hiddenBySession.set(sessionId, set);
+			persist(sessionId, set);
+		}
+		/** A row's turn number, or null when absent or not a safe integer. */
+		function turnValue(row) {
+			const value = Number(row.getAttribute(TURN_ATTR));
+			return Number.isSafeInteger(value) ? value : null;
+		}
+		/** A row's identity key, or null when the shell rendered it bare. */
+		function rowKey(row) {
+			return row.getAttribute(KEY_ATTR) ?? row.getAttribute(FALLBACK_KEY_ATTR) ?? null;
+		}
+		/** Escape a key for a double-quoted CSS attribute selector. */
+		function cssEscape(value) {
+			return value.replace(/[\\"]/g, (ch) => "\\" + ch);
+		}
+		/** The page-level stylesheet that keeps re-created rows hidden (or null). */
+		function hiddenStyle() {
+			if (typeof document === "undefined") return null;
+			let style = document.querySelector("style[data-dsh-recall-hidden]");
+			if (style === null && document.head !== null) {
+				style = document.createElement("style");
+				style.setAttribute("data-dsh-recall-hidden", "");
+				document.head.appendChild(style);
+			}
+			return style;
+		}
+		/** Rebuild the stylesheet from every session's hidden keys. */
+		function refreshStyle() {
+			const style = hiddenStyle();
+			if (style === null) return;
+			const rules = [];
+			for (const keys of hiddenBySession.values()) for (const key of keys) rules.push(`[${KEY_ATTR}="${cssEscape(key)}"]{display:none!important}`);
+			style.textContent = rules.join("\n");
+		}
+		/**
+		* Remove the recalled latest turn's rows from the open conversation flow and
+		* remember their identity keys so re-created rows stay hidden. No-op when no
+		* conversation is open or no operator message anchors the flow (the disk
+		* rollback's outcome is unaffected either way).
+		* @param sessionId - the session whose recall just succeeded on disk.
+		*/
+		function hideRecalledTail(sessionId) {
+			const flow = recallFlow();
+			if (flow === null) return;
+			const rows = [...flow.querySelectorAll(`[${TURN_ATTR}]`)];
+			const userRows = rows.filter((row) => row.matches(USER_ROW_SELECTOR));
+			const anchor = userRows.length > 0 ? userRows[userRows.length - 1] : null;
+			if (anchor === null) return;
+			const turn = turnValue(anchor);
+			if (turn === null) return;
+			const doomed = rows.filter((row) => {
+				const value = turnValue(row);
+				return value !== null && value >= turn;
+			});
+			if (doomed.length === 0) return;
+			const keys = /* @__PURE__ */ new Set();
+			for (const row of doomed) {
+				const key = rowKey(row);
+				if (key !== null) keys.add(key);
+			}
+			for (const row of doomed) row.remove();
+			if (keys.size > 0) {
+				remember(sessionId, keys);
+				refreshStyle();
+			}
+		}
+		/**
+		* Drop the plugin's page-level hidden stylesheet (plugin disposal): the
+		* persisted key sets survive a reload so re-created rows stay hidden there.
+		* @returns disposer removing the stylesheet.
+		*/
+		function recallCleanupDisposer() {
+			return () => {
+				document.querySelector("style[data-dsh-recall-hidden]")?.remove();
+			};
+		}
+		/** Locate the open conversation's message flow (null outside a chat view). */
+		function recallFlow() {
+			return document.querySelector("[data-pane=\"conversation\"]")?.querySelector("[data-chat-flow]") ?? null;
+		}
+		//#endregion
 		//#region src/client/composer.ts
 		/**
 		* Composer refill: put recalled text back into the official conversation
@@ -181,8 +351,10 @@ window.__ModuleLoader__.load({
 		//#region src/client/RecallTrigger.tsx
 		/**
 		* The recall trigger: a small tail-of-conversation button. Clicking it
-		* confirms once, POSTs the active session id to the host rollback route, and
-		* surfaces the outcome with the reopen/restart note.
+		* confirms once, POSTs the active session id to the host rollback route,
+		* removes the latest turn's rows from the visible flow immediately, and keeps
+		* the recalled content available as a composer draft (the reopen/restart
+		* note covers the host-memory side, not the visible flow).
 		* @module @linxin666/dsh-recall/client/RecallTrigger
 		*/
 		function RecallTrigger({ t, sessionId, inFlight }) {
@@ -210,6 +382,7 @@ window.__ModuleLoader__.load({
 							setOutcome(res.reason === "missing-session" ? "missing" : res.reason === "nothing-to-recall" ? "none" : "failed");
 							return;
 						}
+						hideRecalledTail(id);
 						if (res.recalled !== void 0 && id !== null) {
 							saveDraft(id, {
 								text: res.recalled.text,
@@ -337,7 +510,10 @@ window.__ModuleLoader__.load({
 				sessionId: recallSessionId,
 				inFlight: isTurnInFlight
 			});
-			ctx.effect(() => () => disposeRecall(), "dsh-recall: conversation recall trigger");
+			ctx.effect(() => () => {
+				disposeRecall();
+				recallCleanupDisposer()();
+			}, "dsh-recall: conversation recall trigger");
 		}
 		//#endregion
 		exports.apply = apply;

@@ -1,11 +1,14 @@
 /**
  * The recall trigger: a small tail-of-conversation button. Clicking it
- * confirms once, POSTs the active session id to the host rollback route, and
- * surfaces the outcome with the reopen/restart note.
+ * confirms once, POSTs the active session id to the host rollback route,
+ * removes the latest turn's rows from the visible flow immediately, and keeps
+ * the recalled content available as a composer draft (the reopen/restart
+ * note covers the host-memory side, not the visible flow).
  * @module @linxin666/dsh-recall/client/RecallTrigger
  */
 
 import { useState } from 'react'
+import { hideRecalledTail } from './cleanup.ts'
 import type { RecallKey } from './locales.ts'
 import { fillComposer } from './composer.ts'
 import { saveDraft } from './draft.ts'
@@ -55,6 +58,10 @@ export function RecallTrigger({ t, sessionId, inFlight }: RecallTriggerProps) {
           setOutcome(res.reason === 'missing-session' ? 'missing' : res.reason === 'nothing-to-recall' ? 'none' : 'failed')
           return
         }
+        // Mirror the disk cut in the visible flow right away: the latest
+        // turn's rows vanish now; re-created rows stay hidden until the
+        // session state itself catches up (see cleanup module).
+        hideRecalledTail(id)
         if (res.recalled !== undefined && id !== null) {
           saveDraft(id, { text: res.recalled.text, attachments: res.recalled.attachments ?? [] })
           if (res.recalled.text.length > 0) fillComposer(res.recalled.text)
