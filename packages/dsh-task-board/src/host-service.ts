@@ -262,7 +262,7 @@ export class TaskBoardHostService {
       const peers = others.length === 0 ? undefined : others.map(other => ({
         id: other.task.id,
         title: other.task.title,
-        ...(team ? { name: teammateName(other.task.title, other.execution.runGroupId ?? other.task.id) } : {}),
+        ...(team ? { name: teammateName(other.task.title, other.execution.runGroupId ?? other.task.id, other.task.id) } : {}),
       }))
       // A cron-triggered run additionally states its own firing instant and
       // rule zone, so a scheduled job can resolve "today" without guessing.
@@ -307,7 +307,7 @@ export class TaskBoardHostService {
     try {
       const member = await team.spawn({
         leadSessionId,
-        name: teammateName(opened.task.title, opened.execution.runGroupId ?? opened.task.id),
+        name: teammateName(opened.task.title, opened.execution.runGroupId ?? opened.task.id, opened.task.id),
         description: opened.task.title,
         prompt: promptText(opened.task),
       })

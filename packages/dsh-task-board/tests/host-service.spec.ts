@@ -165,9 +165,12 @@ describe('team-run dispatch', () => {
     expect(prompts).toHaveLength(1)
     expect(spawns.map(input => input.leadSessionId)).toEqual(['session-lead', 'session-lead'])
     expect(spawns.map(input => input.name)).toEqual([
-      expect.stringMatching(/^collect-carbon-[0-9a-f]{8}$/),
-      expect.stringMatching(/^model-[0-9a-f]{8}$/),
+      expect.stringMatching(/^collect-carbon-[0-9a-f]{4}-[0-9a-f]{8}$/),
+      expect.stringMatching(/^model-[0-9a-f]{4}-[0-9a-f]{8}$/),
     ])
+    // Two members of one run group can never share a name: Agent Teams refuses
+    // the second spawn, which is how three subtasks of a real run never started.
+    expect(new Set(spawns.map(input => input.name)).size).toBe(spawns.length)
     expect(spawns[0].prompt).toContain('collect')
     const tasks = ledger.state().tasks
     expect(tasks.find(task => task.id === 'root')?.executions.at(-1)?.sessionId).toBe('session-lead')

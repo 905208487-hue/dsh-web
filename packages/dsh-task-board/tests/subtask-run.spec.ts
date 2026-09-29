@@ -389,6 +389,25 @@ describe('Agent Team runs', () => {
     expect(teammateName('b', 'zzzz')).not.toBe(teammateName('b', 'yyyy'))
   })
 
+  it('operator team run gives every CJK-titled subtask its own teammate name', () => {
+    // Given the reported run: five CJK-only titles in one run group, where the
+    // generic prefix collapsed all of them onto one teammate name and Agent
+    // Teams refused every member after the first
+    const titles = ['科研支线一：机器学习预测强度论文', '科研支线二：低碳混凝土论文', '第三阶段：系统扩展与企业应用', '专利申请工作', '收集公开数据']
+    // When the names are derived with the member ids this run dispatches
+    const names = titles.map((title, index) => teammateName(title, 'a1b2c3d4-ffff', `member-${index}`))
+    // Then the Team never sees a duplicate name
+    expect(new Set(names).size).toBe(names.length)
+    expect(names.every(name => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name))).toBe(true)
+    // Two members that share a slug (identical or same-leading-word titles) differ too
+    expect(teammateName('AI 强度预测', 'g1', 'member-a')).not.toBe(teammateName('AI 配比优化', 'g1', 'member-b'))
+    expect(teammateName('same', 'g1', 'member-a')).not.toBe(teammateName('same', 'g1', 'member-b'))
+    // And the derivation is a pure function of the member id, so the Lead prompt
+    // and the spawn request always agree on the same name
+    expect(teammateName('科研支线一：机器学习预测强度论文', 'a1b2c3d4-ffff', 'member-0'))
+      .toBe(teammateName('科研支线一：机器学习预测强度论文', 'a1b2c3d4-ffff', 'member-0'))
+  })
+
   it('operator cron on a team card refuses when a subtask pins a permission', () => {
     // Given a team-mode scheduled root whose subtask pins above the session default
     const ledger = new HostTaskLedger(tempRoot(), () => NOW, { sessionDefaultPermission: 'read-only' })

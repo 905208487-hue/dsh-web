@@ -271,18 +271,43 @@ export function effectiveTaskPermission(task: TaskRecord): TaskRecord['permissio
  */
 /**
  * The immutable teammate name for one team-mode member. Teammate names are
- * lower-kebab-case and must stay unique for the lifetime of the Team, so the
- * run-group token is appended: two runs of the same tree never collide. A title
- * with no ASCII word characters (a CJK title, for example) keeps a stable
- * generic prefix and is still distinguished by the token.
+ * lower-kebab-case and must stay unique for the lifetime of the Team: the
+ * run-group token separates two runs of the same tree, and the member
+ * discriminator separates two members of one run that reduce to the same slug.
+ *
+ * The discriminator is not cosmetic. A title with no ASCII word characters (a
+ * CJK title, for example) carries no slug at all, so every such title of one
+ * run group collides on the generic prefix; Agent Teams answers every member
+ * after the first with `teammate name "..." was already used in this Team`,
+ * and those subtasks never start. Two ASCII titles that share a slug
+ * (`AI 强度预测` next to `AI 配比优化`) collide the same way.
  * @param title - the member task's title.
  * @param token - the run group id (the task id when no group is recorded).
+ * @param memberId - the member task's id, which makes the name unique in the run.
  * @returns the teammate name handed to the Agent Teams service.
  */
-export function teammateName(title: string, token: string): string {
+export function teammateName(title: string, token: string, memberId?: string): string {
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32).replace(/-+$/g, '')
   const suffix = token.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
-  return `${slug === '' ? 'subtask' : slug}-${suffix === '' ? 'run' : suffix}`
+  const member = memberId === undefined || memberId === '' ? undefined : stableTag(memberId)
+  return [slug === '' ? 'subtask' : slug, member, suffix === '' ? 'run' : suffix]
+    .filter((part): part is string => part !== undefined)
+    .join('-')
+}
+
+/**
+ * A stable 4-hex tag for one member id. The name is derived twice for the same
+ * member — once for the Lead's prompt and once for the spawn request — so the
+ * tag must be a pure function of the id, never of a clock or a counter. FNV-1a
+ * keeps it dependency-free in `core/`, which both halves compile.
+ */
+function stableTag(value: string): string {
+  let hash = 0x811c9dc5
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash.toString(16).padStart(8, '0').slice(0, 4)
 }
 
 export function resolveExecutionTargets(
