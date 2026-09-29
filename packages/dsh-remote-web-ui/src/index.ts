@@ -736,18 +736,22 @@ function applyImpl(ctx: Context, config?: ResolvedConfigFields): void {
     console.warn('remote-web-ui: LAN-exposed bind — pairing gates the /remote channel; direct /api stays under the harness fence + browser auth (stop() does not revoke an already-redeemed browser credential)')
   }
 
-  // Apply the effective configuration to the running surfaces once per
-  // activation: the service tunables, the LAN-bind block/firewall, the tunnel
-  // plan, the pairing routes, the presence sweep, and the posture probe.
-  const sync = (): void => {
-    const value = resolve()
-    service.config = pairingConfigOf(value)
-    // LAN bind toggle: only write the managed patch block once the user has
-    // flipped it (undefined = untouched, never write). Desired host/port come
-    // from the CLI flags when given (flags win), else from the toggle and
-    // the currently bound port. The block takes effect on the next start, so
-    // the re-assert at every boot keeps it in sync with both the toggle and
-    // the flags.
+  // LAN bind toggle: only write the managed patch block once the user has
+  // flipped it (undefined = untouched, never write). Desired host/port come
+  // from the CLI flags when given (flags win), else from the toggle and
+  // the currently bound port. The block takes effect on the next start, so
+  // the re-assert at every boot keeps it in sync with both the toggle and
+  // the flags.
+  //
+  // This work must leave the caller's async context first: a settings save
+  // runs inside the Host's hmr.runExclusive, and cordis.patch.yml is exactly
+  // the file the HMR config watcher refreshes from. A write issued on that
+  // same context makes the watcher's refresh re-enter runExclusive, which
+  // rejects with "HMR transactions cannot be nested" and fails the user's
+  // save (issue #1751). setImmediate starts a fresh AsyncLocalStorage store,
+  // so the assertion runs outside the transaction; it is idempotent, so the
+  // coalesced follow-up sync() re-reading the same block writes nothing.
+  const applyLanBindWork = (value: ResolvedConfig): void => {
     if (value.lanBind !== undefined) {
       const startup = ctx.get('webStartup') as StartupFacts | undefined
       const desiredHost = desiredBindHost(value.lanBind === true, startup?.host)
@@ -785,6 +789,36 @@ function applyImpl(ctx: Context, config?: ResolvedConfigFields): void {
         }
       }
     }
+  }
+
+  // The LAN bind assertion never blocks the caller: one pending work item is
+  // enough, and it always re-reads the config through `resolve()` at run time
+  // so a toggle flipped twice before the tick lands on the last value.
+  let lanBindWorkPending = false
+  const scheduleLanBindWork = (): void => {
+    if (lanBindWorkPending) return
+    lanBindWorkPending = true
+    setImmediate(() => {
+      lanBindWorkPending = false
+      try {
+        applyLanBindWork(resolve())
+      } catch (error) {
+        // A deferred assertion must never surface as an unhandled rejection:
+        // the settings save that triggered it already answered, and the card
+        // reads the live block state back on its own poll.
+        console.error(`remote-web-ui: the deferred lan-bind assertion failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    })
+  }
+  ctx.effect(() => () => { lanBindWorkPending = false }, 'remote-web-ui: lan-bind work')
+
+  // Apply the effective configuration to the running surfaces once per
+  // activation: the service tunables, the LAN-bind block/firewall, the tunnel
+  // plan, the pairing routes, the presence sweep, and the posture probe.
+  const sync = (): void => {
+    const value = resolve()
+    service.config = pairingConfigOf(value)
+    scheduleLanBindWork()
     // The plugin-managed tunnels own the public base while one runs: the URL
     // lands in the service through the tunnel's phase listener (the minted
     // quick URL, or the named tunnel's fixed public hostname). The manual

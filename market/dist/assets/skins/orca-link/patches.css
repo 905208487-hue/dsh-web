@@ -927,14 +927,24 @@ body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > butto
   top: 58px;
   left: 22px;
   width: calc(var(--orca-sidebar-art-width, 280px) - 30px);
-  height: calc(var(--orca-stage, 300px) - 66px);
+  /* 58 + (stage - 174) = stage - 116: the plane ends exactly where the panel
+     list is pushed to (the list's own `margin-top`), so no point of any plugin
+     row can reach this button (issue #1743). The painted character still owns
+     the full stage; only the hit surface is clipped to the free band. */
+  height: calc(var(--orca-stage, 300px) - 174px);
   content: "";
   /* The hit plane is the stage's own box, the one the status character paints:
-     every point of the area the skin presents as the new-session stage now
-     reaches the button's click handler, starting at the pane top the way the
-     artwork does. It stops at the stage seam, where the panel list begins and
-     keeps its own taps -- the plane must never be padded up or down across
-     that seam. */
+     every point of the area the skin presents as the new-session stage reaches
+     the button's click handler, starting at the pane top the way the artwork
+     does.
+
+     It must stop where the PANEL LIST starts, not at the stage seam. The list
+     is offset to `stage - 116px` while the painted stage reaches `stage`, so a
+     plane sized to the artwork swallowed the first rows of the list: their own
+     boxes sit above it, but the plane is the ::before of a sibling that keeps
+     the pane's child z-index, so a click landing on a row's lower half reached
+     the New Session button instead of opening the panel (issue #1743). Ending
+     the plane at the list's own offset keeps every point of the list its own. */
   cursor: pointer;
   opacity: 0;
   background: linear-gradient(var(--orca-blue), var(--orca-blue)) left top / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) left top / 1px 18px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right top / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right top / 1px 18px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) left bottom / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) left bottom / 1px 18px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right bottom / 18px 1px no-repeat, linear-gradient(var(--orca-blue), var(--orca-blue)) right bottom / 1px 18px no-repeat;
@@ -944,7 +954,7 @@ body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > butto
 }
 
 body[data-orca-sidebar-wide] [data-dsh-surface="sidebar"] > :first-child > button:not([data-dsh-part="sidebar-entry"]):after {
-  top: calc(58px + var(--orca-stage, 300px) - 66px - 12px);
+  top: calc(58px + var(--orca-stage, 300px) - 174px - 12px);
   left: calc(22px + var(--orca-sidebar-art-width, 280px) - 30px - 13px);
   content: "";
   pointer-events: none;

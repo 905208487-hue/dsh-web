@@ -17004,7 +17004,7 @@ window.__ModuleLoader__.load({
 		* `blob:`, `data:`, `about:` and `filesystem:` stay on the web side: a
 		* network page mints those documents, so they must keep the fence.
 		*/
-		const WEB_PAGE_PROTOCOLS = [
+		const WEB_PAGE_PROTOCOLS$1 = [
 			"http:",
 			"https:",
 			"blob:",
@@ -17018,7 +17018,7 @@ window.__ModuleLoader__.load({
 		* @returns true for the network transports and the documents they mint.
 		*/
 		function isWebPageProtocol(protocol) {
-			return WEB_PAGE_PROTOCOLS.includes(protocol);
+			return WEB_PAGE_PROTOCOLS$1.includes(protocol);
 		}
 		/**
 		* Hostname-only loopback classification: localhost, the IPv6 loopback literal
@@ -17104,7 +17104,7 @@ window.__ModuleLoader__.load({
 			deviceQuery: REMOTE_DEVICE_QUERY,
 			uploadPath: "/api/session/uploadFileBinary",
 			uploadHookGlobal: "__DSH_FILE_UPLOAD__",
-			webProtocols: WEB_PAGE_PROTOCOLS,
+			webProtocols: WEB_PAGE_PROTOCOLS$1,
 			hostGrantGlobal: "__DSH_REMOTE_HOST_GRANT__"
 		};
 		/** The window global the boot patch publishes its seat under. */
@@ -20040,6 +20040,7 @@ window.__ModuleLoader__.load({
 			"terminal.ready": "终端已连接（{alias}）",
 			"terminal.exited": "终端已退出（{alias}）",
 			"terminal.error": "终端错误：{error}",
+			"terminal.noWebSocket": "当前页面不支持 WebSocket（应用外壳只转发 HTTP），请改用浏览器打开的 Web 界面使用终端。",
 			"terminal.auth.title": "二次身份验证 (2FA / 交互式认证)",
 			"terminal.auth.submit": "提交验证码",
 			"terminal.auth.cancel": "取消",
@@ -20195,6 +20196,7 @@ window.__ModuleLoader__.load({
 			"terminal.ready": "Terminal connected ({alias})",
 			"terminal.exited": "Terminal exited ({alias})",
 			"terminal.error": "Terminal error: {error}",
+			"terminal.noWebSocket": "This page cannot carry a WebSocket (the application shell forwards HTTP only). Open the Web UI in a browser to use the terminal.",
 			"terminal.auth.title": "Two-Factor Authentication (2FA)",
 			"terminal.auth.submit": "Submit Code",
 			"terminal.auth.cancel": "Cancel",
@@ -20371,6 +20373,63 @@ window.__ModuleLoader__.load({
 			for (const [key, value] of Object.entries(params)) if (value !== void 0 && value !== "") search.set(key, String(value));
 			const text = search.toString();
 			return text === "" ? "" : "?" + text;
+		}
+		/**
+		* The WebSocket URL the terminal route is reached at, or undefined when this
+		* page cannot carry one.
+		*
+		* A page delivered by an application on this machine (the official DSH
+		* Desktop shell serves its Web GUI from `dsh-app://app/`) has no WebSocket
+		* transport: its scheme handler forwards HTTP requests to the local host but
+		* cannot upgrade a socket, so `ws://app/...` never connects and the terminal
+		* reports "connection error" (issue #1744). Every other page is a web page and
+		* resolves the socket against its own origin, exactly as before.
+		*
+		* A blank authority is treated the same as an application scheme: there is
+		* nothing to dial, and the caller gets the actionable reason instead of a
+		* socket that can only fail.
+		*
+		* @param location - the page location to read.
+		* @param search - the query string carrying `alias` or `session`.
+		* @returns the absolute `ws:`/`wss:` URL, or undefined when the page cannot carry one.
+		*/
+		function terminalSocketUrl(location, search) {
+			if (WEB_PAGE_PROTOCOLS.includes(location.protocol)) return (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + SSH_API.terminal + search;
+		}
+		/**
+		* Schemes a network page can be delivered with. Every other scheme belongs to
+		* an application on this machine, which is the same classification the remote
+		* channel and the update seat use (`isWebPageProtocol` / `isApplicationDeliveredPage`).
+		*/
+		const WEB_PAGE_PROTOCOLS = [
+			"http:",
+			"https:",
+			"blob:",
+			"data:",
+			"about:",
+			"filesystem:"
+		];
+		/**
+		* A terminal connection that never opened: it reports one failure once the
+		* view has attached its `onExit`, so the tab shows why instead of sitting on a
+		* spinner, and every later frame is a no-op.
+		*/
+		function failedTerminal(reason) {
+			const connection = {
+				onReady: void 0,
+				onOutput: void 0,
+				onExit: void 0,
+				onAuthPrompt: void 0,
+				send: () => void 0,
+				resize: () => void 0,
+				sendAuthResponse: () => void 0,
+				detach: () => void 0,
+				close: () => void 0
+			};
+			queueMicrotask(() => {
+				connection.onExit?.(null, reason);
+			});
+			return connection;
 		}
 		/** The browser half's only data entry point. */
 		var SshApi = class {
@@ -20599,8 +20658,14 @@ window.__ModuleLoader__.load({
 			}
 			/** One terminal socket over either an alias (open) or a session id (attach). */
 			terminalSocket(search) {
-				const url = (window.location.protocol === "https:" ? "wss" : "ws") + "://" + window.location.host + SSH_API.terminal + search;
-				const socket = new WebSocket(url);
+				const target = terminalSocketUrl(window.location, search);
+				if (target === void 0) return failedTerminal(tt$1("terminal.noWebSocket"));
+				let socket;
+				try {
+					socket = new WebSocket(target);
+				} catch (error) {
+					return failedTerminal(error instanceof Error ? error.message : String(error));
+				}
 				let leaving = false;
 				const sendFrame = (frame) => {
 					if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(frame));

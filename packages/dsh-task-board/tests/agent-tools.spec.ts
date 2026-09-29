@@ -146,6 +146,23 @@ describe('agent tool definitions', () => {
     expect(names).not.toContain('confirm')
     expect(actions).not.toContain('confirm')
   })
+
+  it('operator can clear a permission without an empty member in any enum', () => {
+    // Given a live board service
+    const live = harness()
+    const update = live.tools.find(tool => tool.name === 'task_board_update')
+    const permission = (update?.parameters as { properties?: Record<string, { oneOf?: Array<{ enum?: string[] }> }> }).properties?.permission
+
+    // When the update tool's permission parameter is read
+    // Then the clearing value is its own const branch, because an OpenAI-compatible
+    // gateway that forwards this schema to Gemini rejects an empty enum member and
+    // fails every request that carries the tool list (issue #1748)
+    const members = permission?.oneOf?.flatMap(branch => branch.enum ?? []) ?? []
+    expect(members).toEqual(['read-only', 'workspace-write', 'danger-full-access'])
+    expect(members).not.toContain('')
+    // The clear value is still reachable, as its own exact branch
+    expect(permission?.oneOf).toHaveLength(2)
+  })
 })
 
 describe('tool argument validation', () => {

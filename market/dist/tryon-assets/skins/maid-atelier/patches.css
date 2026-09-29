@@ -3,6 +3,26 @@ html[data-dsh-skin="maid-atelier"] [id="root"] {
   position: relative;
 }
 
+/* The skin paints an opaque backdrop on the root element, so the host's
+   `contributes.backgroundMedia` layer (z-index: -2, appended to body) stops
+   propagating and is painted as an ordinary element background instead — which
+   happens AFTER the negative-z-index layers. The result was an entire window
+   of flat dark blue with the palace illustration invisible (issues #1745 A and
+   #1746).
+
+   `isolation: isolate` on body makes body its own stacking-context root: the
+   body background returns to the canvas step and the -2 layer paints again,
+   while the character stage (z-index 0) and the conversation panels (auto)
+   still sit above it. z-index is left alone on purpose — raising the layer to 0
+   would put it over the conversation itself.
+
+   This must stay on `body`, never on `html`/` :root`: the skin-center patch
+   pipeline prefixes every selector with `html[data-dsh-skin="<id>"] `, so a
+   `:root` rule would compile to a selector that can never match. */
+html[data-dsh-skin="maid-atelier"] body {
+  isolation: isolate;
+}
+
 html[data-dsh-skin="maid-atelier"] body:before {
   content: "";
   position: fixed;
