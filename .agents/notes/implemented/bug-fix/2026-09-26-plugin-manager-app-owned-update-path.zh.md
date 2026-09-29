@@ -57,6 +57,15 @@ Status: implemented
    与版本核对均不变，且只有依赖仍在 profile 中并报告路由解析出的版本才算 `done`——管理器
    报告成功却什么都没动，与 CLI 路径一样判为 `更新未生效` 错误。其余运行时仍以 CLI 为唯一
    写入器，行为不变。
+4. **先读官方管理器返回的判定，再读 profile。** 它的 `change()` 包装器会捕获一切失败并折叠进
+   解析值（`application: 'failed'` / `'cancelled'`，外加 `error.code` 与 `error.diagnostic`），
+   因此 `installBundle` 被 resolve 并不等于成功。只看调用是否抛错，会把 pnpm 已经拒绝的运行
+   报成 `官方插件管理器报告成功，但 … 仍为 …（更新未生效）`，并把真正原因藏起来（2026-09-29
+   的 `dsh-better-sidebar` 0.22.1 → 0.24.1：管理器自己的日志
+   `~/.dsh/profiles/desktop/.plugin-manager/logs/operation-YG19PC/pnpm.log` 里是
+   `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`）。`nativeManagerFailure()` 负责渲染该判定——
+   pnpm 诊断文本、`incompatible-version` 拒绝点名的包，或取消——只有判定不是失败时才继续做
+   profile 重读。
 
 官方管理器是契约观察而非 import：本仓基于官方 SDK 已发布包构建，且本包必须在没有挂载管理器
 的宿主上照常运行。该路由仍位于 loopback 门禁与用户点击之后，与官方插件页调用同一服务时
@@ -95,8 +104,10 @@ Status: implemented
   二进制与 `#!/bin/sh` 包装器仍直接 spawn；头部读不到时回退直接 spawn。`withPrependedPath`
   在 POSIX PATH 前置、把 Windows 大小写变体折叠成一个键、环境无 PATH 时写入 PATH。
 - `tests/gateway-jobs.spec.ts`：在 `desktop` 事实下更新经脚本化的官方管理器执行，CLI spawn
-  接缝一旦被使用即抛错；管理器失败以任务 error 落定并带其消息；管理器报告成功但版本未变的
-  绿灯判为 `更新未生效`；非桌面 profile 上 CLI 仍是写入器，管理器不被触碰。
+  接缝一旦被使用即抛错；管理器抛错以任务 error 落定并带其消息；折叠式失败判定按自身原因上报
+  （`官方插件管理器更新失败：…`）而不是 `更新未生效` 这类空转文案；取消与
+  `incompatible-version` 判定会被点名；管理器报告成功但版本未变的绿灯判为 `更新未生效`；
+  正向判定仍要过 profile 重读；非桌面 profile 上 CLI 仍是写入器，管理器不被触碰。
 - 针对真实安装现场复现了 spawn 缺陷与修复：旧形态退出码 127 且
   `env: node: No such file or directory`；在宿主自身 `PATH=/usr/bin:/bin` 下
   `/opt/homebrew/bin/node /opt/homebrew/bin/dsh --version` 输出 `0.1.7-rc.2`；

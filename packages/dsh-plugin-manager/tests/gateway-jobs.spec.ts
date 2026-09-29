@@ -594,6 +594,36 @@ describe('CliGateway operations on an application-owned profile', () => {
     })
   }
 
+  /**
+   * A gateway whose official manager resolves with one scripted verdict: the
+   * manager folds a refused run into its resolved value instead of rejecting
+   * (its `change()` wrapper catches every failure), so this is the shape a real
+   * refusal arrives in.
+   */
+  function verdictGatewayFor(facts: ProfileFacts, verdict: unknown, calls: string[][] = []): CliGateway {
+    return new CliGateway(desktopFacts(facts), {} as NodeJS.ProcessEnv, {
+      spawnImpl: (() => { throw new Error('the CLI must not run for an application-owned profile') }) as never,
+      findBinary: () => '/fake/dsh',
+      nativeManager: () => ({
+        installBundle: async (spec: string) => { calls.push(['install', spec]); return verdict },
+        removeBundle: async (name: string) => { calls.push(['remove', name]); return verdict },
+      }),
+    })
+  }
+
+  /** The verdict a real refused pnpm run carries (ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION). */
+  const pnpmRefusal = {
+    stage: 'install',
+    target: 'dsh-better-sidebar@0.24.1',
+    enabled: true,
+    changed: false,
+    application: 'failed',
+    error: {
+      code: 'operation-error',
+      diagnostic: '[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification',
+    },
+  }
+
   it('operator: updates through the official in-process manager instead of the refused CLI', async () => {
     // Given an application-owned desktop profile with an outdated package
     const { facts, dir } = makeProfile({ 'dsh-memoir': { version: '1.0.0' } })
@@ -650,6 +680,128 @@ describe('CliGateway operations on an application-owned profile', () => {
     // Then a no-op is still a failure, exactly like the CLI path
     expect(job.phase).toBe('error')
     expect(job.error).toContain('更新未生效')
+  })
+
+  it('operator: sees the manager folded refusal with pnpm\'s own reason on an update', async () => {
+    // Given a manager that refused the update and resolved with its verdict
+    const { facts, dir } = makeProfile({ 'dsh-memoir': { version: '1.0.0' } })
+    tempDirs.push(dir)
+    const gateway = verdictGatewayFor(desktopFacts(facts), pnpmRefusal)
+
+    // When the update runs
+    const { jobId } = gateway.update('dsh-memoir', '1.1.0')
+    const job = await settle(gateway, jobId)
+
+    // Then the job reports the manager's refusal and its pnpm diagnostic
+    // instead of claiming the manager succeeded and nothing moved
+    expect(job.phase).toBe('error')
+    expect(job.error).toContain('官方插件管理器更新失败')
+    expect(job.error).toContain('ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION')
+    expect(job.error).not.toContain('报告成功')
+  })
+
+  it('operator: sees the manager folded refusal on an install', async () => {
+    // Given a manager that refused the install and resolved with its verdict
+    const { facts, dir } = makeProfile({})
+    tempDirs.push(dir)
+    const gateway = verdictGatewayFor(desktopFacts(facts), pnpmRefusal)
+
+    // When the install runs
+    const { jobId } = gateway.install('dsh-free-search')
+    const job = await settle(gateway, jobId)
+
+    // Then the manager's own reason is the job error
+    expect(job.phase).toBe('error')
+    expect(job.error).toContain('官方插件管理器安装失败')
+    expect(job.error).toContain('ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION')
+  })
+
+  it('operator: sees the manager folded refusal on a removal', async () => {
+    // Given a manager that refused the removal and resolved with its verdict
+    const { facts, dir } = makeProfile({ 'dsh-free-search': { version: '1.0.0' } })
+    tempDirs.push(dir)
+    const gateway = verdictGatewayFor(desktopFacts(facts), {
+      stage: 'remove',
+      target: 'dsh-free-search',
+      changed: false,
+      application: 'failed',
+      error: { code: 'operation-error', diagnostic: 'ERR_PNPM_ENOENT: no such package in the profile' },
+    })
+
+    // When the removal runs
+    const { jobId } = gateway.remove('dsh-free-search')
+    const job = await settle(gateway, jobId)
+
+    // Then the refusal is reported, not the "still in the profile" no-op
+    expect(job.phase).toBe('error')
+    expect(job.error).toContain('官方插件管理器卸载失败')
+    expect(job.error).toContain('ERR_PNPM_ENOENT')
+    expect(job.error).not.toContain('卸载未生效')
+  })
+
+  it('operator: sees a cancelled manager run as a cancellation, not a no-op', async () => {
+    // Given a manager run the host cancelled before it touched the profile
+    const { facts, dir } = makeProfile({ 'dsh-memoir': { version: '1.0.0' } })
+    tempDirs.push(dir)
+    const gateway = verdictGatewayFor(desktopFacts(facts), { stage: 'install', changed: false, application: 'cancelled' })
+
+    // When the update runs
+    const { jobId } = gateway.update('dsh-memoir', '1.1.0')
+    const job = await settle(gateway, jobId)
+
+    // Then the cancellation is named
+    expect(job.phase).toBe('error')
+    expect(job.error).toContain('已取消')
+  })
+
+  it('operator: sees the packages an incompatible-version refusal names', async () => {
+    // Given the manager refused a version the running dsh rejects
+    const { facts, dir } = makeProfile({ 'dsh-memoir': { version: '1.0.0' } })
+    tempDirs.push(dir)
+    const gateway = verdictGatewayFor(desktopFacts(facts), {
+      stage: 'install',
+      changed: false,
+      application: 'failed',
+      error: {
+        code: 'incompatible-version',
+        incompatible: [{ name: 'dsh-memoir', version: '2.0.0', runtimeVersion: '0.2.0-rc.1' }],
+      },
+    })
+
+    // When the update runs
+    const { jobId } = gateway.update('dsh-memoir', '2.0.0')
+    const job = await settle(gateway, jobId)
+
+    // Then the refusal names the package, its version and the runtime it rejects
+    expect(job.phase).toBe('error')
+    expect(job.error).toContain('dsh-memoir@2.0.0')
+    expect(job.error).toContain('0.2.0-rc.1')
+  })
+
+  it('operator: keeps verifying the profile when the manager reports it applied the run', async () => {
+    // Given a manager whose verdict claims success and whose run really moved the profile
+    const { facts, dir } = makeProfile({ 'dsh-memoir': { version: '1.0.0' } })
+    tempDirs.push(dir)
+    const gateway = new CliGateway(desktopFacts(facts), {} as NodeJS.ProcessEnv, {
+      spawnImpl: (() => { throw new Error('the CLI must not run for an application-owned profile') }) as never,
+      findBinary: () => '/fake/dsh',
+      nativeManager: () => ({
+        installBundle: async () => {
+          installPackage(facts.profileDir, 'dsh-memoir', { version: '1.1.0' })
+          return { stage: 'install', target: 'dsh-memoir@1.1.0', changed: true, application: 'restart-required' }
+        },
+        removeBundle: async () => {},
+      }),
+    })
+
+    // When the update runs
+    const { jobId } = gateway.update('dsh-memoir', '1.1.0')
+    const job = await settle(gateway, jobId)
+
+    // Then the profile re-read still settles it, because a positive verdict is
+    // not trusted on its own either
+    expect(job.phase).toBe('done')
+    expect(job.plugin).toMatchObject({ id: 'dsh-memoir', version: '1.1.0' })
   })
 
   it('operator: keeps the CLI as the writer on a non-desktop profile', async () => {

@@ -39,10 +39,15 @@ Verification mirrors the CLI path, because a green manager call is not proof
 the profile moved: an install is only `done` once the profile carries a
 dependency it did not carry before, and a removal is only `done` once a
 dependency it carried is gone. A manager that resolved without changing the
-profile is `安装未生效` / `卸载未生效`, and a manager rejection is reported
-with the manager's own message. The job table, `/status` polling, the
-mutation queue and the browser half's wire contract are unchanged, so the
-Workshop store and the check-for-updates block cannot tell the writers apart.
+profile is `安装未生效` / `卸载未生效`; a rejected run resolves too — the
+manager's `change()` wrapper folds it into the returned verdict
+(`application: 'failed'` / `'cancelled'`, `error.code`, `error.diagnostic`) —
+so `nativeManagerFailure()` reads that verdict first and reports its own reason
+(`官方插件管理器安装失败：…` / `卸载失败：…`, including the pnpm diagnostic)
+before the profile verification runs, exactly as on the update path. The job
+table, `/status` polling, the mutation queue and the browser half's wire
+contract are unchanged, so the Workshop store and the check-for-updates block
+cannot tell the writers apart.
 
 Because the CLI is not the writer there, the gateway's HTTP install, update and
 removal routes ask which writer serves the request
@@ -111,11 +116,13 @@ updates and removals.
 - `tests/gateway-jobs.spec.ts`: on a `desktop` fact set an install runs
   through a scripted official manager and the CLI spawn seam throws if it is
   ever used; a manager failure settles the job as an error with the manager's
-  message; a green manager run that added no dependency is `安装未生效`; a
-  removal runs through `removeBundle` and the dependency leaves the profile; a
-  green removal that left the dependency is `卸载未生效`; and on a non-desktop
-  profile the CLI stays the writer for install and removal with the manager
-  untouched. The native update tests from the previous note keep passing.
+  message; a folded failure verdict on an install or a removal is reported with
+  its own reason instead of the `安装未生效` / `卸载未生效` no-op text; a green
+  manager run that added no dependency is `安装未生效`; a removal runs through
+  `removeBundle` and the dependency leaves the profile; a green removal that
+  left the dependency is `卸载未生效`; and on a non-desktop profile the CLI
+  stays the writer for install and removal with the manager untouched. The
+  native update tests from the previous note keep passing.
 - The writer the fix routes to is verified live in the running profile: the
   official manager keeps its own operation logs under
   `~/.dsh/profiles/desktop/.plugin-manager/logs/`, and they show it writing

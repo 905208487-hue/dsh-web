@@ -54,6 +54,17 @@ const ADAPT_CSS_ID = 'dsh-remote-web-ui/mobile-adapt.css'
 const ACTIVE_CLASS = 'dsh-remote-portrait'
 /** Body class while the collapsed rail is hidden behind the whale. */
 const RAIL_HIDDEN_CLASS = 'dsh-remote-rail-hidden'
+/**
+ * The official sidebar column root. Also the scope of the row sweep: every row
+ * the drag suppression covers is a descendant of it, so the document-wide scan
+ * it replaces only ever returned these.
+ */
+const SIDEBAR_SELECTOR = '[class*="_sidebarCol"]'
+/** The official draggable session/project rows (see disableRowDrag). */
+const ROW_SELECTOR = '[class*="_sessionRow"], [class*="_projectRow"]'
+/** The injected stylesheet, addressed through the same cached lookup. */
+const STYLE_SELECTOR = `style[data-plugin-css="${ADAPT_CSS_ID}"]`
+
 /** Whale button id. */
 const WHALE_ID = 'dshRemoteWhale'
 /** Compact picker: synthesized model button id. */
@@ -346,6 +357,8 @@ export function startMobileAdapt(): void {
   let whaleObserver: MutationObserver | null = null
   /** Header subtree observer: marks the geometry measurement dirty on re-render. */
   let headerObserver: MutationObserver | null = null
+  /** Document child-list observer: invalidates the cached-absent selector set. */
+  let domObserver: MutationObserver | null = null
   let observedHeader: Element | null = null
   /** Whether the seated-actions geometry needs re-measuring (see alignActionsText). */
   let headerGeometryDirty = true
@@ -368,17 +381,28 @@ export function startMobileAdapt(): void {
    * rail compaction) while the body class stays.
    */
   function ensureAdaptStyle(): void {
-    if (nodeOf(`style[data-plugin-css="${ADAPT_CSS_ID}"]`) !== null) return
+    if (nodeOf(STYLE_SELECTOR) !== null) return
     const tag = document.createElement('style')
     tag.dataset.plugin = 'remote-web-ui'
     tag.dataset.pluginCss = ADAPT_CSS_ID
     tag.textContent = ADAPT_CSS.join('')
     document.head.appendChild(tag)
+    // Seed the lookup cache: the tag is created here, outside nodeOf, so the
+    // negative cache could otherwise report it missing for one more tick and
+    // stack a duplicate stylesheet.
+    nodeCache.set(STYLE_SELECTOR, tag)
+    nodeMissCache.delete(STYLE_SELECTOR)
   }
 
   function apply(): void {
     if (active) return
     active = true
+    // First statement of the activation, before any lookup: nothing observed the
+    // document while the layer was reverted (the observer is created below), so
+    // no "absent" verdict recorded earlier may be served now. Clearing here
+    // rather than beside the observer also covers the lookups this path runs
+    // before that point.
+    forgetAbsentSelectors()
     document.body.classList.add(ACTIVE_CLASS)
     // A details panel opened before the viewport rotated into portrait (or
     // restored across reloads) would sit behind the display:none above;
@@ -397,6 +421,7 @@ export function startMobileAdapt(): void {
       meta.setAttribute('content', `${savedViewportContent}, viewport-fit=cover`)
     }
     ensureWhale()
+    ensureDomObserver()
     syncWhale()
     // React builds nodes with attributes before inserting them, so
     // attribute observers miss the initial collapsed state — a light
@@ -429,6 +454,45 @@ export function startMobileAdapt(): void {
       whaleObserver.disconnect()
       whaleObserver = null
     }
+    if (domObserver !== null) {
+      domObserver.disconnect()
+      domObserver = null
+    }
+    // Nothing observes the document from here on; a verdict recorded now could
+    // not be trusted after the next apply().
+    forgetAbsentSelectors()
+  }
+
+  /**
+   * Observe the document for the two kinds of change that can make a cached-absent
+   * target discoverable again (see nodeOf): node insertion/removal, and the
+   * class / compat-stamp attributes the cached selectors match on.
+   *
+   * Body class writes are excluded by target: the layer toggles three body
+   * classes every tick, and counting those would invalidate the negative cache
+   * on every tick and restore the very scan this cache removes. They cannot
+   * create a target either — every cached selector matches an element other
+   * than <body>.
+   *
+   * The record queue is drained on a microtask, so this stays off the layout
+   * path; a chat turn's insertions are a handful per second, not per element.
+   */
+  function ensureDomObserver(): void {
+    if (domObserver !== null || typeof MutationObserver === 'undefined' || !document.body) return
+    domObserver = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type === 'childList' || record.target !== document.body) {
+          noteDomChange()
+          return
+        }
+      }
+    })
+    domObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'data-dsh-frame'],
+    })
   }
 
   /** Start/stop the 600ms sync tick; a no-op when already in the asked state. */
@@ -702,7 +766,7 @@ export function startMobileAdapt(): void {
   const dragOverridden = new Map<Element, string | null>()
   function disableRowDrag(): void {
     if (!active) return
-    const rows = document.querySelectorAll('[class*="_sidebarCol"] [class*="_sessionRow"], [class*="_sidebarCol"] [class*="_projectRow"]')
+    const rows = sidebarRows()
     for (const row of rows) {
       if (row.getAttribute('draggable') !== 'false') {
         if (!dragOverridden.has(row)) dragOverridden.set(row, row.getAttribute('draggable'))
@@ -731,13 +795,88 @@ export function startMobileAdapt(): void {
    * node on a major re-render, which the isConnected guard detects.
    */
   const nodeCache = new Map<string, Element>()
+  /**
+   * Selectors known to be absent as of {@link domGeneration}. A miss is the
+   * common case, not the exception: the layer holds no overlay of its own, and
+   * several official surfaces it looks for (tabs row, tools row, sidebar rows)
+   * legitimately do not exist at once. Re-walking a conversation-sized document
+   * for the same absent selector on every 600ms tick was waste that almost
+   * always resolved to null: five document-wide lookups per tick on the measured
+   * fixture, zero after this cache. That is a lookup count — the wall-clock
+   * saving is real while the mounted content is quiet and shrinks to the
+   * row-scope saving when a turn streams (see the Agent Note for the harness and
+   * the before/after numbers).
+   *
+   * A miss is trusted only while the observed content has not changed, so a
+   * surface that appears is still found on the very next tick — the same
+   * discovery latency the unconditional probe had. The cache is never aged by a
+   * clock: it is cleared by {@link noteDomChange} while the observer is live and
+   * by {@link forgetAbsentSelectors} across the windows where it is not (apply
+   * and revert). One blind spot is deliberate and load-bearing: the observer
+   * watches <body>, so a head-resident target is not covered by that signal —
+   * the one such target is seeded into the cache where it is created (see
+   * ensureAdaptStyle).
+   */
+  const nodeMissCache = new Set<string>()
+  /**
+   * Bumped whenever a cached target may have appeared or disappeared. A surface
+   * qualifies on a class token or on the aggregate compat stamp
+   * (`data-dsh-frame`), so both insertions/removals AND those two attributes
+   * can change the answer. Nothing the layer writes per tick lands here: its own
+   * class writes are all on <body>, and its row/transform/label writes touch
+   * other attributes entirely (see ensureDomObserver).
+   */
+  let domGeneration = 0
+  /** The generation the negative cache was recorded against. */
+  let missGeneration = -1
+
+  function noteDomChange(): void {
+    domGeneration += 1
+  }
+
+  /**
+   * Drop every cached "absent" verdict. Called on apply and revert: while the
+   * observer is disconnected the layer is blind to insertions, so a verdict
+   * recorded before the gap could otherwise outlive the change that falsified
+   * it and be served without a probe. The positive cache needs no equivalent —
+   * its `isConnected` guard already re-resolves a replaced node.
+   */
+  function forgetAbsentSelectors(): void {
+    nodeMissCache.clear()
+    domGeneration += 1
+  }
+
   function nodeOf(selector: string): Element | null {
     const cached = nodeCache.get(selector)
-    if (cached !== undefined && cached.isConnected) return cached
+    if (cached !== undefined) {
+      // A node React replaced is no longer connected; drop it and fall through
+      // so the lookup below can find its replacement.
+      if (cached.isConnected) return cached
+      nodeCache.delete(selector)
+    }
+    if (missGeneration !== domGeneration) {
+      nodeMissCache.clear()
+      missGeneration = domGeneration
+    }
+    if (nodeMissCache.has(selector)) return null
     const found = document.querySelector(selector)
-    if (found === null) nodeCache.delete(selector)
-    else nodeCache.set(selector, found)
+    if (found === null) {
+      nodeMissCache.add(selector)
+      return null
+    }
+    nodeCache.set(selector, found)
     return found
+  }
+
+  /**
+   * The session/project rows the drag suppression covers, scoped to the cached
+   * sidebar root. Each row carries the sidebar column class as an ancestor, so
+   * the document-wide scan this replaces only ever returned rows from here.
+   */
+  function sidebarRows(): Element[] {
+    const sidebar = nodeOf(SIDEBAR_SELECTOR)
+    if (sidebar === null) return []
+    return Array.from(sidebar.querySelectorAll(ROW_SELECTOR))
   }
 
   /** The official application frame, through the same cached lookup. */

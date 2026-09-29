@@ -21,6 +21,12 @@ packages/AGENTS.md 的全局/包级规则。
   拒绝写该 profile（`dsh plugin --profile desktop …` 直接报错），更新必须经宿主挂载的
   官方 `pluginManager` 服务（`ctx.get('pluginManager')`，契约观察不 import）；其余运行时
   CLI 仍是唯一写入器，两条路径共用同一任务表、状态轮询与版本核对。
+- **官方管理器 resolve 不等于成功**：它的 `change()` 包装器把失败折叠进返回值
+  （`application: 'failed'` / `'cancelled'`，附 `error.code` / `error.diagnostic`），而不是
+  抛错。原生安装/更新/卸载必须先经 `nativeManagerFailure()` 读该判定再重读 profile，
+  否则会把 pnpm 已经拒绝的运行报成「官方插件管理器报告成功，但…未生效」，把真实原因
+  （例如 `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`）藏起来。判定形状见
+  [更新路径记录](../../.agents/notes/implemented/bug-fix/2026-09-26-plugin-manager-app-owned-update-path.md)。
 - **CLI 是 Node 脚本时不能用 shebang 直接 spawn**：GUI 启动的宿主（桌面应用）PATH 里没有
   `node`，`#!/usr/bin/env node` 会在 CLI 启动前以 `env: node: No such file or directory`
   （退出码 127）失败。用 CLI 旁的 `node`（npm-global/homebrew 布局），否则用

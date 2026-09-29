@@ -371,15 +371,69 @@ export interface NativePluginManager {
    * Install or update one package spec through the official manager.
    * @param spec - package spec (e.g. `@scope/pkg@1.2.3`).
    * @param options - activation choice and the request id the run is tracked under.
-   * @returns the manager's own diagnostics (the caller re-reads the profile).
+   * @returns the manager's own verdict ({@link NativeManagerOutcome}); the caller
+   * re-reads the profile as well, but must read this first — a refusal resolves.
    */
   installBundle(spec: string, options?: { enabled?: boolean; requestId?: string }): Promise<unknown>
   /**
    * Remove one profile-owned bundle through the official manager.
    * @param name - installed dependency (bundle) name.
-   * @returns the manager's own diagnostics (the caller re-reads the profile).
+   * @returns the manager's own verdict ({@link NativeManagerOutcome}); the caller
+   * re-reads the profile as well, but must read this first — a refusal resolves.
    */
   removeBundle(name: string): Promise<unknown>
+}
+
+/**
+ * The verdict the official in-process manager returns for one mutation. Its
+ * internal `change()` wrapper never rejects a failed operation: it folds the
+ * failure into this resolved value (`application: 'failed'` plus `error`), so a
+ * resolved promise is not proof the profile moved. Reading only whether the
+ * call threw reported a refused pnpm run as "the manager succeeded but nothing
+ * changed" and hid the real reason (2026-09-29: `dsh-better-sidebar` update
+ * blocked by `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`). Contract observation,
+ * shape mirrored from `@deepseek-ai/dsh-plugin-manager`.
+ */
+export interface NativeManagerOutcome {
+  /** `applied` or `restart-required` on success, `cancelled`, or `failed`. */
+  application?: string
+  /** Whether the profile files differ from before the run. */
+  changed?: boolean
+  /** Present when `application` is `failed`. */
+  error?: {
+    /** The manager's own failure code (`operation-error`, `incompatible-version`, …). */
+    code?: string
+    /** Raw failure text for `operation-error` (the pnpm output tail). */
+    diagnostic?: string
+    /** Packages an `incompatible-version` refusal names. */
+    incompatible?: readonly { name?: string; version?: string; runtimeVersion?: string }[]
+  }
+}
+
+/**
+ * The official manager's own failure text for one run, or undefined when its
+ * verdict is not a failure. The manager resolves a failed run instead of
+ * rejecting it, so this is the only place its refusal can be read — the profile
+ * re-read afterwards can only say that nothing moved, never why.
+ * @param outcome - the resolved value of `installBundle` / `removeBundle`.
+ * @returns the failure text to report, or undefined for a run that did not fail.
+ */
+export function nativeManagerFailure(outcome: unknown): string | undefined {
+  if (typeof outcome !== 'object' || outcome === null) return undefined
+  const verdict = outcome as NativeManagerOutcome
+  if (verdict.application === 'cancelled') return '本次操作已取消（profile 未改动）'
+  if (verdict.application !== 'failed') return undefined
+  const failure = verdict.error
+  const diagnostic = typeof failure?.diagnostic === 'string' ? failure.diagnostic.trim() : ''
+  if (diagnostic !== '') return diagnostic
+  const incompatible = failure?.incompatible
+  if (Array.isArray(incompatible) && incompatible.length > 0) {
+    return incompatible
+      .map(item => `${item.name ?? '未知包'}@${item.version ?? '未知版本'} 与 dsh ${item.runtimeVersion ?? '当前版本'} 不兼容`)
+      .join('；')
+  }
+  const code = failure?.code
+  return typeof code === 'string' && code !== '' ? `官方插件管理器拒绝执行（${code}）` : '官方插件管理器报告失败'
 }
 
 /** One layer snapshot plus the profile patch text and dependency list. */
@@ -739,15 +793,24 @@ export class CliGateway {
    * applies the bundle, then this reads the profile the same way the CLI path
    * does: the install is only `done` once the profile carries a dependency it
    * did not carry before, so a green manager call that added nothing is still
-   * reported as a failure. The CLI-specific guards are deliberately absent —
-   * the official manager validates and applies the bundle itself, exactly as it
-   * does for the official Plugins page.
+   * reported as a failure. Its resolved verdict is read first
+   * ({@link nativeManagerFailure}): the manager folds a refused run into that
+   * value instead of rejecting, and only the verdict names the reason. The
+   * CLI-specific guards are deliberately absent — the official manager
+   * validates and applies the bundle itself, exactly as it does for the
+   * official Plugins page.
    * @param job - the install job being settled.
    * @param native - the official manager.
    */
   private async runNativeInstall(job: GatewayJob, native: NativePluginManager): Promise<void> {
     const before = await this.capture()
-    await native.installBundle(job.spec, { enabled: true, requestId: job.id })
+    const verdict = await native.installBundle(job.spec, { enabled: true, requestId: job.id })
+    const refusal = nativeManagerFailure(verdict)
+    if (refusal !== undefined) {
+      job.phase = 'error'
+      job.error = `plugin-manager: 官方插件管理器安装失败：${refusal}`
+      return
+    }
     const after = await this.capture()
     const name = this.newDependency(before, after)
     if (name === undefined) {
@@ -786,6 +849,10 @@ export class CliGateway {
    * this reads the profile the same way the CLI path does: the dependency must
    * still be there and the installed version must be the one the route resolved,
    * so a green manager call that changed nothing is still reported as a failure.
+   * Its resolved verdict is read first ({@link nativeManagerFailure}): a refused
+   * run (pnpm exited non-zero, an incompatible version, a cancellation) resolves
+   * with `application: 'failed'`, and only that verdict carries the reason — the
+   * profile re-read can only show that the version did not move.
    * @param job - the update job being settled.
    * @param native - the official manager.
    */
@@ -798,7 +865,13 @@ export class CliGateway {
       return
     }
     const before = await this.capture()
-    await native.installBundle(job.spec, { enabled: true, requestId: job.id })
+    const verdict = await native.installBundle(job.spec, { enabled: true, requestId: job.id })
+    const refusal = nativeManagerFailure(verdict)
+    if (refusal !== undefined) {
+      job.phase = 'error'
+      job.error = `plugin-manager: 官方插件管理器更新失败：${refusal}`
+      return
+    }
     const after = await this.capture()
     if (!after.dependencies.includes(targetId)) {
       job.phase = 'error'
@@ -897,13 +970,21 @@ export class CliGateway {
    * Run one removal through the official in-process manager (an
    * application-owned profile, where the CLI refuses to write). The removal is
    * only `done` once a dependency the profile carried before is gone, exactly
-   * the verification the CLI path performs.
+   * the verification the CLI path performs. Its resolved verdict is read first
+   * ({@link nativeManagerFailure}): a refused removal resolves with
+   * `application: 'failed'` rather than rejecting.
    * @param job - the removal job being settled.
    * @param native - the official manager.
    */
   private async runNativeRemove(job: GatewayJob, native: NativePluginManager): Promise<void> {
     const before = await this.capture()
-    await native.removeBundle(job.spec)
+    const verdict = await native.removeBundle(job.spec)
+    const refusal = nativeManagerFailure(verdict)
+    if (refusal !== undefined) {
+      job.phase = 'error'
+      job.error = `plugin-manager: 官方插件管理器卸载失败：${refusal}`
+      return
+    }
     const after = await this.capture()
     const name = before.dependencies.find(candidate => !after.dependencies.includes(candidate))
     if (name === undefined) {
