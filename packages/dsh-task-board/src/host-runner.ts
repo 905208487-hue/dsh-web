@@ -60,6 +60,17 @@ function isDefinitionWithdrawn(error: unknown): boolean {
 
 const SERVICE_UNAVAILABLE_ATTEMPTS = 5
 const SERVICE_UNAVAILABLE_BACKOFF_MS = 2_000
+/**
+ * Largest number of history pages one inspection walks back. A session whose
+ * window is wider than this cannot be resolved from its log, which the caller
+ * treats as an unreadable history rather than as pending work.
+ */
+const HISTORY_PAGE_LIMIT = 100
+
+/** One-line text of a gateway or stream failure, for a decideable reason. */
+function failureText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => { setTimeout(resolve, ms) })
@@ -87,7 +98,14 @@ export interface SessionCommandDispatcher {
 }
 
 export type ExecutionInspection =
-  | { outcome: 'pending' }
+  /**
+   * No verdict yet. `unreadable` separates "the work may still be in progress"
+   * from "this session's history could not be read at all": a reader failure is
+   * not progress, and the caller decides how long to keep waiting before it
+   * reports the execution as undeterminable instead of holding a card open
+   * forever.
+   */
+  | { outcome: 'pending'; unreadable?: true; reason?: string }
   | { outcome: 'succeeded' }
   | { outcome: 'failed'; error: string }
   | { outcome: 'cancelled'; error: string }
@@ -545,8 +563,17 @@ export class HostExecutionRunner {
     }
   }
 
-  /** Resolve an execution outcome from the session list and bounded history pages. */
-  async inspect(sessionId: string, startedAt = 0, sessions?: readonly SessionSummary[]): Promise<ExecutionInspection> {
+  /**
+   * Resolve an execution outcome from the session list and bounded history pages.
+   * @param sessionId - the session the execution runs in.
+   * @param startedAt - instant the execution opened; earlier events are not its own.
+   * @param sessions - roster from the caller's own poll, when it already has one.
+   * @param options.whileRunning - read the first completed turn even while the
+   *   roster reports the session as running. A durable Agent Teams teammate
+   *   stays alive after its turn ends, so `running` never clears for it and the
+   *   turn it completed is the only verdict it will ever expose.
+   */
+  async inspect(sessionId: string, startedAt = 0, sessions?: readonly SessionSummary[], options: { whileRunning?: boolean } = {}): Promise<ExecutionInspection> {
     let items: readonly SessionSummary[]
     if (sessions !== undefined) {
       items = sessions
@@ -576,7 +603,7 @@ export class HostExecutionRunner {
       this.scanMemos.delete(sessionId)
       return { outcome: 'cancelled', error: 'execution session no longer exists' }
     }
-    if (summary.running) return { outcome: 'pending' }
+    if (summary.running && options.whileRunning !== true) return { outcome: 'pending' }
 
     let opening: { cursor: number; records: readonly SessionHistoryRecord[]; hasMore: boolean }
     try {
@@ -586,12 +613,12 @@ export class HostExecutionRunner {
       if (typeof iterator.return === 'function') await iterator.return()
       const follow = next.done === true ? undefined : next.value as { type?: string; cursor?: number; records?: readonly SessionHistoryRecord[]; hasMore?: boolean }
       if (follow === undefined || follow.type !== 'snapshot' || typeof follow.cursor !== 'number' || follow.records === undefined || typeof follow.hasMore !== 'boolean') {
-        return { outcome: 'pending' }
+        return { outcome: 'pending', unreadable: true, reason: 'session/follow returned no opening frame' }
       }
       opening = { cursor: follow.cursor, records: follow.records, hasMore: follow.hasMore }
     } catch (error) {
       console.warn('[dsh-task-board] session/follow failed during execution inspection; keeping the outcome pending', error)
-      return { outcome: 'pending' }
+      return { outcome: 'pending', unreadable: true, reason: 'session/follow failed: ' + failureText(error) }
     }
     const openingEvents = opening.records.map(record => ({ event: recordEvent(record) }))
     const newestSeq = openingEvents.reduce<number | undefined>((newest, entry) => newest === undefined ? entry.event.seq : Math.max(newest, entry.event.seq), undefined)
@@ -599,7 +626,7 @@ export class HostExecutionRunner {
     const events: Array<{ event: { type: string; seq: number; time: number; data: unknown } }> = [...openingEvents]
     let beforeSeq: number | undefined
     let reachedExecutionBoundary = !opening.hasMore
-    for (let page = 0; page < 100 && !reachedExecutionBoundary; page += 1) {
+    for (let page = 0; page < HISTORY_PAGE_LIMIT && !reachedExecutionBoundary; page += 1) {
       let history: SessionPage
       try {
         history = await this.invoke('session', 'page', {
@@ -610,7 +637,7 @@ export class HostExecutionRunner {
         }) as SessionPage
       } catch (error) {
         console.warn('[dsh-task-board] session/page failed during execution inspection; keeping the outcome pending', error)
-        return { outcome: 'pending' }
+        return { outcome: 'pending', unreadable: true, reason: 'session/page failed: ' + failureText(error) }
       }
       const pageEntries = pageEvents(history)
       events.push(...pageEntries)
@@ -623,7 +650,9 @@ export class HostExecutionRunner {
       if (oldestSeq === undefined || oldestSeq === beforeSeq) return { outcome: 'pending' }
       beforeSeq = oldestSeq
     }
-    if (!reachedExecutionBoundary) return { outcome: 'pending' }
+    if (!reachedExecutionBoundary) {
+      return { outcome: 'pending', unreadable: true, reason: 'history scan did not reach the execution start within ' + HISTORY_PAGE_LIMIT + ' pages' }
+    }
     const turnEnd = events
       .filter(entry => entry.event.type === 'turn/end' && (startedAt <= 0 || entry.event.time >= startedAt))
       .sort((a, b) => a.event.seq - b.event.seq)[0]

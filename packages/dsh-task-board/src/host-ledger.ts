@@ -84,6 +84,13 @@ export interface OpenExecutionReference {
   readonly executionId: string
   readonly sessionId: string | undefined
   readonly startedAt: number
+  /**
+   * True for a member of a team-mode run other than its Lead. A teammate is a
+   * durable member of the Team: it stays alive after its turn ends, so the
+   * roster may keep reporting its session as running, and the turn it completed
+   * is the only verdict it exposes.
+   */
+  readonly teamMember: boolean
 }
 
 /** Minimal value copy used by the Host scheduler. */
@@ -434,6 +441,10 @@ export class HostTaskLedger {
       }
       this.repairSchedules(true)
       this.reconcileInterruptedStarts()
+      // Boot recovery also folds every already-decided run: a team run whose
+      // Lead recorded its verdict in an earlier process, and a lineage whose
+      // last settle never reached its parent, both leave the running column here.
+      this.finalizeReadyRuns(false)
       // Persist a freshly generated ledger identity and any recovery error
       // immediately, even when there are no tasks to trigger a later action.
       this.commit(false)
@@ -496,6 +507,15 @@ export class HostTaskLedger {
    */
   runtimeView(): LedgerRuntimeView {
     let armedSchedules = 0
+    // Run groups opened by a team-mode card: every other member of those groups
+    // runs as a teammate inside that card's Lead session.
+    const teamGroups = new Set<string>()
+    for (const task of this.document.tasks) {
+      if (task.teamRun !== true) continue
+      for (const execution of task.executions) {
+        if (execution.runGroupId !== undefined) teamGroups.add(execution.runGroupId)
+      }
+    }
     const openExecutions: OpenExecutionReference[] = []
     for (const task of this.document.tasks) {
       if (task.archivedAt === undefined && task.schedule?.enabled === true) armedSchedules += 1
@@ -509,6 +529,9 @@ export class HostTaskLedger {
           executionId: execution.id,
           sessionId: execution.sessionId,
           startedAt: execution.startedAt,
+          teamMember: task.teamRun !== true
+            && execution.runGroupId !== undefined
+            && teamGroups.has(execution.runGroupId),
         })
       }
     }
@@ -689,16 +712,26 @@ export class HostTaskLedger {
       })
       changed = true
     }
+    // A team run is governed by its Lead: the Lead's own outcome closes whatever
+    // the Team still holds open, so the tree can never wait on a teammate that
+    // will never report one.
+    if (task.teamRun === true
+      && this.closeTeamMembers(taskId, groupId, execution.ownResult ?? outcome, execution.ownError ?? error, now)) changed = true
     if (this.settleCascade(taskId, groupId, now)) changed = true
     if (changed) this.commit()
   }
 
   attachSession(taskId: string, executionId: string, sessionId: string): void {
     const now = this.now()
-    this.document.tasks = this.document.tasks.map(task => task.id !== taskId ? task : {
-      ...task,
+    const task = this.document.tasks.find(item => item.id === taskId)
+    // A run the Lead's verdict already closed keeps its record: attaching a
+    // session to a settled execution would rewrite history the Host no longer
+    // observes (a teammate spawn that resolved after its Team was closed).
+    if (task?.executions.find(entry => entry.id === executionId)?.endedAt !== undefined) return
+    this.document.tasks = this.document.tasks.map(item => item.id !== taskId ? item : {
+      ...item,
       updatedAt: now,
-      executions: task.executions.map(entry => entry.id === executionId ? { ...entry, sessionId } : entry),
+      executions: item.executions.map(entry => entry.id === executionId ? { ...entry, sessionId } : entry),
     })
     this.commit()
   }
@@ -725,6 +758,9 @@ export class HostTaskLedger {
           : `invalid cron disabled for task(s): ${invalidScheduleIds.join(', ')}`
         this.repairSchedules(true, false)
         this.reconcileInterruptedStarts(false)
+        // An imported document may carry a decided-but-open run; fold it in the
+        // same action (apply() commits once at the end).
+        this.finalizeReadyRuns(false)
         break
       }
       case 'create': {
@@ -965,6 +1001,95 @@ export class HostTaskLedger {
         : item)
       changed = true
       current = task.parentId
+    }
+    return changed
+  }
+
+  /**
+   * Close every run that is already decided, and fold every lineage whose
+   * members are all settled. The Host poll calls this on every tick, so a run
+   * can no longer be left in the running column by a settle nobody observed:
+   *
+   * - A team run is governed by its Lead. Once the Lead's own outcome is
+   *   recorded, its still-open members are settled with that verdict. A
+   *   teammate is a durable member of the Team and may never report a turn of
+   *   its own, and without this the whole lineage waits on it forever.
+   * - A cascade parent whose members are all settled is finalized here even
+   *   when the settle that completed the tree happened in another process, or
+   *   was interrupted between its child write and its parent write.
+   *
+   * Idempotent: a run that is already folded is left untouched, so a caller may
+   * invoke it on every tick.
+   * @param persist - false to leave the document for the caller to commit.
+   * @returns whether the document changed.
+   */
+  finalizeReadyRuns(persist = true): boolean {
+    const now = this.now()
+    let changed = false
+    const groups = new Set<string>()
+    for (const task of this.document.tasks) {
+      for (const execution of task.executions) {
+        if (execution.endedAt === undefined && execution.runGroupId !== undefined) groups.add(execution.runGroupId)
+      }
+    }
+    for (const groupId of groups) {
+      const lead = this.document.tasks.find(task => task.teamRun === true
+        && task.executions.some(entry => entry.runGroupId === groupId))
+      const verdict = lead === undefined ? undefined : this.leadVerdict(lead, groupId)
+      if (lead !== undefined && verdict !== undefined
+        && this.closeTeamMembers(lead.id, groupId, verdict.result, verdict.error, now)) changed = true
+      // Fold the lineage: a member may itself be a parent of a deeper member.
+      for (const task of this.document.tasks) {
+        if (this.settleCascade(task.id, groupId, now)) changed = true
+      }
+    }
+    if (changed && persist) this.commit()
+    return changed
+  }
+
+  /**
+   * The verdict a team run's Lead has already recorded: its own turn outcome
+   * once that turn ended, or the folded outcome once its card settled.
+   */
+  private leadVerdict(lead: TaskRecord, groupId: string): { result: ExecutionOutcome; error: string | undefined } | undefined {
+    const execution = lead.executions.find(entry => entry.runGroupId === groupId)
+    const result = execution?.ownResult ?? execution?.result
+    if (result === undefined) return undefined
+    return { result, error: execution?.ownError ?? execution?.error }
+  }
+
+  /**
+   * Settle every still-open member of a team run with the Lead's verdict.
+   * A teammate that already reported its own outcome keeps it: the ordinary
+   * fold still lets a failure dominate.
+   * @param leadId - the Lead card's task id (never settled here).
+   * @param groupId - the team run's group.
+   * @param verdict - the Lead's outcome, inherited by members that never reported.
+   * @param error - the Lead's failure text, inherited with a failed verdict.
+   * @param now - clock instant (ms epoch).
+   * @returns whether the document changed.
+   */
+  private closeTeamMembers(leadId: string, groupId: string, verdict: ExecutionOutcome, error: string | undefined, now: number): boolean {
+    const members: string[] = []
+    let recorded = false
+    this.document.tasks = this.document.tasks.map(task => {
+      if (task.id === leadId) return task
+      const execution = openGroupExecution(task, groupId)
+      if (execution === undefined) return task
+      members.push(task.id)
+      if (execution.ownResult !== undefined) return task
+      recorded = true
+      return {
+        ...task,
+        updatedAt: now,
+        executions: task.executions.map(entry => entry.id === execution.id
+          ? { ...entry, ownResult: verdict, ownError: error }
+          : entry),
+      }
+    })
+    let changed = recorded
+    for (const memberId of members) {
+      if (this.settleCascade(memberId, groupId, now)) changed = true
     }
     return changed
   }

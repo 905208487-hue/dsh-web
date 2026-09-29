@@ -238,11 +238,13 @@ describe('HostTaskLedger', () => {
         executionId: 'open',
         sessionId: 'session-open',
         startedAt: NOW - 1_000,
+        teamMember: false,
       }, {
         taskId: 'awaiting-session',
         executionId: 'awaiting-session-open',
         sessionId: undefined,
         startedAt: NOW - 500,
+        teamMember: false,
       }],
     })
     expect(ledger.armedScheduleCount()).toBe(1)

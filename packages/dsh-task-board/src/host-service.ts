@@ -50,6 +50,15 @@ const SESSION_POLL_MS = 5_000
 const RECOVERY_TOLERANCE_MS = 60_000
 /** Largest delay a Node timer represents without clamping; longer targets re-arm in segments. */
 const MAX_TIMER_DELAY_MS = 2_147_483_647
+/**
+ * Consecutive polls that may report one execution's session history as
+ * unreadable before it is reported failed. The roster poll runs every 5 s, so
+ * this is two minutes of a session that is NOT running: no turn is executing
+ * there and its history cannot be read, which means no verdict will ever
+ * arrive. Reporting that as a failure keeps a card — and every ancestor of it —
+ * out of the running column, which nothing else can rescue.
+ */
+const UNREADABLE_SETTLE_POLLS = 24
 
 /**
  * Provenance of one cron-triggered cascade: when the rule fired and the zone
@@ -113,6 +122,12 @@ export class TaskBoardHostService {
    * conversation instead of prompting into a session it cannot see.
    */
   private idleSessionIds: ReadonlySet<string> | undefined
+  /**
+   * Consecutive unreadable-history polls per open execution (see
+   * {@link noteUnreadableInspection}). Cleared as soon as an inspection
+   * resolves, so a transient reader failure never fails a card.
+   */
+  private readonly unreadablePolls = new Map<string, number>()
   private preventIdleSleep = false
   private readonly team: TaskBoardTeamDispatcher | undefined
   private readonly timers: HostTimerFace
@@ -336,6 +351,10 @@ export class TaskBoardHostService {
       return
     }
     this.idleSessionIds = new Set(running.items.filter(item => !item.running).map(item => item.sessionId))
+    // Fold whatever the board can already decide before spending inspection
+    // RPCs: a team run whose Lead recorded its verdict, and any lineage whose
+    // members are all settled. Idempotent, so an already folded board is free.
+    this.ledger.finalizeReadyRuns()
     // Read after the RPC so executions attached while it was in flight are
     // included in this pass, matching the former full-state snapshot timing.
     const runtime = this.ledger.runtimeView()
@@ -357,13 +376,53 @@ export class TaskBoardHostService {
     for (const execution of executions) {
       if (execution.sessionId === undefined) continue
       try {
-        const result = await this.runner.inspect(execution.sessionId, execution.startedAt, sessions)
-        if (result.outcome === 'pending') continue
+        // A team member's turn is read even while the roster calls its session
+        // running: a durable teammate never goes idle for good.
+        const result = await this.runner.inspect(execution.sessionId, execution.startedAt, sessions, {
+          whileRunning: execution.teamMember,
+        })
+        if (result.outcome === 'pending') {
+          if (result.unreadable === true) this.noteUnreadableInspection(execution, result.reason)
+          else this.unreadablePolls.delete(execution.executionId)
+          continue
+        }
+        this.unreadablePolls.delete(execution.executionId)
         this.ledger.settle(execution.taskId, execution.executionId, result.outcome, 'error' in result ? result.error : undefined)
       } catch {
         // A transient inspection failure never settles a running execution.
       }
     }
+    const open = new Set(executions.map(execution => execution.executionId))
+    for (const executionId of [...this.unreadablePolls.keys()]) {
+      if (!open.has(executionId)) this.unreadablePolls.delete(executionId)
+    }
+  }
+
+  /**
+   * Count one poll whose session history could not be read. A reader failure is
+   * not progress: the session is not running (the runner only reads history for
+   * one that is idle), so nothing will ever change that verdict. After
+   * {@link UNREADABLE_SETTLE_POLLS} consecutive polls the execution is reported
+   * failed with the recorded reason, instead of holding its card — and every
+   * ancestor of it — in the running column with no way out. The first poll of
+   * each streak is logged, so the Host log names the session.
+   */
+  private noteUnreadableInspection(execution: OpenExecutionReference, reason: string | undefined): void {
+    const polls = (this.unreadablePolls.get(execution.executionId) ?? 0) + 1
+    this.unreadablePolls.set(execution.executionId, polls)
+    const detail = reason ?? 'no reason reported'
+    if (polls === 1) {
+      safeConsoleError('[dsh-task-board] execution session ' + (execution.sessionId ?? 'unknown')
+        + ' history is unreadable; it stays pending for up to ' + UNREADABLE_SETTLE_POLLS + ' polls: ' + detail)
+    }
+    if (polls < UNREADABLE_SETTLE_POLLS) return
+    this.unreadablePolls.delete(execution.executionId)
+    this.ledger.settle(
+      execution.taskId,
+      execution.executionId,
+      'failed',
+      'execution session history is unreadable (' + UNREADABLE_SETTLE_POLLS + ' consecutive polls); the outcome cannot be determined: ' + detail,
+    )
   }
 
   /** Drop the armed schedule timer and forget its target. */

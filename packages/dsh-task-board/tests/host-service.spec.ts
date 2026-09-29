@@ -431,6 +431,50 @@ describe('TaskBoardHostService scheduling without a browser', () => {
     service.dispose()
   })
 
+  it('reports an execution failed when its session history stays unreadable', async () => {
+    // Given a running execution whose session history cannot be read at all
+    const ledger = new HostTaskLedger(root())
+    const base = createTask({ title: 'A', description: '', prompt: '' }, 1_000, 'task-a')
+    const opened = startExecution(base, 1_100, 'execution-a').task
+    const imported = {
+      ...opened,
+      status: 'running' as const,
+      executions: opened.executions.map(execution => ({ ...execution, sessionId: 'session-a' })),
+    }
+    ledger.applyRequest('import', { kind: 'import', sourceId: 'browser', tasks: [imported] })
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { gateway } = makeGateway(request => {
+      if (request.method === 'list') return { items: [{ sessionId: 'session-a', running: false }] }
+      throw new Error('history offline')
+    }, () => ({
+      async *[Symbol.asyncIterator]() {
+        throw new Error('follow offline')
+      },
+    }))
+    const service = new TaskBoardHostService(gateway, {
+      ledger,
+      power: new PowerInhibitor({ platform: 'linux' }),
+    })
+    try {
+      const poll = service as unknown as { pollSessions(): Promise<void> }
+      // When the poll meets the unreadable history
+      await poll.pollSessions()
+      // Then the first failure is only reported: a transient reader failure must
+      // never fail a card
+      expect(ledger.state().tasks[0].status).toBe('running')
+      expect(errors).toHaveBeenCalledWith(expect.stringContaining('history is unreadable'))
+      // And a sustained one is reported as a failure instead of hanging the card
+      for (let turn = 0; turn < 30; turn += 1) await poll.pollSessions()
+      const settled = ledger.state().tasks[0]
+      expect(settled.executions[0].result).toBe('failed')
+      expect(settled.status).toBe('failed')
+      expect(settled.executions[0].error).toContain('the outcome cannot be determined')
+    } finally {
+      errors.mockRestore()
+      service.dispose()
+    }
+  })
+
   it('holds exactly one recurring poll timer, and start() is idempotent', () => {
     const interval = vi.fn((_callback: () => void, _delay: number) => () => {})
     const { gateway } = makeGateway(() => ({ items: [] }))
