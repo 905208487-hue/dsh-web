@@ -94,6 +94,8 @@ function scheduleView(schedule: ScheduleRule): Record<string, unknown> {
   return {
     enabled: schedule.enabled,
     cron: schedule.cron,
+    // Absent means the rule follows the Host zone, which the board view reports.
+    ...(schedule.timeZone === undefined ? {} : { timeZone: schedule.timeZone }),
     ...(schedule.nextRunAt === undefined ? {} : { nextRunAt: schedule.nextRunAt }),
     ...(schedule.lastTriggeredAt === undefined ? {} : { lastTriggeredAt: schedule.lastTriggeredAt }),
   }
@@ -383,7 +385,8 @@ function buildScheduleTool(host: TaskBoardToolHost): ToolDefinition {
   return defineTool({
     name: 'task_board_schedule',
     description: [
-      'Arm, change, or disarm a task scheduled runs (5-field cron in the Host local time zone; day-of-month and day-of-week use OR semantics).',
+      'Arm, change, or disarm a task scheduled runs (5-field cron; day-of-month and day-of-week follow Vixie semantics: both restricted means OR, otherwise AND).',
+      'The cron wall clock is read in the rule stored IANA time zone; omit timeZone to use the Host zone reported by task_board_list/task_board_get. DST gaps are skipped and an ambiguous fall-back time fires once, at the earlier instant.',
       'A due scheduled task runs the same cascade a manual run does, so a root task runs its whole subtask tree.',
       'A schedule whose tree contains an unconfirmed above-default permission is refused and rolls to its next occurrence; the reason is reported in the list board summary as schedulerError.',
       'Missed occurrences during Host downtime are skipped, never queued; a task that is already running skips its occurrence.',
@@ -393,20 +396,27 @@ function buildScheduleTool(host: TaskBoardToolHost): ToolDefinition {
       taskId: { type: 'string', required: true, description: 'The task whose schedule changes.' },
       enabled: { type: 'boolean', description: 'Arm (true) or disarm (false) the schedule.' },
       cron: { type: 'string', description: '5-field cron expression: minute hour day-of-month month day-of-week.' },
+      timeZone: {
+        type: 'string',
+        description: 'IANA zone the cron wall clock is read in (for example Asia/Shanghai). Omit to keep the stored zone, or pass an empty string to clear it back to the Host zone.',
+      },
     },
     output: { schema: { type: 'json' }, render: renderJson },
     async execute(args, exec) {
-      if (args.enabled === undefined && args.cron === undefined) {
-        return refused('nothing-to-change', 'pass enabled and/or cron')
+      if (args.enabled === undefined && args.cron === undefined && args.timeZone === undefined) {
+        return refused('nothing-to-change', 'pass enabled and/or cron and/or timeZone')
       }
       // A missing card must read as a missing card: the ledger reports an
       // unknown id through the same refusal as a malformed cron.
       if (!host.snapshot().tasks.some(task => task.id === args.taskId)) {
         return refused('task-not-found', 'no task with id ' + args.taskId)
       }
-      const patch: { enabled?: boolean; cron?: string } = {
+      const patch: { enabled?: boolean; cron?: string; timeZone?: string | null } = {
         ...(args.enabled === undefined ? {} : { enabled: args.enabled }),
         ...(args.cron === undefined ? {} : { cron: args.cron }),
+        // An empty string is the documented way to clear the stored zone, so
+        // the model never has to emit an explicit null through JSON args.
+        ...(args.timeZone === undefined ? {} : { timeZone: args.timeZone === '' ? null : args.timeZone }),
       }
       try {
         const snapshot = host.apply(crypto.randomUUID(), { kind: 'set-schedule', taskId: args.taskId, patch }, callingSessionId(exec))

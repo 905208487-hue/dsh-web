@@ -250,6 +250,30 @@ describe('goal run toggle', () => {
     expect(updateTask).toHaveBeenCalledWith('t1', { goalRun: false })
   })
 
+  it('user changing the schedule zone persists it through the controller', async () => {
+    // Given a card whose rule is pinned to a zone
+    const { container, controller } = await renderDetail(task({
+      schedule: { enabled: true, cron: '0 9 * * *', timeZone: 'Asia/Shanghai', nextRunAt: undefined, lastTriggeredAt: undefined },
+    }))
+
+    // When the user picks a different zone and then the Host default
+    const zoneSelect = [...container.querySelectorAll<HTMLSelectElement>('select')]
+      .find(candidate => candidate.getAttribute('aria-label') === '时区')!
+    expect(zoneSelect.value).toBe('Asia/Shanghai')
+    await act(async () => {
+      zoneSelect.value = 'Europe/London'
+      zoneSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      zoneSelect.value = ''
+      zoneSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    // Then each choice is written as an action, and clearing sends null
+    expect(controller.setSchedule).toHaveBeenCalledWith('t1', { timeZone: 'Europe/London' })
+    expect(controller.setSchedule).toHaveBeenCalledWith('t1', { timeZone: null })
+  })
+
   it('user opening an opted-out card sees it unchecked and re-checking restores the default', async () => {
     // Given a card that stored the /goal opt-out
     const updateTask = vi.fn(async () => true)

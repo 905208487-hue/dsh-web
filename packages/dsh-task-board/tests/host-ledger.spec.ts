@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTask, EXECUTION_HISTORY_LIMIT, startExecution, withSchedule, type TaskRecord } from '../src/core/tasks.ts'
 import { HostTaskLedger, processIsAlive, processState, win32StartTimeMs, type PowerShellProbe } from '../src/host-ledger.ts'
+import { resolveHostTimeZone } from '../src/core/schedule.ts'
 
 const roots: string[] = []
 const NOW = new Date(2026, 7, 16, 10, 0, 30).getTime()
@@ -160,7 +161,7 @@ describe('HostTaskLedger', () => {
     const recoveredId = ledger.state().scheduler.ledgerId
     expect(ledger.state().tasks).toEqual([])
     expect(ledger.state().scheduler.error).toContain('quarantined')
-    expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({ schemaVersion: 3, tasks: [] })
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({ schemaVersion: 4, tasks: [] })
     const quarantined = readdirSync(root).find(name => name.startsWith('ledger-v2.json.corrupt-'))
     expect(quarantined).toBeDefined()
     expect(readFileSync(join(root, quarantined!), 'utf8')).toBe('{not json')
@@ -248,6 +249,7 @@ describe('HostTaskLedger', () => {
     expect(ledger.dueSchedules(NOW + 60_000)).toEqual([{
       taskId: 'scheduled',
       cron: '* * * * *',
+      timeZone: expect.any(String),
       nextRunAt: NOW + 30_000,
     }])
     expect(ledger.runtimeView().openExecutions[0]).not.toBe(runtime.openExecutions[0])
@@ -631,8 +633,8 @@ describe('HostTaskLedger', () => {
   })
 })
 
-describe('ledger schema v3 migration', () => {
-  it('migrates a v2 document losslessly to v3 on load and writes it back as v3', () => {
+describe('ledger schema v4 migration', () => {
+  it('migrates a v2 document losslessly to v4 on load, stamping the schedule zone', () => {
     const root = tempRoot()
     const scheduled = withSchedule(
       { ...task('legacy-scheduled'), permission: 'workspace-write', workspaceId: 'ws-1', mode: 'mode-a' },
@@ -667,16 +669,19 @@ describe('ledger schema v3 migration', () => {
     expect(migratedScheduled.permission).toBe('workspace-write')
     expect(migratedScheduled.workspaceId).toBe('ws-1')
     expect(migratedScheduled.mode).toBe('mode-a')
-    expect(migratedScheduled.schedule).toEqual({ enabled: false, cron: '*/5 * * * *', nextRunAt: NOW + 120_000, lastTriggeredAt: NOW - 60_000 })
+    // v4 stamps the Host zone onto a pre-v4 rule so the trigger instant it
+    // already committed stops following the process TZ. The instant itself is
+    // untouched, because the stored nextRunAt already encodes the old zone.
+    expect(migratedScheduled.schedule).toEqual({ enabled: false, cron: '*/5 * * * *', timeZone: expect.any(String), nextRunAt: NOW + 120_000, lastTriggeredAt: NOW - 60_000 })
     const migratedSettled = state.tasks.find(entry => entry.id === 'legacy-settled')!
     expect(migratedSettled.archivedAt).toBe(NOW - 10)
     expect(migratedSettled.executions).toHaveLength(2)
     expect(migratedSettled.executions[1]).toEqual({ id: 'exec-2', sessionId: 'session-2', startedAt: NOW - 300, endedAt: NOW - 200, result: 'failed', error: 'boom' })
     expect(state.scheduler.ledgerId).toBe('ledger-legacy')
     expect(state.scheduler.lastTickAt).toBe(NOW - 1_000)
-    // The migration is written back immediately as v3, keeping every field.
+    // The migration is written back immediately as v4, keeping every field.
     const onDisk = JSON.parse(readFileSync(join(root, 'ledger-v2.json'), 'utf8'))
-    expect(onDisk.schemaVersion).toBe(3)
+    expect(onDisk.schemaVersion).toBe(4)
     expect(onDisk.revision).toBe(41)
     expect(onDisk.tasks).toEqual(state.tasks)
     expect(onDisk.scheduler.ledgerId).toBe('ledger-legacy')
@@ -685,17 +690,71 @@ describe('ledger schema v3 migration', () => {
     ledger.dispose()
   })
 
-  it('cold-starts an empty v3 ledger on a fresh directory and reloads an empty v3 document', () => {
+  it('operator upgrading a v3 rule that stored no zone gets the Host zone stamped on it', () => {
+    // Given a v3 document whose enabled rule committed a future target while
+    // the Host zone was whatever the process reported
+    // When the document is loaded and migrated
+    const root = tempRoot()
+    const committed = NOW + 120_000
+    const v3Document = JSON.stringify({
+      schemaVersion: 3, revision: 7,
+      tasks: [{
+        ...task('legacy-zoned'),
+        schedule: { enabled: false, cron: '0 9 * * *', nextRunAt: committed, lastTriggeredAt: NOW - 60_000 },
+      }],
+      scheduler: { timeZone: 'UTC', ledgerId: 'ledger-v3' },
+      recentRequests: [],
+    })
+    writeFileSync(join(root, 'ledger-v2.json'), v3Document, 'utf8')
+
+    // When it is loaded
+    const ledger = new HostTaskLedger(root, () => NOW + 2_000)
+    const migrated = ledger.state().tasks[0].schedule!
+
+    // Then the rule carries the Host zone so it stops following a later TZ
+    // change, and the instant it had already committed is untouched.
+    expect(migrated.timeZone).toBe(resolveHostTimeZone())
+    expect(migrated.nextRunAt).toBe(committed)
+    expect(migrated.cron).toBe('0 9 * * *')
+    ledger.dispose()
+  })
+
+  it('operator upgrading a v3 rule that already has a zone keeps that stored zone', () => {
+    // Given a v3 row that already carries an explicit zone
+    // When the document is loaded and migrated
+    // Then the stored zone is kept rather than replaced by the Host zone
+    const root = tempRoot()
+    const committed = NOW + 120_000
+    const v3Document = JSON.stringify({
+      schemaVersion: 3, revision: 8,
+      tasks: [{
+        ...task('legacy-explicit'),
+        schedule: { enabled: false, cron: '0 9 * * *', timeZone: 'Europe/London', nextRunAt: committed, lastTriggeredAt: NOW - 60_000 },
+      }],
+      scheduler: { timeZone: 'UTC', ledgerId: 'ledger-v3b' },
+      recentRequests: [],
+    })
+    writeFileSync(join(root, 'ledger-v2.json'), v3Document, 'utf8')
+
+    // When it is loaded
+    const ledger = new HostTaskLedger(root, () => NOW + 2_000)
+
+    // Then the stored zone wins over the Host zone
+    expect(ledger.state().tasks[0].schedule!.timeZone).toBe('Europe/London')
+    ledger.dispose()
+  })
+
+  it('cold-starts an empty v4 ledger on a fresh directory and reloads an empty v4 document', () => {
     const fresh = tempRoot()
     const ledger = new HostTaskLedger(fresh, () => NOW)
     expect(ledger.state().tasks).toEqual([])
     expect(ledger.state().revision).toBe(0)
-    expect(JSON.parse(readFileSync(join(fresh, 'ledger-v2.json'), 'utf8')).schemaVersion).toBe(3)
+    expect(JSON.parse(readFileSync(join(fresh, 'ledger-v2.json'), 'utf8')).schemaVersion).toBe(4)
     ledger.dispose()
 
     const existing = tempRoot()
     writeFileSync(join(existing, 'ledger-v2.json'), JSON.stringify({
-      schemaVersion: 3, revision: 0, tasks: [], scheduler: { timeZone: 'UTC', ledgerId: 'ledger-empty' }, recentRequests: [],
+      schemaVersion: 4, revision: 0, tasks: [], scheduler: { timeZone: 'UTC', ledgerId: 'ledger-empty' }, recentRequests: [],
     }), 'utf8')
     const reloaded = new HostTaskLedger(existing, () => NOW)
     expect(reloaded.state().tasks).toEqual([])
@@ -730,7 +789,7 @@ describe('ledger schema v3 migration', () => {
     ledger.dispose()
   })
 
-  it('round-trips a v3 document through persist and reload without field drift', () => {
+  it('round-trips a v4 document through persist and reload without field drift', () => {
     const root = tempRoot()
     const ledger = new HostTaskLedger(root, () => NOW)
     ledger.applyRequest('create', {
@@ -746,7 +805,7 @@ describe('ledger schema v3 migration', () => {
     expect(after.revision).toBe(before.revision)
     expect(after.tasks).toEqual(before.tasks)
     expect(after.scheduler.ledgerId).toBe(before.scheduler.ledgerId)
-    expect(JSON.parse(readFileSync(join(root, 'ledger-v2.json'), 'utf8')).schemaVersion).toBe(3)
+    expect(JSON.parse(readFileSync(join(root, 'ledger-v2.json'), 'utf8')).schemaVersion).toBe(4)
     reloaded.dispose()
   })
 })

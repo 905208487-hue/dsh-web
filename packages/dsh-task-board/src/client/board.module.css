@@ -724,6 +724,21 @@
   outline: none;
 }
 
+/* Zone row: the label and the picker share the cron row's geometry so the two
+   controls read as one editor. */
+.scheduleZone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.scheduleZone select {
+  flex: 1;
+  min-width: 0;
+}
+
 .scheduleMeta {
   margin: 0;
   font-size: 12px;

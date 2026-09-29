@@ -39,7 +39,7 @@ class FakeSessions {
 /** Host-like snapshot builder for transport fakes. */
 function snapshot(revision: number, tasks: TaskRecord[] = [], ledgerId = 'ledger-a'): TaskBoardSnapshot {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     revision,
     tasks,
     scheduler: { timeZone: 'UTC', ledgerId },

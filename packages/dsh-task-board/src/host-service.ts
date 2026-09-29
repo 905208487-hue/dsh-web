@@ -52,6 +52,17 @@ const RECOVERY_TOLERANCE_MS = 60_000
 const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 /**
+ * Provenance of one cron-triggered cascade: when the rule fired and the zone
+ * its wall clock was read in. Passed into every launched prompt of that run so
+ * a scheduled job knows its own clock rather than inferring one.
+ */
+export interface ScheduledRunContext {
+  triggeredAt: number
+  timeZone: string
+  cron: string
+}
+
+/**
  * Actions that can move an armed trigger. Only these re-arm the native timer;
  * an unrelated card edit leaves the pending fire untouched.
  */
@@ -239,7 +250,7 @@ export class TaskBoardHostService {
     this.listeners.clear()
   }
 
-  private async launch(opened: OpenedRun, others: readonly OpenedRun[] = []): Promise<void> {
+  private async launch(opened: OpenedRun, others: readonly OpenedRun[] = [], schedule?: ScheduledRunContext): Promise<void> {
     try {
       // A team run always mints a fresh Lead session: teammates are immutable
       // children of that session, so reusing an older one would collide on
@@ -248,13 +259,17 @@ export class TaskBoardHostService {
       const reuseSessionId = team ? undefined : reusableSessionId(opened.task, this.idleSessionIds)
       // Both modes tell the launched agent what else this run opens; only a team
       // run names teammates, because only then does this session own them.
-      const promptContext = others.length === 0 ? undefined : {
-        peers: others.map(other => ({
-          id: other.task.id,
-          title: other.task.title,
-          ...(team ? { name: teammateName(other.task.title, other.execution.runGroupId ?? other.task.id) } : {}),
-        })),
+      const peers = others.length === 0 ? undefined : others.map(other => ({
+        id: other.task.id,
+        title: other.task.title,
+        ...(team ? { name: teammateName(other.task.title, other.execution.runGroupId ?? other.task.id) } : {}),
+      }))
+      // A cron-triggered run additionally states its own firing instant and
+      // rule zone, so a scheduled job can resolve "today" without guessing.
+      const promptContext = peers === undefined && schedule === undefined ? undefined : {
+        ...(peers === undefined ? {} : { peers }),
         ...(team ? { team: true } : {}),
+        ...(schedule === undefined ? {} : { schedule }),
       }
       const sessionId = await this.runner.launch(opened.task, {
         ...(reuseSessionId === undefined ? {} : { reuseSessionId }),
@@ -411,8 +426,11 @@ export class TaskBoardHostService {
       return
     }
     for (const schedule of this.ledger.dueSchedules(now)) {
-      const next = nextRunAtMs(schedule.cron, schedule.nextRunAt)
-      this.dispatchRuns(this.ledger.openScheduled(schedule.taskId, next, now))
+      const next = nextRunAtMs(schedule.cron, schedule.nextRunAt, schedule.timeZone)
+      this.dispatchRuns(
+        this.ledger.openScheduled(schedule.taskId, next, now),
+        { triggeredAt: now, timeZone: schedule.timeZone, cron: schedule.cron },
+      )
     }
     // The launched run (or the rolled-forward target) moved every due schedule,
     // so the next nearest target has to be recomputed from the ledger.
@@ -430,18 +448,18 @@ export class TaskBoardHostService {
    * others back. A team run's members are spawned inside the root's Lead
    * session instead, once that session exists.
    */
-  private dispatchRuns(runs: readonly OpenedRun[]): void {
+  private dispatchRuns(runs: readonly OpenedRun[], schedule?: ScheduledRunContext): void {
     if (runs.length === 0) return
     const root = runs.find(run => run.dispatch !== 'teammate') ?? runs[0]
     const others = runs.filter(run => run !== root)
-    this.scheduleLaunch(root, others)
+    this.scheduleLaunch(root, others, schedule)
     for (const run of others) {
-      if (run.dispatch !== 'teammate') this.scheduleLaunch(run)
+      if (run.dispatch !== 'teammate') this.scheduleLaunch(run, [], schedule)
     }
   }
 
-  private scheduleLaunch(opened: OpenedRun, others: readonly OpenedRun[] = []): void {
-    void this.launch(opened, others).catch(error => {
+  private scheduleLaunch(opened: OpenedRun, others: readonly OpenedRun[] = [], schedule?: ScheduledRunContext): void {
+    void this.launch(opened, others, schedule).catch(error => {
       safeConsoleError('[dsh-task-board] execution launch settlement failed', error)
     })
   }

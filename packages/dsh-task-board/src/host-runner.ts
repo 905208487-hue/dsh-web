@@ -136,6 +136,13 @@ export interface PromptContext {
   peers?: readonly PromptPeer[]
   /** True when those members run as teammates inside this session (Team Lead). */
   team?: boolean
+  /**
+   * Scheduled-run provenance: the instant the cron rule actually fired and the
+   * IANA zone its wall clock was read in. Present only for a cron-triggered
+   * run, so the model can resolve an unqualified date in the run's own terms
+   * instead of guessing from the Host clock (issue #1722).
+   */
+  schedule?: { triggeredAt: number; timeZone: string; cron: string }
 }
 
 /**
@@ -155,6 +162,20 @@ function peerPromptPreamble(context: PromptContext): string | undefined {
 }
 
 /**
+ * The scheduled-run section: this execution was triggered by the card's cron
+ * rule rather than by a person. It states the firing instant, the rule's zone,
+ * and the rule text, so the run's own clock is unambiguous — the board's
+ * scheduler fires on a wall clock in a specific IANA zone, which is not
+ * necessarily the zone of whatever session the run lands in.
+ */
+function schedulePromptPreamble(context: PromptContext): string | undefined {
+  const schedule = context.schedule
+  if (schedule === undefined) return undefined
+  const stamp = new Date(schedule.triggeredAt).toISOString()
+  return `本次执行由任务看板的定时规则自动触发：触发时间 ${stamp}（UTC），规则时区 ${schedule.timeZone}，cron 表达式 ${schedule.cron}。需要判断「今天」「现在」或计算时间窗口时，以该时区的触发时间为准。`
+}
+
+/**
  * Build the execution prompt for one task.
  * @param task - the task being launched.
  * @param context - the run's other members, for the execution-shape section.
@@ -167,11 +188,14 @@ export function promptText(task: TaskRecord, context: PromptContext = {}): strin
     ? undefined
     : `交接包引用（来自任务看板续接卡片，冻结于 ${new Date(handover.bundledAt).toISOString()}）：\n${handover.references.map(reference => `- ${reference}`).join('\n')}`
   // Tag prompts come first: they are the run's standing context (business line,
-  // output location), the handover preamble is a per-card note, and the task
-  // body is the instruction itself.
+  // output location), the handover preamble is a per-card note, the scheduled
+  // section states why this run exists, and the task body is the instruction.
   const tagPreamble = tagPromptPreamble(task)
+  const handoverSection = handoverPreamble
+  const schedulePreamble = schedulePromptPreamble(context)
   const runPreamble = peerPromptPreamble(context)
-  const preambles = [tagPreamble, handoverPreamble, runPreamble].filter((part): part is string => part !== undefined)
+  const preambles = [tagPreamble, handoverSection, schedulePreamble, runPreamble]
+    .filter((part): part is string => part !== undefined)
   const preamble = preambles.length === 0 ? undefined : preambles.join('\n\n')
   const freeze = task.freeze
   if (freeze === undefined) {

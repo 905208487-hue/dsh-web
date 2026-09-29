@@ -18,6 +18,49 @@ describe('task-board action protocol', () => {
     })).toBeUndefined()
   })
 
+  it('operator setting a schedule zone gets it carried, and an unusable one rejected', () => {
+    // Given a resolvable zone, a clearing null and unusable names
+    // When each action envelope is parsed
+    // Then the resolvable zone and the null survive and the bad names do not
+    expect(parseActionEnvelope({
+      requestId: 'zone-set',
+      action: { kind: 'set-schedule', taskId: 'task-a', patch: { cron: '0 9 * * *', timeZone: 'Asia/Shanghai' } },
+    })?.action).toEqual({ kind: 'set-schedule', taskId: 'task-a', patch: { cron: '0 9 * * *', timeZone: 'Asia/Shanghai' } })
+    expect(parseActionEnvelope({
+      requestId: 'zone-clear',
+      action: { kind: 'set-schedule', taskId: 'task-a', patch: { timeZone: null } },
+    })?.action).toEqual({ kind: 'set-schedule', taskId: 'task-a', patch: { timeZone: null } })
+    // An unknown zone never reaches the Host.
+    expect(parseActionEnvelope({
+      requestId: 'zone-bad',
+      action: { kind: 'set-schedule', taskId: 'task-a', patch: { timeZone: 'Not/AZone' } },
+    })).toBeUndefined()
+    expect(parseActionEnvelope({
+      requestId: 'zone-empty',
+      action: { kind: 'set-schedule', taskId: 'task-a', patch: { timeZone: '' } },
+    })).toBeUndefined()
+  })
+
+  it('operator creating a card with a zone gets it accepted, and an unusable one rejected', () => {
+    // Given a valid and an unknown creation-time zone
+    // When each create envelope is parsed
+    // Then only the valid zone produces a create action
+    expect(parseActionEnvelope({
+      requestId: 'create-zone',
+      action: {
+        kind: 'create', id: 'task-zone',
+        input: { title: 'T', description: '', prompt: '', schedule: { enabled: true, cron: '0 9 * * *', timeZone: 'Europe/London' } },
+      },
+    })?.action.kind).toBe('create')
+    expect(parseActionEnvelope({
+      requestId: 'create-zone-bad',
+      action: {
+        kind: 'create', id: 'task-zone-bad',
+        input: { title: 'T', description: '', prompt: '', schedule: { enabled: true, cron: '0 9 * * *', timeZone: 'Nowhere/Nope' } },
+      },
+    })).toBeUndefined()
+  })
+
   it('accepts a task-content update patch (host rejects the blank title)', () => {
     expect(parseActionEnvelope({
       requestId: 'content-update',

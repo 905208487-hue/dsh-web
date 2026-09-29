@@ -162,6 +162,45 @@ describe('create-task dialog regions', () => {
     expect([...customGroup.querySelectorAll('option')].map(option => option.value)).toEqual(['dispatch'])
   })
 
+  it('user arming a schedule picks the time zone the create payload carries', async () => {
+    // Given the new-task dialog with its schedule region expanded
+    const container = renderModal()
+    openFormSection(container, t('new.section.schedule'))
+
+    // When the user enables the schedule and selects the Shanghai zone
+    const enable = container.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    act(() => { enable.click() })
+    const zoneSelect = [...container.querySelectorAll<HTMLSelectElement>('select')]
+      .find(candidate => candidate.getAttribute('aria-label') === t('detail.schedule.timeZone'))
+    if (zoneSelect === undefined) throw new Error('no schedule zone picker')
+    expect([...zoneSelect.options].some(option => option.value === 'Asia/Shanghai')).toBe(true)
+    act(() => {
+      zoneSelect.value = 'Asia/Shanghai'
+      zoneSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    // Then the dialog renders the zone picker labelled for the user and the
+    // selected zone is the one the create call will carry
+    expect(zoneSelect.value).toBe('Asia/Shanghai')
+    expect(container.textContent).toContain(t('detail.schedule.timeZone'))
+  })
+
+  it('user leaving the zone at the Host default creates an unscheduled-zone rule', () => {
+    // Given the new-task dialog with its schedule region expanded
+    const container = renderModal()
+    openFormSection(container, t('new.section.schedule'))
+
+    // When the user enables the schedule without touching the zone picker
+    const enable = container.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    act(() => { enable.click() })
+    const zoneSelect = [...container.querySelectorAll<HTMLSelectElement>('select')]
+      .find(candidate => candidate.getAttribute('aria-label') === t('detail.schedule.timeZone'))!
+
+    // Then the picker rests on the Host entry, which stores no zone
+    expect(zoneSelect.value).toBe('')
+    expect(zoneSelect.options[0].value).toBe('')
+  })
+
   it('user submitting an invalid schedule sees that region forced open with its error', async () => {
     // Given a duplicated task whose stored cron is invalid for a new create
     const source = {

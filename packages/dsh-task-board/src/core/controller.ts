@@ -17,6 +17,7 @@ import { applyArchiveTask, applyRestoreTask } from './use-cases/task-archive.ts'
 import { applyCreateTask } from './use-cases/task-create.ts'
 import { applyDeleteTask } from './use-cases/task-delete.ts'
 import { applyScheduleNextRun as applyScheduleRollForward, applySetSchedule } from './use-cases/task-schedule.ts'
+import { resolveHostTimeZone } from './schedule.ts'
 import { applySetParent } from './use-cases/task-parent.ts'
 import { applyUpdateTask, type TaskUpdatePatch } from './use-cases/task-update.ts'
 import { DEFAULT_SUBTASK_DEPTH } from './subtask.ts'
@@ -517,8 +518,12 @@ export class BoardController {
    * @param patch - fields to change (absent fields keep their current value).
    * @returns true when applied, false when rejected (invalid cron / unknown task).
    */
-  setSchedule(id: string, patch: { enabled?: boolean; cron?: string }): boolean {
-    const { tasks, applied } = applySetSchedule(this.tasks, id, patch, this.now())
+  setSchedule(id: string, patch: { enabled?: boolean; cron?: string; timeZone?: string | null }): boolean {
+    // The Host zone is the fallback a rule with no stored zone follows: the
+    // mirrored snapshot carries it, and a controller without a Host mirror
+    // (pure client tests) falls back to the process zone.
+    const hostTimeZone = this.hostState?.scheduler.timeZone ?? resolveHostTimeZone()
+    const { tasks, applied } = applySetSchedule(this.tasks, id, patch, this.now(), hostTimeZone)
     if (!applied) return false
     if (this.deps.transport !== undefined) {
       void this.commitRemote({ kind: 'set-schedule', taskId: id, patch }, id)

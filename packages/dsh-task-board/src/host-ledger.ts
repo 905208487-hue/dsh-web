@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { chmodSync, closeSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { dshHome } from './dsh-home.ts'
-import { isValidCron, nextRunAtMs } from './core/schedule.ts'
+import { isValidCron, isValidTimeZone, nextRunAtMs, resolveHostTimeZone } from './core/schedule.ts'
 import { isTaskRecord, parseLedger } from './core/store.ts'
 import { canMoveManually, retainRecentExecutions, settleExecution, startExecution, withStatus, type ExecutionOutcome, type ExecutionRecord, type TaskRecord } from './core/tasks.ts'
 import {
@@ -21,7 +21,7 @@ import { applyDeleteTask } from './core/use-cases/task-delete.ts'
 import { applySetSchedule, applyScheduleNextRun } from './core/use-cases/task-schedule.ts'
 import { applySetParent } from './core/use-cases/task-parent.ts'
 import { applyUpdateTask, canEditTaskContent, hasContentPatch } from './core/use-cases/task-update.ts'
-import { TASK_BOARD_LEGACY_SCHEMA_VERSION, TASK_BOARD_SCHEMA_VERSION, type TaskBoardAction, type TaskBoardSchedulerSnapshot } from './protocol.ts'
+import { TASK_BOARD_LEGACY_SCHEMA_VERSION, TASK_BOARD_OLDER_SCHEMA_VERSION, TASK_BOARD_SCHEMA_VERSION, type TaskBoardAction, type TaskBoardSchedulerSnapshot } from './protocol.ts'
 import { DEFAULT_SESSION_PERMISSION, requiresPermissionConfirmation, type TaskPermission } from './core/handover.ts'
 
 interface PersistedScheduler extends TaskBoardSchedulerSnapshot {
@@ -90,6 +90,8 @@ export interface OpenExecutionReference {
 export interface DueScheduleReference {
   readonly taskId: string
   readonly cron: string
+  /** Zone this rule's wall clock is read in. */
+  readonly timeZone: string
   readonly nextRunAt: number
 }
 
@@ -106,7 +108,12 @@ interface CachedRequest {
 }
 
 function timeZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'local'
+  return resolveHostTimeZone()
+}
+
+/** The zone a schedule is evaluated in: its own, or the Host zone when it stores none. */
+function scheduleZone(schedule: { timeZone?: string }): string {
+  return schedule.timeZone ?? timeZone()
 }
 
 function cloneTasks(tasks: readonly TaskRecord[]): TaskRecord[] {
@@ -381,6 +388,7 @@ function parseHostTasks(values: readonly unknown[]): TaskRecord[] {
       schedule: {
         enabled: false,
         cron: schedule.cron,
+        ...(typeof schedule.timeZone === 'string' && isValidTimeZone(schedule.timeZone) ? { timeZone: schedule.timeZone } : {}),
         nextRunAt: undefined,
         lastTriggeredAt: typeof schedule.lastTriggeredAt === 'number' && Number.isFinite(schedule.lastTriggeredAt)
           ? schedule.lastTriggeredAt
@@ -543,7 +551,7 @@ export class HostTaskLedger {
       if (task.archivedAt !== undefined) continue
       const schedule = task.schedule
       if (schedule === undefined || !schedule.enabled || schedule.nextRunAt === undefined || schedule.nextRunAt > now) continue
-      due.push({ taskId: task.id, cron: schedule.cron, nextRunAt: schedule.nextRunAt })
+      due.push({ taskId: task.id, cron: schedule.cron, timeZone: scheduleZone(schedule), nextRunAt: schedule.nextRunAt })
     }
     return due
   }
@@ -626,7 +634,7 @@ export class HostTaskLedger {
       const schedule = task.schedule
       if (schedule === undefined || !schedule.enabled || schedule.nextRunAt === undefined || schedule.nextRunAt > now) return task
       changed = true
-      return { ...task, schedule: { ...schedule, nextRunAt: nextRunAtMs(schedule.cron, now) }, updatedAt: now }
+      return { ...task, schedule: { ...schedule, nextRunAt: nextRunAtMs(schedule.cron, now, scheduleZone(schedule)) }, updatedAt: now }
     })
     if (changed) this.commit()
   }
@@ -721,13 +729,15 @@ export class HostTaskLedger {
       }
       case 'create': {
         if (this.document.tasks.some(task => task.id === action.id)) throw new Error('task id already exists')
-        if (action.input.schedule?.enabled === true && (!isValidCron(action.input.schedule.cron) || nextRunAtMs(action.input.schedule.cron, now) === undefined)) {
+        if (action.input.schedule?.enabled === true && (!isValidCron(action.input.schedule.cron)
+          || !isValidTimeZone(action.input.schedule.timeZone ?? timeZone())
+          || nextRunAtMs(action.input.schedule.cron, now, action.input.schedule.timeZone ?? timeZone()) === undefined)) {
           throw new Error('invalid schedule')
         }
         const input = action.input.freeze === undefined || initiator === undefined || initiator === ''
           ? action.input
           : { ...action.input, freeze: { ...action.input.freeze, frozenBy: initiator } }
-        const result = applyCreateTask(this.document.tasks, input, now, action.id, this.maxSubtaskDepth)
+        const result = applyCreateTask(this.document.tasks, input, now, action.id, this.maxSubtaskDepth, timeZone())
         if (result.task === undefined) throw new Error(result.error ?? 'invalid task')
         this.document.tasks = [...result.tasks]
         break
@@ -805,7 +815,7 @@ export class HostTaskLedger {
       case 'set-schedule': {
         const task = this.document.tasks.find(task => task.id === action.taskId)
         if (task?.archivedAt !== undefined) throw new Error('archived task is read-only')
-        const result = applySetSchedule(this.document.tasks, action.taskId, action.patch, now)
+        const result = applySetSchedule(this.document.tasks, action.taskId, action.patch, now, timeZone())
         if (!result.applied) throw new Error('invalid schedule')
         this.document.tasks = [...result.tasks]
         break
@@ -966,7 +976,7 @@ export class HostTaskLedger {
       const schedule = task.schedule
       if (schedule === undefined || !schedule.enabled) return task
       if (!skipPast && schedule.nextRunAt !== undefined) return task
-      const next = nextRunAtMs(schedule.cron, now)
+      const next = nextRunAtMs(schedule.cron, now, scheduleZone(schedule))
       if (next === undefined) {
         changed = true
         this.document.scheduler.error = `invalid cron disabled for task: ${task.id}`
@@ -1003,35 +1013,52 @@ export class HostTaskLedger {
   }
 
   /**
-   * Field-preserving v2 to v3 migration. v3 adds no fields yet, so the
-   * migration reuses the v3 normalization, but it first proves every task
-   * row is structurally valid: a v2 document that would silently drop or
-   * coerce rows fails loudly instead (no quarantined-empty restart).
+   * Field-preserving migration of a pre-v4 document. It first proves every task
+   * row is structurally valid, so a document that would silently drop or coerce
+   * rows fails loudly instead (no quarantined-empty restart), and then reuses
+   * the current normalization.
+   *
+   * v4 adds `ScheduleRule.timeZone`. A rule written before v4 was evaluated in
+   * whatever zone the Host process happened to report, so the migration stamps
+   * that zone onto every enabled rule: the trigger instant is preserved exactly
+   * (the stored `nextRunAt` already encodes the old zone), but the rule stops
+   * following a later `TZ` change, which is what made an existing schedule
+   * silently move when the Host's zone changed.
    */
   private migrateLegacyDocument(parsed: ParsedLedgerDocument): LedgerDocument {
     if (!Array.isArray(parsed.tasks) || !parsed.tasks.every(row => isTaskRecord(row))) {
-      throw new Error('v2 document contains structurally invalid task rows')
+      throw new Error(`v${String(parsed.schemaVersion)} document contains structurally invalid task rows`)
     }
-    return this.normalizeDocument(parsed)
+    // Every row passed `isTaskRecord` above, so the stamped rows are still
+    // task records; the cast only re-narrows the unknown-typed on-disk array.
+    const rows = (parsed.tasks as readonly unknown[]).map((value) => {
+      const row = value as { schedule?: unknown }
+      const schedule = row.schedule
+      if (typeof schedule !== 'object' || schedule === null) return value
+      if (typeof (schedule as { timeZone?: unknown }).timeZone === 'string') return value
+      return { ...(value as object), schedule: { ...(schedule as object), timeZone: timeZone() } }
+    })
+    return this.normalizeDocument({ ...parsed, tasks: rows as TaskRecord[] })
   }
 
   private load(dir: string): LedgerDocument {
     const existed = existsSync(this.file)
-    // schemaVersion stays unknown-typed here: on-disk documents may be v2
-    // (legacy), v3, or any future/invalid value the branches below sort out.
+    // schemaVersion stays unknown-typed here: on-disk documents may be v2 or
+    // v3 (legacy), v4, or any future/invalid value the branches below sort out.
     let parsed: ParsedLedgerDocument
     try {
       parsed = JSON.parse(readFileSync(this.file, 'utf8')) as ParsedLedgerDocument
     } catch (error) {
       return this.recoverCorrupt(dir, existed, error)
     }
-    if (parsed.schemaVersion === TASK_BOARD_LEGACY_SCHEMA_VERSION) {
+    if (parsed.schemaVersion === TASK_BOARD_LEGACY_SCHEMA_VERSION
+      || parsed.schemaVersion === TASK_BOARD_OLDER_SCHEMA_VERSION) {
       try {
         return this.migrateLegacyDocument(parsed)
       } catch (error) {
-        // Migration failure is explicit: the original v2 file stays in place
+        // Migration failure is explicit: the original file stays in place
         // for manual recovery and the ledger refuses to start (fail closed).
-        throw new Error(`ledger v2 to v3 migration failed; original file kept at ${this.file}: ${error instanceof Error ? error.message : String(error)}`)
+        throw new Error(`ledger v${String(parsed.schemaVersion)} to v${TASK_BOARD_SCHEMA_VERSION} migration failed; original file kept at ${this.file}: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
     try {

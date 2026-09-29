@@ -442,6 +442,54 @@ describe('task_board_schedule', () => {
     expect((disarmed.schedule as { enabled: boolean }).enabled).toBe(false)
   })
 
+  it('user arming a rule in an explicit zone sees that zone on the schedule', async () => {
+    // Given a plain card
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the user arms a rule pinned to a zone
+    const armed = await call(live, 'task_board_schedule', {
+      taskId, enabled: true, cron: '0 9 * * *', timeZone: 'Asia/Shanghai',
+    })
+
+    // Then the schedule reports the stored zone alongside the expression
+    const schedule = armed.schedule as { enabled: boolean; cron: string; timeZone?: string; nextRunAt?: number }
+    expect(schedule.enabled).toBe(true)
+    expect(schedule.cron).toBe('0 9 * * *')
+    expect(schedule.timeZone).toBe('Asia/Shanghai')
+    expect(typeof schedule.nextRunAt).toBe('number')
+  })
+
+  it('user clearing the time zone with an empty string gets the stored zone removed', async () => {
+    // Given a card whose rule is pinned to a zone
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+    await call(live, 'task_board_schedule', { taskId, enabled: true, cron: '0 9 * * *', timeZone: 'Asia/Shanghai' })
+
+    // When the model clears it with an empty string
+    const cleared = await call(live, 'task_board_schedule', { taskId, timeZone: '' })
+
+    // Then no zone is stored any more
+    expect((cleared.schedule as { timeZone?: string }).timeZone).toBeUndefined()
+  })
+
+  it('user arming a rule with an unusable zone is refused and the rule stays unset', async () => {
+    // Given a card
+    const live = harness()
+    await call(live, 'task_board_create', { title: 'root' })
+    const taskId = await onlyTaskId(live)
+
+    // When the model names a zone that cannot resolve
+    const refused = await call(live, 'task_board_schedule', { taskId, enabled: true, cron: '0 9 * * *', timeZone: 'Nowhere/Nope' })
+
+    // Then the action is refused and no rule was written
+    expect(refused.ok).toBe(false)
+    const get = await call(live, 'task_board_get', { taskId })
+    expect((get.task as { schedule?: unknown }).schedule).toBeUndefined()
+  })
+
   it('user arming a schedule on an unknown card is told the card is missing', async () => {
     // Given an empty board
     const live = harness()

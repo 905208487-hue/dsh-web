@@ -362,6 +362,24 @@ describe('Agent Team runs', () => {
     expect(cascade).not.toContain('Agent Team 的 Lead')
   })
 
+  it('operator reading a cron-triggered run sees its firing instant, zone and expression', () => {
+    // Given a plain card and a scheduled-run provenance
+    const root = createTask({ title: 'root', description: '', prompt: 'do it' }, NOW, 'root')
+    const triggeredAt = Date.UTC(2026, 8, 29, 1, 0)
+
+    // When the prompt is built for a cron trigger
+    const scheduled = promptText(root, { schedule: { triggeredAt, timeZone: 'Asia/Shanghai', cron: '0 9 * * *' } })
+
+    // Then the run is told when it fired and in which zone its clock is read
+    expect(scheduled).toContain('定时规则自动触发')
+    expect(scheduled).toContain('2026-09-29T01:00:00.000Z')
+    expect(scheduled).toContain('Asia/Shanghai')
+    expect(scheduled).toContain('0 9 * * *')
+    expect(scheduled).toContain('do it')
+    // A manual run carries no scheduling section at all.
+    expect(promptText(root)).toBe('do it')
+  })
+
   it('operator teammate names stay kebab-case and unique per run', () => {
     // Given CJK, mixed-case and short titles with two different run tokens
     // When the names are derived

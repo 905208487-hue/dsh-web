@@ -10,6 +10,7 @@ import { effectiveTaskPermission } from '../../core/subtask.ts'
 import { collectKnownTags, TASK_PERMISSIONS, type TaskPermission, type TaskRecord, type TaskTag } from '../../core/tasks.ts'
 import { t, type TaskBoardKey } from '../locales.ts'
 import { SCHEDULE_PRESETS } from '../schedule-presets.ts'
+import { nextRunLabel, zoneChoices } from '../schedule-zone.ts'
 import { CollapsibleSection, ModalShell, TaskContentFields, TaskTagFields, cleanTags } from './TaskForm.tsx'
 import { formatHostTimestamp } from './TaskCard.tsx'
 import { readParseModelPreference, writeParseModelPreference } from './parse-model-pref.ts'
@@ -58,6 +59,9 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
   const [goalRun, setGoalRun] = useState(initialTask?.goalRun ?? true)
   const [scheduleEnabled, setScheduleEnabled] = useState(initialTask?.schedule?.enabled ?? false)
   const [scheduleCron, setScheduleCron] = useState(initialTask?.schedule?.cron ?? '')
+  // '' means "follow the Host zone" (store no zone), which is the default a
+  // user gets unless they pick one explicitly.
+  const [scheduleZone, setScheduleZone] = useState(initialTask?.schedule?.timeZone ?? '')
   const [scheduleError, setScheduleError] = useState<string | undefined>(undefined)
   const [freezeText, setFreezeText] = useState('')
   const [freezeError, setFreezeError] = useState<string | undefined>(undefined)
@@ -182,7 +186,9 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
       ...(reuseSession ? { reuseSession: true } : {}),
       ...(goalRun ? {} : { goalRun: false }),
       ...(tagList.length > 0 ? { tags: tagList } : {}),
-      schedule: scheduleEnabled ? { enabled: true, cron: scheduleCron.trim() } : undefined,
+      schedule: scheduleEnabled
+        ? { enabled: true, cron: scheduleCron.trim(), ...(scheduleZone === '' ? {} : { timeZone: scheduleZone }) }
+        : undefined,
     })
     if (task === undefined) {
       setPending(false)
@@ -207,9 +213,12 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
     onClose()
   }
 
-  /** Next-run preview for a valid armed cron (creation-time only). */
+  // Next-run preview for a valid armed cron (creation-time only), computed in
+  // the selected zone so it matches what the Host will arm.
+  const hostTimeZone = controller.getSnapshot().host?.scheduler.timeZone
+  const scheduleTimeZone = scheduleZone === '' ? hostTimeZone : scheduleZone
   const scheduleNextRun = scheduleEnabled && scheduleCron.trim() !== '' && isValidCron(scheduleCron)
-    ? nextRunAtMs(scheduleCron, Date.now())
+    ? nextRunAtMs(scheduleCron, Date.now(), scheduleTimeZone)
     : undefined
 
   const modalTitle = parentTask !== undefined
@@ -534,9 +543,24 @@ export function NewTaskModal({ controller, onClose, initialTask, defaultWorkspac
               </select>
             </div>
             {scheduleError !== undefined && <p className={css.formError}>{scheduleError}</p>}
+            <label className={css.scheduleZone}>
+              <span>{t('detail.schedule.timeZone')}</span>
+              <select
+                className={css.schedulePreset}
+                value={scheduleZone}
+                aria-label={t('detail.schedule.timeZone')}
+                title={t('detail.schedule.timeZoneHint')}
+                onChange={event => { setScheduleZone(event.target.value); setScheduleError(undefined) }}
+              >
+                {zoneChoices(hostTimeZone, initialTask?.schedule?.timeZone).map(choice => (
+                  <option key={choice.id === '' ? '__host' : choice.id} value={choice.id}>{choice.label}</option>
+                ))}
+              </select>
+            </label>
             {scheduleError === undefined && scheduleNextRun !== undefined && (
               <p className={css.scheduleMeta}>
-                {t('detail.schedule.nextRun')} {formatHostTimestamp(scheduleNextRun, controller.getSnapshot().host?.scheduler.timeZone)}
+                {t('detail.schedule.nextRun')}{' '}
+                {nextRunLabel(scheduleNextRun, scheduleTimeZone, formatHostTimestamp, Date.now())}
               </p>
             )}
           </>
