@@ -37,7 +37,9 @@ jobs:
   publish:
     name: Build, test, gated npm publish
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Gates, publish, then the registry assertion, which waits out a registry
+    # staging promotion (about thirty minutes worst case, v0.4.4).
+    timeout-minutes: 60
 
     steps:
       - name: Checkout

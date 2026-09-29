@@ -356,8 +356,9 @@ describe('DeepSeek real-spend watch', () => {
     // The accrual persists with the provider snapshots and revives on load.
     const revived = new UsageService(ctx, OPTIONS)
     revived.start()
-    await sleep(30)
-    expect(revived.overview().usage.observedSpend?.cny).toBeCloseTo(1.5)
+    await waitForPersistedLoad(() => {
+      expect(revived.overview().usage.observedSpend?.cny).toBeCloseTo(1.5)
+    })
     await revived.stop()
   })
 
