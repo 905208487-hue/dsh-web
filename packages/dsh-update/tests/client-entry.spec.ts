@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 /**
- * The browser half's registration contract: this package's own apply mounts the
- * update seat into the official `sidebar.footer.action` slot under the
- * `update` locale namespace on web pages, and mounts nothing on the desktop
- * shell's application-delivered page. Seat independence from dsh-remote-web-ui
- * is the reason the capability was split out, so both halves are pinned here.
+ * The browser half's registration contract: this package registers its locale
+ * dictionaries and heartbeat but intentionally no longer mounts a visible
+ * `sidebar.footer.action` download trigger. The left footer seat is reserved for
+ * Usage statistics plus the remote-access phone trigger.
  */
 import { describe, expect, it } from 'vitest'
 import { apply } from '../src/client/index.ts'
@@ -45,44 +44,35 @@ function ctxDouble(): {
 }
 
 describe('update client entry registration', () => {
-  it('operator: a web page mounts the update seat in the shared footer slot', () => {
-    // Given the jsdom page origin (http:) and a client context carrying the
-    // slots and locale services this plugin declares
+  it('operator: a web page registers dictionaries but no sidebar footer download seat', () => {
+    // Given the jsdom page origin (http:) and a client context carrying both
+    // locale and slot services
     const { ctx, injected, registered, dictionaries } = ctxDouble()
     // When the plugin applies
     apply(ctx)
-    // Then the seat is the official footer slot, with entry id and dictionary
-    // namespace both `update`
-    expect(injected).toEqual(['sidebar.footer.action'])
-    expect(registered).toEqual([{ name: 'sidebar.footer.action', id: 'update', locale: 'update' }])
+    // Then only the update dictionary registers; the former download trigger is gone
     expect(dictionaries).toEqual(['update'])
+    expect(injected).toEqual([])
+    expect(registered).toEqual([])
   })
 })
 
-describe('update seat placement', () => {
-  it('operator: the desktop shell page carries no update seat', () => {
+describe('update seat placement helper', () => {
+  it('operator: desktop-shell detection still identifies application-delivered pages', () => {
     // Given the DSH Desktop shell's own delivery scheme
-    // When the placement decision runs
-    // Then the seat is refused, because that application owns its own updater
+    // When the placement helper runs
+    // Then the helper still recognizes the application page for callers that use it
     expect(isApplicationDeliveredPage('dsh-app:')).toBe(true)
     expect(shouldMountUpdateSeat('dsh-app:')).toBe(false)
   })
 
-  it('operator: a web page keeps the update seat', () => {
+  it('operator: web transports remain classified as web pages even though this package no longer mounts a seat', () => {
     // Given the web transports and the documents a web page mints
     const webSchemes = ['http:', 'https:', 'blob:', 'data:', 'about:', 'filesystem:']
-    // When the placement decision runs for each scheme
-    // Then every web page keeps the seat
+    // When the placement helper runs for each scheme
+    // Then every web page remains a web page for compatibility with external callers
     for (const scheme of webSchemes) {
       expect(shouldMountUpdateSeat(scheme), scheme).toBe(true)
     }
-  })
-
-  it('operator: an unreadable scheme stays on the web side', () => {
-    // Given a page whose scheme could not be read
-    // When the placement decision runs
-    // Then the seat is kept (a missing scheme is not evidence of a desktop app)
-    expect(isApplicationDeliveredPage('')).toBe(false)
-    expect(shouldMountUpdateSeat('')).toBe(true)
   })
 })

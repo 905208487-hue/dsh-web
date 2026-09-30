@@ -1,30 +1,16 @@
 # dsh-update
 
 English | [中文](README.zh.md)
-> Family self-update for the dsh web GUI: a sidebar trigger beside the settings
-> seat that probes npm for newer `@linxin666/dsh-web-*` releases and runs the
-> owning profile's `pnpm update --latest` in place.
+> Family self-update host routes for the dsh web GUI: loopback-only endpoints probe npm for newer `@linxin666/dsh-web-*` releases and can run the owning profile's `pnpm update --latest` in place.
 
-This repository is an external plugin package for DeepSeek Harness (DSH). It is a
-dual-face package: the host half mounts the `/api/update` route family, and the
-browser half renders the sidebar trigger plus the update panel.
+This repository is an external plugin package for DeepSeek Harness (DSH). It is a dual-face package: the host half mounts the `/api/update` route family, and the browser half only registers the locale namespace and heartbeat. The Web GUI no longer renders a left-sidebar download/update button; that footer position belongs to Usage statistics and the remote-access phone trigger.
 
-The capability is deliberately **its own plugin row** (row id `update`, aggregate
-row `web-ui-update`) rather than a seat of `dsh-remote-web-ui`: turning remote
-access off — or disabling the remote-access plugin entirely — must never take the
-update trigger away.
+The capability is deliberately **its own plugin row** (row id `update`, aggregate row `web-ui-update`) rather than a seat of `dsh-remote-web-ui`: turning remote access off — or disabling the remote-access plugin entirely — must never affect the update host routes.
 
 ## What it does
 
-- **Sidebar trigger**: a download control in the official
-  `sidebar.footer.action` seat beside the settings trigger. It marks the button
-  with a text badge when a newer release exists, checks the registry on open, and
-  lets the user confirm the update from the result view.
-- **Web pages only**: the trigger mounts on pages a web transport delivered —
-  the loopback GUI in a browser, a LAN or tunnel deployment. The official DSH
-  Desktop shell serves its page from `dsh-app://app/` and owns its own updater,
-  so the seat is not mounted there at all; that page's seat keeps the
-  phone-remote trigger alone.
+- **No left-footer trigger**: the package does not register into `sidebar.footer.action`; the former download button is removed so Usage statistics occupies that sidebar foot position.
+- **Browser half without UI**: the client registers the `update` locale namespace and telemetry heartbeat only. The official DSH Desktop shell keeps its own updater, and browser pages also avoid a dsh-update sidebar seat.
 - **Verified install**: the run endpoint executes `pnpm update --latest` in the
   profile the web GUI was booted from, then re-reads the installed versions. The
   pnpm 11 `minimumReleaseAge` gate can silently keep same-day releases, so a
@@ -57,21 +43,11 @@ plugin manager if a profile should not offer self-update.
 
 ## Configuration
 
-The plugin ships no settings namespace of its own: a profile either mounts the
-row or not, and the plugin manager's per-row switch is the only control. The
-host surface is fixed — the two loopback routes below — and the sidebar trigger
-always registers into the official `sidebar.footer.action` seat.
+The plugin ships no settings namespace of its own: a profile either mounts the row or not, and the plugin manager's per-row switch is the only control. The host surface is fixed — the two loopback routes below — and the browser half deliberately registers no sidebar footer entry.
 
 ## Use
 
-1. Open the dsh web GUI and look at the sidebar foot: the download trigger sits
-   beside the settings trigger (a 36px circle in the collapsed rail, a pill in the
-   wide column).
-2. Click it. The panel probes the registry and shows either "up to date" or the
-   newer release with its notes.
-3. Confirm with **Update now**. The panel shows the pnpm run, then the outcome and
-   the component versions.
-4. Restart `dsh web` for the new packages to load.
+There is no sidebar control for this package in the Web GUI. The host routes stay mounted for trusted local callers and future update surfaces; after a successful update run, restart `dsh web` for the new packages to load.
 
 ## Routes
 
@@ -103,9 +79,6 @@ A paired remote desktop reaches them through the `dsh-remote-web-ui` gated
 
 ## Known limitations
 
-- The desktop shell (`dsh-app://` pages) has no update seat by design: use the
-  desktop application's own updater there, or open the GUI in a browser to drive
-  the family update.
 - A profile whose family packages are installed with local `link:` specs reports
   local development mode and cannot self-update; sync the checkout instead.
 - `pnpm` must be resolvable on the host (`pnpm`, `corepack`, or `npx`); the panel
@@ -114,10 +87,7 @@ A paired remote desktop reaches them through the `dsh-remote-web-ui` gated
   installed versions did not move, the panel explains the
   `minimumReleaseAgeExclude` / `minimumReleaseAge: 0` remedy.
 - The captured pnpm output is shown verbatim and can contain local paths.
-- The wide sidebar row that puts the footer actions beside the settings trigger
-  is declared by `dsh-remote-web-ui`. With that plugin disabled the update trigger
-  falls back to the shell's own stacked foot: it still renders and works, only
-  the shared-row layout is lost.
+- This package currently exposes no first-party browser control; it only serves the loopback update routes and client dictionaries.
 
 ## Development
 

@@ -1,26 +1,14 @@
 // @vitest-environment jsdom
 /**
- * The desktop shell's page carries no update seat: the same apply() that mounts
- * the seat on a web page must mount nothing on an application-delivered page,
- * because the desktop application owns its own updater and that page's sidebar
- * seat keeps only the phone-remote trigger.
- *
- * The page's scheme is installed by replacing the ambient `location` rather
- * than by pointing jsdom at `dsh-app://app/`. An opaque origin makes jsdom's
- * own `localStorage` getter throw `SecurityError: localStorage is not
- * available for opaque origins`, and vitest reads that property while it
- * populates the environment's globals — so the worker died during setup and
- * the file was reported as "failed to start" instead of as a test
- * (`pnpm test` and CI on dev were red for exactly this reason). The plugin
- * reads the scheme through `pageProtocolOf()`, which takes the window as a
- * parameter, so a stand-in location exercises the same branch with a usable
- * origin underneath.
+ * The desktop shell's page and the browser page both carry no dsh-update footer
+ * seat. The package keeps its locale namespace registered, while the visible
+ * footer position belongs to Usage statistics and the phone-remote trigger.
  */
 import { describe, expect, it } from 'vitest'
 import { apply } from '../src/client/index.ts'
 
 describe('desktop shell page', () => {
-  it('operator: the update seat is not mounted on the desktop shell page', () => {
+  it('operator: the update client registers dictionaries but no footer seat', () => {
     // Given the desktop shell's own delivery scheme on the ambient location
     const real = Object.getOwnPropertyDescriptor(globalThis, 'location')
     expect(real?.configurable).toBe(true)

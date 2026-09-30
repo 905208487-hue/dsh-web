@@ -1,23 +1,16 @@
 # dsh-update
 
 [English](README.md) | 中文
-> dsh web GUI 家族自更新插件：侧边栏设置席位旁的下载触发器，探测 npm 上更新的
-> `@linxin666/dsh-web-*` 版本，并在当前 profile 内执行 `pnpm update --latest`。
+> dsh web GUI 家族自更新宿主路由：仅限回环访问的端点探测 npm 上更新的 `@linxin666/dsh-web-*` 版本，并可在当前 profile 内执行 `pnpm update --latest`。
 
-本仓库是 DeepSeek Harness（DSH）的外部插件包，双半区结构：host 半区挂载
-`/api/update` 路由族，browser 半区渲染侧边栏触发器与更新面板。
+本仓库是 DeepSeek Harness（DSH）的外部插件包，双半区结构：host 半区挂载 `/api/update` 路由族，browser 半区只注册语言命名空间与心跳。Web GUI 不再渲染左侧栏下载/更新按钮；该脚部位置留给使用统计与手机远程触发器。
 
-该能力刻意做成**独立插件行**（行 id `update`，聚合行 `web-ui-update`），而不是
-`dsh-remote-web-ui` 的一个席位：关闭远程访问、甚至整体禁用远程访问插件，都不
-应该把更新入口一起带走。
+该能力刻意做成**独立插件行**（行 id `update`，聚合行 `web-ui-update`），而不是 `dsh-remote-web-ui` 的一个席位：关闭远程访问、甚至整体禁用远程访问插件，都不影响更新宿主路由。
 
 ## 功能
 
-- **侧边栏触发器**：官方 `sidebar.footer.action` 席位里、设置触发器旁边的下载按钮。
-  有新版本时按钮显示文字角标；点开即探测 registry，并在结果页让用户确认更新。
-- **只在网页页面挂载**：由 Web 传输交付的页面（浏览器里的回环 GUI、局域网或隧道
-  部署）才显示该触发器。官方 DSH 桌面外壳的页面来自 `dsh-app://app/`，且桌面应用
-  自带更新器，因此那里完全不挂载该席位——该页面的席位只留给手机远程触发器。
+- **无左侧脚部触发器**：本包不再注册 `sidebar.footer.action`；旧下载按钮已移除，让使用统计占用该侧栏脚部位置。
+- **无 UI 的浏览器半区**：客户端只注册 `update` 语言命名空间与遥测心跳。官方 DSH 桌面外壳使用自己的更新器，浏览器页面同样不放置 dsh-update 侧栏席位。
 - **带核对的安装**：run 端点在该 Web GUI 启动的 profile 内执行
   `pnpm update --latest`，随后重新读取安装版本。pnpm 11 的 `minimumReleaseAge`
   门禁可能静默跳过当日发布，因此只看 pnpm 退出码为 0 不会报告成功。
@@ -45,17 +38,11 @@ dsh plugin --profile <profile> add link:<repo>/packages/dsh-update
 
 ## 配置
 
-本插件不自带设置命名空间：profile 要么挂载该行、要么不挂载，插件管理里的按行开关
-是唯一控制项。宿主面是固定的——下面两条回环路由——侧栏触发器始终注册进官方
-`sidebar.footer.action` 席位。
+本插件不自带设置命名空间：profile 要么挂载该行、要么不挂载，插件管理里的按行开关是唯一控制项。宿主面是固定的——下面两条回环路由——浏览器半区刻意不注册侧栏脚部入口。
 
 ## 使用
 
-1. 打开 dsh web GUI，看侧边栏底部：下载触发器与设置触发器并排（窄栏是 36px 圆形，
-   宽栏是胶囊按钮）。
-2. 点击它。面板探测 registry，显示「已是最新」或新版本及其更新说明。
-3. 点「开始更新」确认。面板展示 pnpm 执行过程，随后给出结果与组件版本。
-4. 重启 `dsh web` 让新版本生效。
+本包在 Web GUI 中没有侧栏控制。宿主路由仍为受信任的本地调用方与后续更新表面保留；更新成功后重启 `dsh web` 让新版本生效。
 
 ## 路由
 
@@ -83,8 +70,6 @@ dsh plugin --profile <profile> add link:<repo>/packages/dsh-update
 
 ## 已知限制
 
-- 桌面外壳（`dsh-app://` 页面）按设计不显示更新席位：那里请使用桌面应用自带的
-  更新器，或改用浏览器打开 GUI 来驱动家族更新。
 - 家族包以本地 `link:` 规格安装的 profile 会报告本地开发模式，无法自更新；请改为
   同步本地检出。
 - 宿主需能解析到 `pnpm`（`pnpm`、`corepack` 或 `npx`）；都不可用时面板会点名
@@ -92,9 +77,7 @@ dsh plugin --profile <profile> add link:<repo>/packages/dsh-update
 - pnpm 11 的 `minimumReleaseAge` 门禁可能压住当日发布。安装版本没有变化时，面板
   会给出 `minimumReleaseAgeExclude` / `minimumReleaseAge: 0` 的处置办法。
 - 捕获的 pnpm 输出会原样展示，其中可能包含本地路径。
-- 让脚部动作与设置触发器共用一行的宽栏布局由 `dsh-remote-web-ui` 声明。该插件被
-  禁用时更新触发器回落到官方 shell 自带的堆叠脚部：依然渲染可用，只是失去共用行
-  布局。
+- 本包目前不提供一等浏览器控制，只提供回环更新路由与客户端字典。
 
 ## 开发
 
