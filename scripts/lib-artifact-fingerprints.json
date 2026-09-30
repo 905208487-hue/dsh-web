@@ -1,6 +1,4 @@
 {
-  "packages/dsh-auto-title": "4a4f330b523c9c82b77ef15ee751e0135a5276f67e5f2865e7fc74d9fbeacabd",
   "packages/dsh-market": "8b0657c3e1d330d5ddeeb87f00ed4fcd07d65bac862e8491bcaea7f42c9c8116",
-  "packages/dsh-recall": "3a78dd9359ed64faf3233f3cc37394171715878d0e70ee12d40ad3f3671836fd",
-  "packages/dsh-web-all": "95e539457cf9dd9ec8ce20303a52eb03a3c58b76aaba81f999509e743d57a163"
+  "packages/dsh-web-all": "8e9dd68d55f15533092b6297067591b6578f683821fad8f2a4cf01214de79da4"
 }

@@ -231,7 +231,12 @@ function declaredNamespaces(descriptor: SettingsDescriptor): string[] {
   const value = descriptor.value
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return []
   const found: string[] = []
-  for (const key of Object.keys(value as Record<string, unknown>)) {
+  for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+    // Only a NESTED section counts. The value is the entry's whole Config, so a
+    // plugin that merely carries a field named after some other family's
+    // namespace (a usage entry with a 'pet' key) must not claim that namespace
+    // and shadow the row that actually serves it.
+    if (typeof nested !== 'object' || nested === null || Array.isArray(nested)) continue
     if (resolveNamespaceEntry(key) !== undefined && !found.includes(key)) found.push(key)
   }
   return found
