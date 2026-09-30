@@ -20,8 +20,8 @@
 
 /* Trigger: the 36px rail circle, or a fully rounded (pill) full-row button
    in wide mode — both maximally rounded so the seat's occupants (this
-   trigger, the dsh-update trigger, the usage card) share one shape family
-   (#1035); the seat's owner (ui-sidebar) lays out the geometry. */
+   trigger, the usage trigger and optional standalone footer triggers) share one
+   shape family (#1035); the seat's owner (ui-sidebar) lays out the geometry. */
 .trigger {
   position: relative;
   flex: none;
@@ -797,8 +797,8 @@
 
 /* The family's own footer entries keep their intrinsic width and close the
    bottom row, sharing it with the settings trigger. `data-dsh-part="entry"` is
-   the family contract for these triggers (dsh-update, dsh-session-id); the
-   remote trigger marks its row with its own class. */
+   the family contract for these triggers (usage, dsh-session-id); the remote
+   trigger marks its row with its own class. */
 :global([data-dsh-frame]:not([data-sidebar-collapsed])) [class*='footerActions'] > [data-slot='sidebar.footer.action'] > [data-dsh-part='entry'],
 :global([data-dsh-frame]:not([data-sidebar-collapsed])) [class*='footerActions'] > [data-slot='sidebar.footer.action'] > [class*='entryRow'] {
   flex: 0 0 auto;

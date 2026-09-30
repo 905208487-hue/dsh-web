@@ -19,6 +19,8 @@ export interface UsageFootActionProps {
   label: () => string
   /** Open the usage settings dashboard. */
   onOpen: () => void
+  /** Whether the sidebar renders wide content (false = 56px rail). */
+  wide?: boolean
 }
 
 /**
@@ -26,12 +28,15 @@ export interface UsageFootActionProps {
  * @param props - label and open action.
  * @returns the trigger element.
  */
-export function UsageFootAction({ label, onOpen }: UsageFootActionProps) {
+export function UsageFootAction({ label, onOpen, wide = true }: UsageFootActionProps) {
   return (
     <button
       type="button"
       className={css.footAction}
       data-dsh-plugin="usage"
+      data-dsh-part="entry"
+      data-wide={wide ? undefined : 'rail'}
+      data-rail={wide ? undefined : 'rail'}
       aria-label={label()}
       title={label()}
       onClick={onOpen}

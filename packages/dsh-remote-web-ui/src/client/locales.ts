@@ -253,5 +253,4 @@ export const en = {
   'settings.unsaved': 'Unsaved',
   'settings.saveFailed': 'The deployment did not accept these values; they were left for you to correct.',
   'settings.invalidNumber': 'Enter a number, or leave blank to use the default.',
-  // Update panel (the sidebar update trigger).
 } satisfies Record<RemoteKey, string>

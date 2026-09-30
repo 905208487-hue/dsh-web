@@ -14,7 +14,7 @@ This repository is an external plugin package for DeepSeek Harness (DSH). It is 
 - **Security**: one active token at a time (a refresh invalidates the old link; the link stays re-usable within its expiry window so a scan handed between browsers can complete pairing; it expires). 停止 revokes every paired device and the current token — the `/remote` channel cuts them off on their next request. Pairing is this plugin's access control for the `/remote` channel; direct `/api` on a LAN-exposed bind is governed by the harness fence + browser auth (see Security model). Loopback (127.0.0.1) keeps using `/api` directly, and so does a page an application on this machine delivered — the desktop shell's `dsh-app://app/` or a `file:` page — because a pairing link is reachable only over the network. A paired device is a **full-control credential** (see Security model).
 - **LAN bind toggle**: the settings card writes a managed block into the profile `cordis.patch.yml` that pins the webserver bind to `0.0.0.0` (on) or `127.0.0.1` (off) — no `--host` command-line dance; an explicit `--host`/`--port` flag still wins. It maintains the matching host firewall rule (Windows Defender via netsh; Linux firewalld/ufw/iptables; other platforms report the firewall as unmanaged) and shows the live bind, the reachable LAN URLs, and the firewall state.
 - **Live status**: the desktop badge flips to 已连接 in real time; an `/api` posture probe reports any host whose `/api` fence the SDK leaves open, and the auto-tunnel state appears on the panel while the tunnel is starting.
-- **Self-update lives next door**: the one-click family update is its own plugin (`dsh-update`, the same sidebar foot seat), so turning remote access off — or disabling this plugin — never removes the update trigger.
+- **Self-update lives next door**: the one-click family update routes are owned by their own plugin (`dsh-update`), so turning remote access off — or disabling this plugin — never removes the local update capability.
 - **Desktop foot row**: on the wide sidebar the footer-action occupants share the official Settings trigger's line instead of stacking above it, so no single control owns a full-width row; any other foot block (the usage glance card, another plugin's) keeps a full row above them, and the 56px rail keeps the shell's stacked foot.
 
 ## The mobile adaptation layer
@@ -39,7 +39,7 @@ The paired remote desktop also runs in **host mode**: on this harness line the "
 
 ## Install
 
-Install the family aggregate package `@linxin666/dsh-web-all` (all plugins and skins in one) or this plugin alone:
+Install the family aggregate package `@linxin666/dsh-web-all` (the plugin set listed in its aggregate manifest) or this plugin alone:
 
 ```sh
 # Recommended: install directly from npm

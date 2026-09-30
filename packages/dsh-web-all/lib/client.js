@@ -18949,8 +18949,8 @@ window.__ModuleLoader__.load({
 		//#region ../dsh-remote-web-ui/src/client/index.ts
 		/**
 		* Remote control — browser half. Registers the `remote` dictionaries, the
-		* sidebar-foot entry (phone trigger + pairing panel + update trigger), and
-		* the pair boot flow (accept + presence heartbeats) plus the one-time
+		* sidebar-foot entry (phone trigger + pairing panel), and the pair boot flow
+		* (accept + presence heartbeats) plus the one-time
 		* failed-pair notice. The portrait-touch adaptation of the official UI
 		* starts under the plugin lifecycle (startMobileAdapt inside apply) and reverts
 		* on dispose, so disabled plugin entries stay inert. Export discipline: packages/client/AGENTS.md — the
@@ -41068,11 +41068,14 @@ window.__ModuleLoader__.load({
 		* @param props - label and open action.
 		* @returns the trigger element.
 		*/
-		function UsageFootAction({ label, onOpen }) {
+		function UsageFootAction({ label, onOpen, wide = true }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 				type: "button",
 				className: usage_module_css_default.footAction,
 				"data-dsh-plugin": "usage",
+				"data-dsh-part": "entry",
+				"data-wide": wide ? void 0 : "rail",
+				"data-rail": wide ? void 0 : "rail",
 				"aria-label": label(),
 				title: label(),
 				onClick: onOpen,
@@ -41105,22 +41108,20 @@ window.__ModuleLoader__.load({
 		* re-renders around, and the aggregate's own foot layout then treats it as a
 		* stray child.
 		*
-		* No layout shim lives here. The aggregate package (`dsh-web-all`) already
-		* orders the foot for this shell:
-		*
-		*   [class*=footArea]      { flex-flow: wrap; align-items: center }
-		*   [class*=settingsArea]  { flex: auto; order: 1 }
-		*   [class*=footerActions] { flex: none; order: 2; align-items: center }
+		* No layout shim lives here. The shared footer geometry is owned by
+		* dsh-remote-web-ui's shell-adaptation CSS: wide mode makes footer actions and
+		* Settings share the bottom row, while rail mode stacks rail-marked occupants.
 		*
 		* A second shim forcing `flex-direction: column` on the same element fought
 		* that rule and left the action cluster centred instead of beside Settings.
-		* The only ordering this package owns is its position INSIDE the cluster,
-		* which the slot `order` below sets: Usage before Remote access.
+		* The only ordering this package owns is its position INSIDE the cluster. It
+		* keeps the default slot order so the aggregate load order seats Usage where
+		* the removed download trigger used to sit: after Remote access.
 		* @module @linxin666/dsh-usage/client/foot-card-mount
 		*/
 		const FOOT_ACTION_SLOT = "sidebar.footer.action";
-		/** First in the cluster: the official list sorts ascending, Remote access sits at 0. */
-		const FOOT_ACTION_ORDER = -100;
+		/** Default list order: the aggregate loads Remote access first, then Usage in the old download seat. */
+		const FOOT_ACTION_ORDER = 0;
 		/**
 		* Open the settings panel on the usage section. The shell owns the panel's
 		* open state and exposes no service for it, so the trigger replays the user's

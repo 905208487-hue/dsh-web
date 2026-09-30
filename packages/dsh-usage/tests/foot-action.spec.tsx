@@ -2,8 +2,9 @@
 
 /**
  * The sidebar usage action trigger: one icon-only button seated where the
- * download (self-update) trigger used to sit. It carries the localized
- * usage label and a usage chart glyph. Given a label and an open callback,
+ * download (self-update) trigger used to sit. It opts into the shared footer
+ * entry layout, carries the localized usage label and a usage chart glyph.
+ * Given a label and an open callback,
  * when the user taps the trigger, then the dashboard opens once.
  */
 
@@ -23,8 +24,12 @@ describe('sidebar usage foot action', () => {
     const { getByTitle, container } = render(<UsageFootAction label={() => 'Usage'} onOpen={() => {}} />)
     // When the foot action mounts
     // Then the trigger is a button carrying the label and the bar glyph
-    expect(getByTitle('Usage').tagName).toBe('BUTTON')
-    expect(getByTitle('Usage').getAttribute('aria-label')).toBe('Usage')
+    const trigger = getByTitle('Usage')
+    expect(trigger.tagName).toBe('BUTTON')
+    expect(trigger.getAttribute('aria-label')).toBe('Usage')
+    expect(trigger.getAttribute('data-dsh-plugin')).toBe('usage')
+    expect(trigger.getAttribute('data-dsh-part')).toBe('entry')
+    expect(trigger.hasAttribute('data-wide')).toBe(false)
     expect(container.querySelectorAll('button svg path').length).toBe(3)
   })
 
@@ -39,7 +44,17 @@ describe('sidebar usage foot action', () => {
     expect(container.querySelector('button svg path')).toBeInstanceOf(SVGElement)
   })
 
-  it('operator contributes Usage as the first entry of the official footer action slot', () => {
+  it('operator marks the collapsed rail variant for the shared footer stack rule', () => {
+    // Given the official footer slot renders in the collapsed rail
+    const { getByTitle } = render(<UsageFootAction label={() => 'Usage'} onOpen={() => {}} wide={false} />)
+    // When the trigger mounts
+    const trigger = getByTitle('Usage')
+    // Then it carries the same rail marker as the retired download trigger.
+    expect(trigger.getAttribute('data-wide')).toBe('rail')
+    expect(trigger.getAttribute('data-rail')).toBe('rail')
+  })
+
+  it('operator contributes Usage to the old download position in the official footer action slot', () => {
     // Given a slot registry that immediately declares the official footer action slot
     const props = { label: () => 'Usage', onOpen: () => {} }
     const disposeRegistration = vi.fn()
@@ -56,7 +71,9 @@ describe('sidebar usage foot action', () => {
     // When the usage foot action mounts
     const dispose = mountUsageFootAction({ slots: { inject, register } as never }, props)
 
-    // Then it registers one real slot entry ordered ahead of Remote access (order 0)
+    // Then it registers one real slot entry at the default order. In the aggregate
+    // load order, Remote access registers first and Usage follows in the removed
+    // download trigger's visual position.
     expect(inject).toHaveBeenCalledWith(__test.FOOT_ACTION_SLOT, expect.any(Function))
     expect(register).toHaveBeenCalledWith({
       name: __test.FOOT_ACTION_SLOT,
@@ -64,7 +81,7 @@ describe('sidebar usage foot action', () => {
       order: __test.FOOT_ACTION_ORDER,
       inject: expect.any(Function),
     }, UsageFootAction)
-    expect(__test.FOOT_ACTION_ORDER).toBeLessThan(0)
+    expect(__test.FOOT_ACTION_ORDER).toBe(0)
     expect(register.mock.calls[0]?.[0].inject()).toBe(props)
     // And it leaves the aggregate's own foot layout untouched: a second shim
     // here fought that rule and centred the action cluster.

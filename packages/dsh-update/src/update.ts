@@ -4,8 +4,8 @@
  * packages when the aggregate is absent, probes npm for newer releases, and
  * runs `pnpm update --latest` inside the owning dsh profile.
  *
- * Split out of dsh-remote-web-ui: the update surface is its own plugin row, so
- * disabling remote access never takes the update trigger away.
+ * Split out of dsh-remote-web-ui: the update capability is its own plugin row,
+ * so disabling remote access never removes the local update routes.
  *
  * Pure logic with injected seams (manifest reading, registry fetches, process
  * spawning) so the whole surface is unit-testable without touching disk,

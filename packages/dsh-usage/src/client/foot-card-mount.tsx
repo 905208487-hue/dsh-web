@@ -7,17 +7,15 @@
  * re-renders around, and the aggregate's own foot layout then treats it as a
  * stray child.
  *
- * No layout shim lives here. The aggregate package (`dsh-web-all`) already
- * orders the foot for this shell:
- *
- *   [class*=footArea]      { flex-flow: wrap; align-items: center }
- *   [class*=settingsArea]  { flex: auto; order: 1 }
- *   [class*=footerActions] { flex: none; order: 2; align-items: center }
+ * No layout shim lives here. The shared footer geometry is owned by
+ * dsh-remote-web-ui's shell-adaptation CSS: wide mode makes footer actions and
+ * Settings share the bottom row, while rail mode stacks rail-marked occupants.
  *
  * A second shim forcing `flex-direction: column` on the same element fought
  * that rule and left the action cluster centred instead of beside Settings.
- * The only ordering this package owns is its position INSIDE the cluster,
- * which the slot `order` below sets: Usage before Remote access.
+ * The only ordering this package owns is its position INSIDE the cluster. It
+ * keeps the default slot order so the aggregate load order seats Usage where
+ * the removed download trigger used to sit: after Remote access.
  * @module @linxin666/dsh-usage/client/foot-card-mount
  */
 
@@ -41,8 +39,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export const FOOT_ACTION_SELECTOR = '[data-dsh-plugin="usage"]'
 
 const FOOT_ACTION_SLOT = 'sidebar.footer.action'
-/** First in the cluster: the official list sorts ascending, Remote access sits at 0. */
-const FOOT_ACTION_ORDER = -100
+/** Default list order: the aggregate loads Remote access first, then Usage in the old download seat. */
+const FOOT_ACTION_ORDER = 0
 
 interface UsageFootActionContext {
   slots: Pick<SlotRegistry, 'inject' | 'register'>

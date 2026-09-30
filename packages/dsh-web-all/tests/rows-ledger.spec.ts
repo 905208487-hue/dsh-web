@@ -78,10 +78,10 @@ describe('active-row ledger', () => {
   afterEach(resetAll)
 
   it('records and removes rows in insertion order', () => {
-    recordActiveRow('@linxin666/dsh-pet')
+    recordActiveRow('@linxin666/dsh-remote-web-ui')
     recordActiveRow('@linxin666/dsh-usage')
-    expect(listActiveRows()).toEqual(['@linxin666/dsh-pet', '@linxin666/dsh-usage'])
-    removeActiveRow('@linxin666/dsh-pet')
+    expect(listActiveRows()).toEqual(['@linxin666/dsh-remote-web-ui', '@linxin666/dsh-usage'])
+    removeActiveRow('@linxin666/dsh-remote-web-ui')
     expect(listActiveRows()).toEqual(['@linxin666/dsh-usage'])
   })
 })

@@ -2,13 +2,13 @@
  * dsh-update — host half. Mounts the /api/update route family on the web
  * server: the npm registry probe behind GET /api/update/status and the
  * profile's real `pnpm update --latest` behind POST /api/update/run. Both are
- * loopback-only control endpoints; the browser half (`./client`) renders the
- * sidebar trigger and the panel and reaches these routes over relative
- * same-origin /api paths.
+ * loopback-only control endpoints; the browser half (`./client`) only registers
+ * dictionaries and heartbeat, leaving the Web GUI footer without a download
+ * trigger.
  *
  * This capability is deliberately its own plugin row rather than a seat of
  * dsh-remote-web-ui: turning remote access off — or disabling that plugin —
- * must never take the update trigger away.
+ * must never remove the local update routes.
  */
 
 import { createRequire } from 'node:module'

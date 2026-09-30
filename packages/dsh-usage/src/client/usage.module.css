@@ -751,19 +751,14 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Sidebar foot card: the compact usage glance the mount seats as the shell
-   foot area's last child, directly below the Settings row. The chrome is an
-   outer div; the content is one transparent main button (the whole card opens
-   the usage settings section) with a sibling corner chevron toggling the
-   collapsed strip — sibling buttons, since nesting buttons is invalid HTML.
-   Quiet card on the same currentColor mixes as the section cards; hidden in
-   the 56px rail (the frame carries data-sidebar-collapsed).
+   Sidebar foot action: an icon-only usage trigger in the official
+   sidebar.footer.action cluster. It replaces the removed download trigger's
+   visual slot beside the Remote access trigger.
    --------------------------------------------------------------------------- */
 
-/* Seated in the sidebar footer action cluster beside the Remote access
-   trigger. It mirrors that trigger's box exactly (36px circle, transparent,
-   label-secondary, same hover/active/focus), so the two icon buttons read as
-   one control group instead of two different button styles. */
+/* Mirrors the footer trigger box exactly (36px circle, transparent,
+   label-secondary, same hover/active/focus), so the icon buttons read as one
+   control group instead of separate button styles. */
 .footAction {
   appearance: none;
   box-sizing: border-box;

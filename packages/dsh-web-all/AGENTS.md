@@ -1,13 +1,13 @@
 # AGENTS.md — dsh-web-all
 
-全家桶聚合载具包：安装它 = 全部功能插件 + 皮肤全家桶一个包装齐。本包无自有插件
+全家桶聚合载具包：安装它 = 聚合清单列出的功能插件一个包装齐。本包无自有插件
 逻辑（仅 compat shim），只是 child 插件 insert 行的汇总载体。
 
 ## 聚合机制
 
 - `cordis.patch.yml` 是各 child 的 insert 行拼接（含每源注释头）；仓库内子包经
   package.json 的 `workspace:*` 拉入，安装单包即全部就位。
-- 已迁出为独立仓库的家族子插件（皮肤中心、宠物、社区插件索引、预设中心）走
+- 已迁出为独立仓库且仍由家族聚合挂载的子插件（社区插件索引、预设中心）走
   `rows:` 外部行：依赖写成显式 semver 范围，行 `name` 直接是真实包名（不经共享壳
   包装），浏览器半区由卫星自带的 loader entry 挂载、不再内联进本包 bundle。代价
   是这些行没有壳的 fault-isolation；收益是卫星客户端改动不再要求重建本包。
@@ -31,8 +31,8 @@
   patch 行（bundle-only 包不能被 loader 直接 import）。
 - `tombstones:` 段保留已退役或已迁出子路径的 exports 空壳（指向
   `lib/shells/shell.js`），避免老 profile 残留旧行名时 Node 抛
-  ERR_PACKAGE_PATH_NOT_EXPORTED。已移除的 `pet` / `skin-center` / `community-plugins` / `preset-center` 与
-  `market`（2026-09-26 从家族移除）子路径留在本清单里，旧 profile 的行仍可 import。
+  ERR_PACKAGE_PATH_NOT_EXPORTED。已移除的 `pet` / `skin-center` / `market` 与仍以外部行
+  挂载的 `community-plugins` / `preset-center` 子路径留在本清单里，旧 profile 的行仍可 import。
 - `patches:` 段（单行 JSON flow mapping）对本聚合自插入行做整对象 config 覆写：
   用于播种行级默认（如 enabled:false），渲染在全部 insert 之后；
   id 必须是本聚合已存在的行，settings 一经用户改动即优先于播种值。

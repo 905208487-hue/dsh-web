@@ -1,10 +1,10 @@
 # Agent Note: Sidebar Update Trigger Renders Text Badge When an Update Is Available
 
-Status: implemented
+Status: superseded by [the family self-update is its own plugin row](../architecture/2026-09-25-self-update-own-plugin-row.md); the visible footer trigger is removed, so this note records the retired badge behavior.
 
 ## Problem
 
-The `dsh-update` plugin renders the check-for-updates trigger in the sidebar footer (it was `dsh-remote-web-ui` before the self-update split; see [the split note](../architecture/2026-09-25-self-update-own-plugin-row.md)). When the background probe detected a newer release (`updateAvailable === true`), it only showed a small dot badge (`::after`) on the download icon. The visual indicator was subtle and easy to overlook.
+The retired `dsh-update` sidebar footer trigger used to render a check-for-updates download button (it was `dsh-remote-web-ui` before the self-update split; see [the split note](../architecture/2026-09-25-self-update-own-plugin-row.md)). When the background probe detected a newer release (`updateAvailable === true`), it only showed a small dot badge (`::after`) on the download icon. The visual indicator was subtle and easy to overlook.
 
 ## Decision
 
@@ -24,5 +24,5 @@ The `dsh-update` plugin renders the check-for-updates trigger in the sidebar foo
 
 ## Consequences
 
-- Users in the expanded sidebar immediately see that a newer version is available.
-- Switching between rail and wide modes remains fluid and maintains the `#1035` uniform rounding family.
+- While the footer trigger existed, users in the expanded sidebar immediately saw that a newer version was available.
+- Switching between rail and wide modes remained fluid and maintained the `#1035` uniform rounding family.

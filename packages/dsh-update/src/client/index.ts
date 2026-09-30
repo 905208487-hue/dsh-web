@@ -53,6 +53,4 @@ export function apply(ctx: ClientContext): void {
   }, 'dsh-update: dictionaries')
 }
 
-export type { UpdateEntryProps } from './UpdateEntry.tsx'
-export type { UpdatePanelProps, UpdateView } from './UpdatePanel.tsx'
 export type { UpdateKey } from './locales.ts'

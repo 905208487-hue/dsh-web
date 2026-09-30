@@ -1,10 +1,10 @@
 # Agent Note: 侧边栏自动更新入口检测到新版本时展示文字徽标
 
-Status: implemented
+Status: superseded by [家族自更新成为独立插件行](../architecture/2026-09-25-self-update-own-plugin-row.zh.md)；可见 footer 触发器已移除，因此本文记录已退役的徽标行为。
 
 ## 问题
 
-`dsh-update` 插件在侧边栏渲染检查更新触发器（自更新拆分前属 `dsh-remote-web-ui`，见[拆分记录](../architecture/2026-09-25-self-update-own-plugin-row.zh.md)）。当后台检测到新版本发布（`updateAvailable === true`）时，仅在下载图标右上角渲染一个红/主题色小圆点（`::after` 徽标），视觉提示较弱且不够直观。
+已退役的 `dsh-update` 侧栏 footer 触发器曾渲染检查更新下载按钮（自更新拆分前属 `dsh-remote-web-ui`，见[拆分记录](../architecture/2026-09-25-self-update-own-plugin-row.zh.md)）。当后台检测到新版本发布（`updateAvailable === true`）时，仅在下载图标右上角渲染一个红/主题色小圆点（`::after` 徽标），视觉提示较弱且不够直观。
 
 ## 决策
 
@@ -24,5 +24,5 @@ Status: implemented
 
 ## 后果
 
-- 用户在侧边栏展开状态下能一眼识别到有新版本可用，点击即可呼出更新面板确认并执行更新。
-- 窄栏与宽栏切换平滑自适应，圆角与尺寸符合 `#1035` 统一几何家族规范。
+- 当 footer 触发器存在时，用户在侧边栏展开状态下能一眼识别到有新版本可用，点击即可呼出更新面板确认并执行更新。
+- 窄栏与宽栏切换曾保持平滑自适应，圆角与尺寸符合 `#1035` 统一几何家族规范。

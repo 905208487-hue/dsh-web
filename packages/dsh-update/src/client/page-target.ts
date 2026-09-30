@@ -1,12 +1,11 @@
 /**
- * Page-delivery facts that decide where the update seat may appear.
+ * Page-delivery facts retained for legacy callers that ask where a visible
+ * update seat would be allowed.
  *
- * The family self-update is a *web* surface: it runs pnpm inside the profile
- * the host was booted from, which only makes sense for a page the browser
- * loaded over the network. The official DSH Desktop shell serves its Web GUI
- * from `dsh-app://app/` and the desktop application owns its own updater, so
- * that page must not render the seat — it keeps the phone-remote trigger that
- * shares the same sidebar seat.
+ * The family self-update is a *web* capability: it runs pnpm inside the profile
+ * the host was booted from. The current browser half renders no sidebar seat,
+ * and the official DSH Desktop shell serves its Web GUI from `dsh-app://app/`
+ * with its own updater.
  *
  * Naming the web side rather than an allowlist of known shells follows the
  * pairing fence's own classification
@@ -37,10 +36,10 @@ export function isApplicationDeliveredPage(protocol: string): boolean {
 }
 
 /**
- * Whether the sidebar seat may mount on this page. The desktop shell owns its
- * own updater, so the seat belongs to web pages only.
+ * Whether a legacy visible sidebar seat would be allowed on this page. The
+ * current client does not call this helper when applying.
  * @param protocol - `location.protocol` of the page.
- * @returns true when the update trigger may register.
+ * @returns true for web pages and false for application-delivered pages.
  */
 export function shouldMountUpdateSeat(protocol: string): boolean {
   return !isApplicationDeliveredPage(protocol)

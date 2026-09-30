@@ -2,7 +2,6 @@
 # deps 的包进 package.json dependencies（workspace:*）：children 作为 dependencies
 # 安装，DSH loader 从 profile 顶层解析 patch 行；严格（isolated）布局需在
 # profile 配 hoist（nodeLinker: hoisted 或 public-hoist-pattern，见根 README）
-# dsh-skins 的 patch 行只有 skin-center，汇总后展开为 web-ui-skin-center
 # 所有子插件行 id 统一加 web-ui- 命名空间（生成器剥掉子包 ui- 前缀后加 web-ui-），
 # 与独立包安装共存，不再触发 loader duplicate entry id
 # self: 聚合包自身也作为插件加载（compat shim 的 host/client 已并入本包，
@@ -10,8 +9,6 @@
 # 顺序注意：ui-web-ui-settings 排在最前（self 之后），先声明
 # web-ui.plugin.item 子槽位，其余插件的设置卡再注入（slots.inject 声明感知，
 # 但更早的声明让设置组在任何卡片之前就位，避免观感上的注册顺序歧义）。
-# remote-web-ui 排在 pet 前，确保非 loopback 页面先安装配对门控的远程通道，
-# 再由 pet 发起首次 /api/pet/* 请求，避免启动阶段命中 SDK 围栏。
 patchFrom:
   - ../dsh-web-settings
   - ../dsh-plugin-manager
@@ -19,8 +16,7 @@ patchFrom:
   - ../dsh-task-board
   - ../dsh-git-graph
   - ../dsh-remote-web-ui
-  # dsh-update 紧邻 remote-web-ui：两者共用侧栏 footer action 席位，
-  # 自更新行跟在远程访问行之后，观感顺序稳定。
+  # dsh-update 仅提供本地更新路由；左侧 footer 原下载席位由 dsh-usage 的使用统计按钮承接。
   - ../dsh-update
   - ../dsh-ssh
   - ../dsh-liangshen
@@ -52,10 +48,9 @@ deps:
   - ../dsh-web-settings
   - ../dsh-i18n
 
-# 独立仓库卫星（npm 外部行）：皮肤中心、宠物、社区插件索引迁出本单一仓库后由各自
+# 独立仓库卫星（npm 外部行）：社区插件索引与预设中心迁出本单一仓库后由各自
 # 仓库独立发版，这里只按 registry 版本内置。行 id 与 patchFrom 时期逐字一致
-# （web-ui-* 命名空间不变），老 profile 无需迁移；remote-web-ui 仍排在 pet 之前
-# （patchFrom 行整体先于外部行渲染）。
+# （web-ui-* 命名空间不变），老 profile 无需迁移。
 # 依赖版本由 packages/dsh-web-all/package.json 手写并随生成器保留。
 # 代价：外部行不带聚合包的 fault-isolation shell，且客户端不再内联进本包 lib
 # （改由卫星自带的 loader entry 挂载）。
@@ -63,9 +58,7 @@ deps:
 # dsh-workshop.panel 子槽位，预设面板再注册进该槽位（见 dsh-presets 仓）。
 rows:
   - {"id": "community-plugins", "name": "@linxin666/dsh-client-ui-community-plugins"}
-  - {"id": "pet", "name": "@linxin666/dsh-pet"}
   - {"id": "preset-center", "name": "@linxin666/dsh-client-ui-preset-center"}
-  - {"id": "skin-center", "name": "@linxin666/dsh-client-ui-skin-center"}
 
 # 外部 npm 插件段：alpha 分支（2026-09-17 决策）不内置 dsh-better-sidebar。
 # 该插件 0.19.1 的全部 @deepseek-ai/dsh-* peer 声明为 ^0.1.5-rc.1，按 semver

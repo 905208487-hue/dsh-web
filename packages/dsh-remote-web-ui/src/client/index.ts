@@ -1,7 +1,7 @@
 /**
  * Remote control — browser half. Registers the `remote` dictionaries, the
- * sidebar-foot entry (phone trigger + pairing panel + update trigger), and
- * the pair boot flow (accept + presence heartbeats) plus the one-time
+ * sidebar-foot entry (phone trigger + pairing panel), and the pair boot flow
+ * (accept + presence heartbeats) plus the one-time
  * failed-pair notice. The portrait-touch adaptation of the official UI
  * starts under the plugin lifecycle (startMobileAdapt inside apply) and reverts
  * on dispose, so disabled plugin entries stay inert. Export discipline: packages/client/AGENTS.md — the

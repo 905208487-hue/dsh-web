@@ -83,8 +83,8 @@ describe('wide sidebar foot row', () => {
   })
 
   it('operator gets the family footer trigger on the settings line at its own size', () => {
-    // Given the family's own footer entries (the update and session-id
-    // triggers mark `data-dsh-part="entry"`; this plugin marks its own row)
+    // Given the family's own footer entries (usage and session-id triggers
+    // mark `data-dsh-part="entry"`; this plugin marks its own row)
     const entry = ruleBody(WIDE + SEAT_SLOT + " > [data-dsh-part='entry']")
     // When the wide layout applies
     // Then the trigger keeps its intrinsic width and closes the bottom row
